@@ -1,0 +1,1223 @@
+<?xml version="1.0" standalone="yes" ?>
+<?xml-stylesheet href="x2script.xsl" type="text/xsl" ?>
+<script>
+<name>plugin.bbs.update</name>
+<version>1</version>
+<engineversion>64</engineversion>
+<description>Guilds, BBS - Update arcticles for sector</description>
+<arguments>
+<argument index="1" name="a.sector" type="Var/Sector" desc="Sector" />
+<argument index="2" name="a.race" type="Var/Boolean" desc="Race" />
+</arguments>
+<sourceplaintext>
+<![CDATA[
+  $page.id = get global variable: name='pageid.guilds'
+  $guilds.data = get global variable: name='guilds.data'
+  $guilds.config = get global variable: name='guilds.config'
+  if $guilds.data
+    $sector.data = $guilds.data['bbs.sectors']
+    if not $sector.data
+      $sector.data = table alloc
+      $guilds.data['bbs.sectors'] = $sector.data
+    end
+    
+    $bbs.data = $sector.data[$a.sector]
+    if not $bbs.data
+      $bbs.data = table alloc
+      $sector.data[$a.sector] = $bbs.data
+    end
+    
+    $articles = $bbs.data['articles']
+    if not $articles
+      $articles = table alloc
+      $bbs.data['articles'] = $articles
+    end
+    
+    $all.articles = $guilds.data['bbs.articles']
+    
+  * check for any arcticles that have expired
+    $current.time = playing time
+    
+    $key = get next key: table=$articles key=null
+    while $key
+      $a = $key
+      $key = get next key: table=$articles key=$key
+      
+      $tArticle = $all.articles[$a]
+      if $tArticle
+        $expire = $tArticle['expire']
+        if $current.time > $expire
+          remove key $a from table $articles
+        end
+      end
+    end
+    
+    $max = $bbs.data['max']
+    $expire = $bbs.data['max.expire']
+    if ! $max OR ( $expire AND $current.time > $expire )
+      $min = $guilds.config['bbs.min']
+      skip if $min
+        $min = 3
+      skip if $max
+        $min = 5
+      $max = $guilds.config['bbs.max']
+      inc $max = 
+      do if $min >= $max
+        $min = $max - 1
+      $max = random value from $min to $max - 1
+      $expire = random value from 7200 to 14400 - 1
+      $expire = $current.time + $expire
+      $bbs.data['max'] = $max
+      $bbs.data['max.expire'] = $expire
+    end
+    
+  * check for existing dynamic articles
+    $has.dynamic = 0
+    $key = get next key: table=$articles key=null
+    while $key
+      $article = $all.articles[$key]
+      if $article
+        if $article['is.dynamic']
+          inc $has.dynamic = 
+        end
+      end
+      $key = get next key: table=$articles key=$key
+    end
+    
+  * add at least 1 dynamic article, if it exists
+    $current.time = playing time
+    $value = $guilds.config['bbs.min.dynamic']
+    while $has.dynamic < $value
+      inc $has.dynamic = 
+      $size = size of table $articles
+      $max = $bbs.data['max']
+      if $size < $max
+@       $a = [THIS] -> call script plugin.bbs.getnews :  Sector=$a.sector  Race=$a.race  Include Dynamic=[TRUE]  Exclude=$articles  Only Dynamic=[TRUE]
+        if $a
+          gosub sub.AddArticle
+        end
+      end
+    end
+    
+    $size = size of table $articles
+    $max = $bbs.data['max']
+    while $size < $max
+@     $a = [THIS] -> call script plugin.bbs.getnews :  Sector=$a.sector  Race=$a.race  Include Dynamic=[TRUE]  Exclude=$articles  Only Dynamic=[FALSE]
+      skip if $a
+        break
+      gosub sub.AddArticle
+      inc $size = 
+    end
+    
+    return $bbs.data
+  end
+  
+  return null
+  
+  
+  sub.AddArticle:
+  $expire = random value from 2400 to 7200 - 1
+  $expire = $expire + $current.time
+  $articles[$a] = $expire
+  gosub sub.CheckDynamic
+  endsub
+  
+  
+  sub.CheckDynamic:
+  $article = $all.articles[$a]
+  if $article
+    if $article['is.dynamic']
+      $max.articles = $article['max']
+      if is datatype[ $max.articles ] == DATATYPE_INT
+        dec $max.articles = 
+        $article['max'] = $max.articles
+      end
+    end
+  end
+  endsub
+  return null
+]]>
+</sourceplaintext>
+<sourcetext>
+<line indent=""><var>$page.id&#160;=&#160;</var><text>get&#160;global&#160;variable:&#160;name=</text><var>'pageid.guilds'</var></line>
+<line indent=""><var>$guilds.data&#160;=&#160;</var><text>get&#160;global&#160;variable:&#160;name=</text><var>'guilds.data'</var></line>
+<line indent=""><var>$guilds.config&#160;=&#160;</var><text>get&#160;global&#160;variable:&#160;name=</text><var>'guilds.config'</var></line>
+<line indent=""><var>if&#160;</var><var>$guilds.data</var></line>
+<line indent="&#160;"><var>$sector.data&#160;=&#160;</var><var>$guilds.data</var><text>[</text><var>'bbs.sectors'</var><text>]</text></line>
+<line indent="&#160;"><var>if&#160;not&#160;</var><var>$sector.data</var></line>
+<line indent="&#160;&#160;"><var>$sector.data&#160;=&#160;</var><text>table&#160;alloc</text></line>
+<line indent="&#160;&#160;"><var>$guilds.data</var><text>[</text><var>'bbs.sectors'</var><text>]&#160;=&#160;</text><var>$sector.data</var></line>
+<line indent="&#160;"><text>end</text></line>
+<line indent="&#160;"></line>
+<line indent="&#160;"><var>$bbs.data&#160;=&#160;</var><var>$sector.data</var><text>[</text><var>$a.sector</var><text>]</text></line>
+<line indent="&#160;"><var>if&#160;not&#160;</var><var>$bbs.data</var></line>
+<line indent="&#160;&#160;"><var>$bbs.data&#160;=&#160;</var><text>table&#160;alloc</text></line>
+<line indent="&#160;&#160;"><var>$sector.data</var><text>[</text><var>$a.sector</var><text>]&#160;=&#160;</text><var>$bbs.data</var></line>
+<line indent="&#160;"><text>end</text></line>
+<line indent="&#160;"></line>
+<line indent="&#160;"><var>$articles&#160;=&#160;</var><var>$bbs.data</var><text>[</text><var>'articles'</var><text>]</text></line>
+<line indent="&#160;"><var>if&#160;not&#160;</var><var>$articles</var></line>
+<line indent="&#160;&#160;"><var>$articles&#160;=&#160;</var><text>table&#160;alloc</text></line>
+<line indent="&#160;&#160;"><var>$bbs.data</var><text>[</text><var>'articles'</var><text>]&#160;=&#160;</text><var>$articles</var></line>
+<line indent="&#160;"><text>end</text></line>
+<line indent="&#160;"></line>
+<line indent="&#160;"><var>$all.articles&#160;=&#160;</var><var>$guilds.data</var><text>[</text><var>'bbs.articles'</var><text>]</text></line>
+<line indent="&#160;"></line>
+<line indent=""><comment><text>*&#160;</text><var>check&#160;for&#160;any&#160;arcticles&#160;that&#160;have&#160;expired</var></comment></line>
+<line indent="&#160;"><var>$current.time&#160;=&#160;</var><text>playing&#160;time</text></line>
+<line indent="&#160;"></line>
+<line indent="&#160;"><var>$key&#160;=&#160;</var><text>get&#160;next&#160;key:&#160;table=</text><var>$articles</var><text>&#160;key=</text><var>null</var></line>
+<line indent="&#160;"><var>while&#160;</var><var>$key</var></line>
+<line indent="&#160;&#160;"><var>$a&#160;=&#160;</var><var>$key</var></line>
+<line indent="&#160;&#160;"><var>$key&#160;=&#160;</var><text>get&#160;next&#160;key:&#160;table=</text><var>$articles</var><text>&#160;key=</text><var>$key</var></line>
+<line indent="&#160;&#160;"></line>
+<line indent="&#160;&#160;"><var>$tArticle&#160;=&#160;</var><var>$all.articles</var><text>[</text><var>$a</var><text>]</text></line>
+<line indent="&#160;&#160;"><var>if&#160;</var><var>$tArticle</var></line>
+<line indent="&#160;&#160;&#160;"><var>$expire&#160;=&#160;</var><var>$tArticle</var><text>[</text><var>'expire'</var><text>]</text></line>
+<line indent="&#160;&#160;&#160;"><var>if&#160;</var><var>$current.time</var><text>&#160;</text><var>&gt;</var><text>&#160;</text><var>$expire</var></line>
+<line indent="&#160;&#160;&#160;&#160;"><text>remove&#160;key&#160;</text><var>$a</var><text>&#160;from&#160;table&#160;</text><var>$articles</var></line>
+<line indent="&#160;&#160;&#160;"><text>end</text></line>
+<line indent="&#160;&#160;"><text>end</text></line>
+<line indent="&#160;"><text>end</text></line>
+<line indent="&#160;"></line>
+<line indent="&#160;"><var>$max&#160;=&#160;</var><var>$bbs.data</var><text>[</text><var>'max'</var><text>]</text></line>
+<line indent="&#160;"><var>$expire&#160;=&#160;</var><var>$bbs.data</var><text>[</text><var>'max.expire'</var><text>]</text></line>
+<line indent="&#160;"><var>if&#160;</var><var>!</var><text>&#160;</text><var>$max</var><text>&#160;</text><var>OR</var><text>&#160;</text><var>(</var><text>&#160;</text><var>$expire</var><text>&#160;</text><var>AND</var><text>&#160;</text><var>$current.time</var><text>&#160;</text><var>&gt;</var><text>&#160;</text><var>$expire</var><text>&#160;</text><var>)</var></line>
+<line indent="&#160;&#160;"><var>$min&#160;=&#160;</var><var>$guilds.config</var><text>[</text><var>'bbs.min'</var><text>]</text></line>
+<line indent="&#160;&#160;"><var>skip&#160;if&#160;</var><var>$min</var></line>
+<line indent="&#160;&#160;&#160;"><var>$min&#160;=&#160;</var><var>3</var></line>
+<line indent="&#160;&#160;"><var>skip&#160;if&#160;</var><var>$max</var></line>
+<line indent="&#160;&#160;&#160;"><var>$min&#160;=&#160;</var><var>5</var></line>
+<line indent="&#160;&#160;"><var>$max&#160;=&#160;</var><var>$guilds.config</var><text>[</text><var>'bbs.max'</var><text>]</text></line>
+<line indent="&#160;&#160;"><text>inc&#160;</text><var>$max&#160;=&#160;</var></line>
+<line indent="&#160;&#160;"><var>do&#160;if&#160;</var><var>$min</var><text>&#160;</text><var>&gt;=</var><text>&#160;</text><var>$max</var></line>
+<line indent="&#160;&#160;&#160;"><var>$min&#160;=&#160;</var><var>$max</var><text>&#160;</text><var>-</var><text>&#160;</text><var>1</var></line>
+<line indent="&#160;&#160;"><var>$max&#160;=&#160;</var><text>random&#160;value&#160;from&#160;</text><var>$min</var><text>&#160;to&#160;</text><var>$max</var><text>&#160;-&#160;1</text></line>
+<line indent="&#160;&#160;"><var>$expire&#160;=&#160;</var><text>random&#160;value&#160;from&#160;</text><var>7200</var><text>&#160;to&#160;</text><var>14400</var><text>&#160;-&#160;1</text></line>
+<line indent="&#160;&#160;"><var>$expire&#160;=&#160;</var><var>$current.time</var><text>&#160;</text><var>+</var><text>&#160;</text><var>$expire</var></line>
+<line indent="&#160;&#160;"><var>$bbs.data</var><text>[</text><var>'max'</var><text>]&#160;=&#160;</text><var>$max</var></line>
+<line indent="&#160;&#160;"><var>$bbs.data</var><text>[</text><var>'max.expire'</var><text>]&#160;=&#160;</text><var>$expire</var></line>
+<line indent="&#160;"><text>end</text></line>
+<line indent="&#160;"></line>
+<line indent=""><comment><text>*&#160;</text><var>check&#160;for&#160;existing&#160;dynamic&#160;articles</var></comment></line>
+<line indent="&#160;"><var>$has.dynamic&#160;=&#160;</var><var>0</var></line>
+<line indent="&#160;"><var>$key&#160;=&#160;</var><text>get&#160;next&#160;key:&#160;table=</text><var>$articles</var><text>&#160;key=</text><var>null</var></line>
+<line indent="&#160;"><var>while&#160;</var><var>$key</var></line>
+<line indent="&#160;&#160;"><var>$article&#160;=&#160;</var><var>$all.articles</var><text>[</text><var>$key</var><text>]</text></line>
+<line indent="&#160;&#160;"><var>if&#160;</var><var>$article</var></line>
+<line indent="&#160;&#160;&#160;"><var>if&#160;</var><var>$article</var><text>[</text><var>'is.dynamic'</var><text>]</text></line>
+<line indent="&#160;&#160;&#160;&#160;"><text>inc&#160;</text><var>$has.dynamic&#160;=&#160;</var></line>
+<line indent="&#160;&#160;&#160;"><text>end</text></line>
+<line indent="&#160;&#160;"><text>end</text></line>
+<line indent="&#160;&#160;"><var>$key&#160;=&#160;</var><text>get&#160;next&#160;key:&#160;table=</text><var>$articles</var><text>&#160;key=</text><var>$key</var></line>
+<line indent="&#160;"><text>end</text></line>
+<line indent="&#160;"></line>
+<line indent=""><comment><text>*&#160;</text><var>add&#160;at&#160;least&#160;1&#160;dynamic&#160;article,&#160;if&#160;it&#160;exists</var></comment></line>
+<line indent="&#160;"><var>$current.time&#160;=&#160;</var><text>playing&#160;time</text></line>
+<line indent="&#160;"><var>$value&#160;=&#160;</var><var>$guilds.config</var><text>[</text><var>'bbs.min.dynamic'</var><text>]</text></line>
+<line indent="&#160;"><var>while&#160;</var><var>$has.dynamic</var><text>&#160;</text><var>&lt;</var><text>&#160;</text><var>$value</var></line>
+<line indent="&#160;&#160;"><text>inc&#160;</text><var>$has.dynamic&#160;=&#160;</var></line>
+<line indent="&#160;&#160;"><var>$size&#160;=&#160;</var><text>size&#160;of&#160;table&#160;</text><var>$articles</var></line>
+<line indent="&#160;&#160;"><var>$max&#160;=&#160;</var><var>$bbs.data</var><text>[</text><var>'max'</var><text>]</text></line>
+<line indent="&#160;&#160;"><var>if&#160;</var><var>$size</var><text>&#160;</text><var>&lt;</var><text>&#160;</text><var>$max</var></line>
+<line interruptable="@" indent="&#160;&#160;&#160;"><var>$a&#160;=&#160;</var><var>[THIS]&#160;-&gt;</var><text>&#160;call&#160;script&#160;</text><call>plugin.bbs.getnews</call><text>&#160;:&#160;</text><text>&#160;Sector=</text><var>$a.sector</var><text>&#160;</text><text>&#160;Race=</text><var>$a.race</var><text>&#160;</text><text>&#160;Include&#160;Dynamic=</text><var>[TRUE]</var><text>&#160;</text><text>&#160;Exclude=</text><var>$articles</var><text>&#160;</text><text>&#160;Only&#160;Dynamic=</text><var>[TRUE]</var></line>
+<line indent="&#160;&#160;&#160;"><var>if&#160;</var><var>$a</var></line>
+<line indent="&#160;&#160;&#160;&#160;"><text>gosub&#160;</text><var>sub.AddArticle</var></line>
+<line indent="&#160;&#160;&#160;"><text>end</text></line>
+<line indent="&#160;&#160;"><text>end</text></line>
+<line indent="&#160;"><text>end</text></line>
+<line indent="&#160;"></line>
+<line indent="&#160;"><var>$size&#160;=&#160;</var><text>size&#160;of&#160;table&#160;</text><var>$articles</var></line>
+<line indent="&#160;"><var>$max&#160;=&#160;</var><var>$bbs.data</var><text>[</text><var>'max'</var><text>]</text></line>
+<line indent="&#160;"><var>while&#160;</var><var>$size</var><text>&#160;</text><var>&lt;</var><text>&#160;</text><var>$max</var></line>
+<line interruptable="@" indent="&#160;&#160;"><var>$a&#160;=&#160;</var><var>[THIS]&#160;-&gt;</var><text>&#160;call&#160;script&#160;</text><call>plugin.bbs.getnews</call><text>&#160;:&#160;</text><text>&#160;Sector=</text><var>$a.sector</var><text>&#160;</text><text>&#160;Race=</text><var>$a.race</var><text>&#160;</text><text>&#160;Include&#160;Dynamic=</text><var>[TRUE]</var><text>&#160;</text><text>&#160;Exclude=</text><var>$articles</var><text>&#160;</text><text>&#160;Only&#160;Dynamic=</text><var>[FALSE]</var></line>
+<line indent="&#160;&#160;"><var>skip&#160;if&#160;</var><var>$a</var></line>
+<line indent="&#160;&#160;&#160;"><text>break</text></line>
+<line indent="&#160;&#160;"><text>gosub&#160;</text><var>sub.AddArticle</var></line>
+<line indent="&#160;&#160;"><text>inc&#160;</text><var>$size&#160;=&#160;</var></line>
+<line indent="&#160;"><text>end</text></line>
+<line indent="&#160;"></line>
+<line indent="&#160;"><text>return&#160;</text><var>$bbs.data</var></line>
+<line indent=""><text>end</text></line>
+<line indent=""></line>
+<line indent=""><text>return&#160;</text><var>null</var></line>
+<line indent=""></line>
+<line indent=""></line>
+<line indent=""><var>sub.AddArticle</var><text>:</text></line>
+<line indent=""><var>$expire&#160;=&#160;</var><text>random&#160;value&#160;from&#160;</text><var>2400</var><text>&#160;to&#160;</text><var>7200</var><text>&#160;-&#160;1</text></line>
+<line indent=""><var>$expire&#160;=&#160;</var><var>$expire</var><text>&#160;</text><var>+</var><text>&#160;</text><var>$current.time</var></line>
+<line indent=""><var>$articles</var><text>[</text><var>$a</var><text>]&#160;=&#160;</text><var>$expire</var></line>
+<line indent=""><text>gosub&#160;</text><var>sub.CheckDynamic</var></line>
+<line indent=""><text>endsub</text></line>
+<line indent=""></line>
+<line indent=""></line>
+<line indent=""><var>sub.CheckDynamic</var><text>:</text></line>
+<line indent=""><var>$article&#160;=&#160;</var><var>$all.articles</var><text>[</text><var>$a</var><text>]</text></line>
+<line indent=""><var>if&#160;</var><var>$article</var></line>
+<line indent="&#160;"><var>if&#160;</var><var>$article</var><text>[</text><var>'is.dynamic'</var><text>]</text></line>
+<line indent="&#160;&#160;"><var>$max.articles&#160;=&#160;</var><var>$article</var><text>[</text><var>'max'</var><text>]</text></line>
+<line indent="&#160;&#160;"><var>if&#160;</var><text>is&#160;datatype[&#160;</text><var>$max.articles</var><text>&#160;]&#160;==&#160;</text><var>DATATYPE_INT</var></line>
+<line indent="&#160;&#160;&#160;"><text>dec&#160;</text><var>$max.articles&#160;=&#160;</var></line>
+<line indent="&#160;&#160;&#160;"><var>$article</var><text>[</text><var>'max'</var><text>]&#160;=&#160;</text><var>$max.articles</var></line>
+<line indent="&#160;&#160;"><text>end</text></line>
+<line indent="&#160;"><text>end</text></line>
+<line indent=""><text>end</text></line>
+<line indent=""><text>endsub</text></line>
+<line indent=""><text>return&#160;</text><var>null</var></line>
+</sourcetext>
+<codearray>
+
+<sval type="array" size="10">
+  <sval type="string" val="plugin.bbs.update"/>
+  <sval type="int" val="64"/>
+  <sval type="string" val="Guilds, BBS - Update arcticles for sector"/>
+  <sval type="int" val="1"/>
+  <sval type="int" val="0"/>
+  <sval type="array" size="21">
+    <sval type="string" val="a.sector"/>
+    <sval type="string" val="a.race"/>
+    <sval type="string" val="page.id"/>
+    <sval type="string" val="guilds.data"/>
+    <sval type="string" val="guilds.config"/>
+    <sval type="string" val="sector.data"/>
+    <sval type="string" val="bbs.data"/>
+    <sval type="string" val="articles"/>
+    <sval type="string" val="all.articles"/>
+    <sval type="string" val="current.time"/>
+    <sval type="string" val="key"/>
+    <sval type="string" val="a"/>
+    <sval type="string" val="tArticle"/>
+    <sval type="string" val="expire"/>
+    <sval type="string" val="max"/>
+    <sval type="string" val="min"/>
+    <sval type="string" val="has.dynamic"/>
+    <sval type="string" val="article"/>
+    <sval type="string" val="value"/>
+    <sval type="string" val="size"/>
+    <sval type="string" val="max.articles"/>
+  </sval>
+  <sval type="array" size="92">
+    <sval type="array" size="4">
+      <sval type="int" val="158"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="pageid.guilds"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="158"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="guilds.data"/>
+      <sval type="int" val="3"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="158"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="guilds.config"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610593533"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="bbs.sectors"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-536868860"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="1733"/>
+      <sval type="int" val="5"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="130"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="bbs.sectors"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="5"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-536867836"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="1733"/>
+      <sval type="int" val="6"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="130"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="6"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="articles"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-536866812"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="1733"/>
+      <sval type="int" val="7"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="130"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="articles"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="bbs.articles"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="141"/>
+      <sval type="int" val="9"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="1739"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610605559"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="1739"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="12"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="11"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610605821"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="12"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="13"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="12"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="expire"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610605821"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="13"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="1735"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="11"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="19"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="max"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="13"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="max.expire"/>
+    </sval>
+    <sval type="array" size="30">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610601213"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="65556"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="13"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="13"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="65556"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="16"/>
+      <sval type="int" val="-3"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="-4"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="-5"/>
+      <sval type="int" val="17"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="bbs.min"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-536862201"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-536861689"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="bbs.max"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="142"/>
+      <sval type="int" val="14"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610602488"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="12"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="12"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="110"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="14"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="110"/>
+      <sval type="int" val="13"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="7200"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="14400"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="13"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="13"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="130"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="max"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="14"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="130"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="max.expire"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="13"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="16"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="1739"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610598903"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="17"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610599421"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="17"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="-1610599421"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="17"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="is.dynamic"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="142"/>
+      <sval type="int" val="16"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="1739"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="47"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="141"/>
+      <sval type="int" val="9"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="18"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="bbs.min.dynamic"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610596087"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="16"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="18"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="142"/>
+      <sval type="int" val="16"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="1734"/>
+      <sval type="int" val="19"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="max"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610596349"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="19"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="16">
+      <sval type="int" val="102"/>
+      <sval type="string" val="plugin.bbs.getnews"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610596349"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="1167"/>
+      <sval type="int" val="76"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="56"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="1734"/>
+      <sval type="int" val="19"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="max"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610593783"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="19"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="16">
+      <sval type="int" val="102"/>
+      <sval type="string" val="plugin.bbs.getnews"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="9"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-536852729"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="74"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="1167"/>
+      <sval type="int" val="76"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="142"/>
+      <sval type="int" val="19"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="67"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="6"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="101"/>
+      <sval type="string" val="sub.AddArticle"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="110"/>
+      <sval type="int" val="13"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="2400"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="7200"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="13"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="13"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="130"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="13"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="1167"/>
+      <sval type="int" val="82"/>
+    </sval>
+    <sval type="array" size="1">
+      <sval type="int" val="1168"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="101"/>
+      <sval type="string" val="sub.CheckDynamic"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="17"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="11"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610589693"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="17"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="-1610589693"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="17"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="is.dynamic"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="20"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="17"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="max"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="125"/>
+      <sval type="int" val="-1610589693"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="20"/>
+      <sval type="int" val="20"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="143"/>
+      <sval type="int" val="20"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="130"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="17"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="max"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="20"/>
+    </sval>
+    <sval type="array" size="1">
+      <sval type="int" val="1168"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+  </sval>
+  <sval type="array" size="2">
+    <sval type="array" size="2">
+      <sval type="int" val="14"/>
+      <sval type="string" val="Sector"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="63"/>
+      <sval type="string" val="Race"/>
+    </sval>
+  </sval>
+  <sval type="array" size="38">
+    <sval type="array" size="2">
+      <sval type="int" val="8"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="8"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="12"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="12"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="16"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="16"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="17"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="17"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="check for any arcticles that have expired"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="18"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="22"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="27"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="27"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="28"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="28"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="45"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="45"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="45"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="check for existing dynamic articles"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="52"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="52"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="54"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="54"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="54"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="add at least 1 dynamic article, if it exists"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="64"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="64"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="65"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="65"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="71"/>
+      <sval type="int" val="7"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="74"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="74"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="75"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="75"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="76"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="76"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="82"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="82"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="90"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="90"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="90"/>
+      <sval type="int" val="4"/>
+    </sval>
+  </sval>
+  <sval type="int" val="0"/>
+</sval>
+
+</codearray>
+<nosignature>5591</nosignature>
+</script>

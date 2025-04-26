@@ -1,0 +1,606 @@
+<?xml version="1.0" standalone="yes" ?>
+<?xml-stylesheet href="x2script.xsl" type="text/xsl" ?>
+<script>
+<name>plugin.boarding.marines.timer</name>
+<version>1</version>
+<engineversion>65</engineversion>
+<description>Improved Boarding: Increase amount of marines on NPC's</description>
+<arguments>
+</arguments>
+<sourceplaintext>
+<![CDATA[
+@ $aRaces = [THIS] -> call script lib.cycrow.getraces :  Include Enemys=[TRUE]  Include Generic=[TRUE]  Include Pirates=[TRUE]  Include Custom=[TRUE]
+  
+  $count = size of array $aRaces
+  while $count
+    dec $count = 
+    $race = $aRaces[$count]
+    
+  * get all big ships from race
+    $aShips =  get ship array: of race $race class/type=Big Ship
+    if $aShips
+      $s.count = size of array $aShips
+@     $percent = [THIS] -> call script plugin.boarding.marines.getamt : 
+      $doAmt = ( $s.count * $percent ) / 100
+      
+      $current.time = playing time
+      while $doAmt
+        $s = size of array $aShips
+        $s = random value from 0 to $s - 1
+        $ship = $aShips[$s]
+        
+        $last.time = $ship -> get local variable: name='last.marines'
+        if ! $last.time OR ( $last.time + 3600 ) < $current.time
+          gosub sub.AddMarines
+          $ship ->set local variable: name='last.marines' value=$current.time
+        end
+        
+        remove element from array $aShips at index $s
+        
+        dec $doAmt = 
+        skip if size of array $aShips
+          break
+@       = wait 10 ms
+      end
+    end
+    
+@   = wait 100 ms
+  end
+  
+  return null
+  
+  sub.AddMarines:
+  skip if $ship -> get true amount of ware Cargo Lifesupport System in cargo bay
+    = $ship -> install 1 units of Cargo Lifesupport System
+  
+  $max = $ship -> get maximum number of marines
+  $free = $ship -> free space for marines
+  $half = $max / 2
+  if $free >= $half
+    $amt = random value from $half to $max - 1
+    inc $amt = 
+    if $amt > $free
+      $amt = $free
+    end
+    $task = $ship -> get next available task: starting=100
+    $ship ->start task $task with script !galaxyeditor.obj.addmarine and prio 10: arg1=$amt arg2=[TRUE] arg3=null arg4=null arg5=null
+  end
+  endsub
+  return null
+]]>
+</sourceplaintext>
+<sourcetext>
+<line interruptable="@" indent=""><var>$aRaces&#160;=&#160;</var><var>[THIS]&#160;-&gt;</var><text>&#160;call&#160;script&#160;</text><call>lib.cycrow.getraces</call><text>&#160;:&#160;</text><text>&#160;Include&#160;Enemys=</text><var>[TRUE]</var><text>&#160;</text><text>&#160;Include&#160;Generic=</text><var>[TRUE]</var><text>&#160;</text><text>&#160;Include&#160;Pirates=</text><var>[TRUE]</var><text>&#160;</text><text>&#160;Include&#160;Custom=</text><var>[TRUE]</var></line>
+<line indent=""></line>
+<line indent=""><var>$count&#160;=&#160;</var><text>size&#160;of&#160;array&#160;</text><var>$aRaces</var></line>
+<line indent=""><var>while&#160;</var><var>$count</var></line>
+<line indent="&#160;"><text>dec&#160;</text><var>$count&#160;=&#160;</var></line>
+<line indent="&#160;"><var>$race&#160;=&#160;</var><var>$aRaces</var><text>[</text><var>$count</var><text>]</text></line>
+<line indent="&#160;"></line>
+<line indent=""><comment><text>*&#160;</text><var>get&#160;all&#160;big&#160;ships&#160;from&#160;race</var></comment></line>
+<line indent="&#160;"><var>$aShips&#160;=&#160;</var><text>&#160;get&#160;ship&#160;array:&#160;of&#160;race&#160;</text><var>$race</var><text>&#160;class/type=</text><var>Big&#160;Ship</var></line>
+<line indent="&#160;"><var>if&#160;</var><var>$aShips</var></line>
+<line indent="&#160;&#160;"><var>$s.count&#160;=&#160;</var><text>size&#160;of&#160;array&#160;</text><var>$aShips</var></line>
+<line interruptable="@" indent="&#160;&#160;"><var>$percent&#160;=&#160;</var><var>[THIS]&#160;-&gt;</var><text>&#160;call&#160;script&#160;</text><call>plugin.boarding.marines.getamt</call><text>&#160;:&#160;</text></line>
+<line indent="&#160;&#160;"><var>$doAmt&#160;=&#160;</var><var>(</var><text>&#160;</text><var>$s.count</var><text>&#160;</text><var>*</var><text>&#160;</text><var>$percent</var><text>&#160;</text><var>)</var><text>&#160;</text><var>/</var><text>&#160;</text><var>100</var></line>
+<line indent="&#160;&#160;"></line>
+<line indent="&#160;&#160;"><var>$current.time&#160;=&#160;</var><text>playing&#160;time</text></line>
+<line indent="&#160;&#160;"><var>while&#160;</var><var>$doAmt</var></line>
+<line indent="&#160;&#160;&#160;"><var>$s&#160;=&#160;</var><text>size&#160;of&#160;array&#160;</text><var>$aShips</var></line>
+<line indent="&#160;&#160;&#160;"><var>$s&#160;=&#160;</var><text>random&#160;value&#160;from&#160;0&#160;to&#160;</text><var>$s</var><text>&#160;-&#160;1</text></line>
+<line indent="&#160;&#160;&#160;"><var>$ship&#160;=&#160;</var><var>$aShips</var><text>[</text><var>$s</var><text>]</text></line>
+<line indent="&#160;&#160;&#160;"></line>
+<line indent="&#160;&#160;&#160;"><var>$last.time&#160;=&#160;</var><var>$ship&#160;-&gt;</var><text>&#160;get&#160;local&#160;variable:&#160;name=</text><var>'last.marines'</var></line>
+<line indent="&#160;&#160;&#160;"><var>if&#160;</var><var>!</var><text>&#160;</text><var>$last.time</var><text>&#160;</text><var>OR</var><text>&#160;</text><var>(</var><text>&#160;</text><var>$last.time</var><text>&#160;</text><var>+</var><text>&#160;</text><var>3600</var><text>&#160;</text><var>)</var><text>&#160;</text><var>&lt;</var><text>&#160;</text><var>$current.time</var></line>
+<line indent="&#160;&#160;&#160;&#160;"><text>gosub&#160;</text><var>sub.AddMarines</var></line>
+<line indent="&#160;&#160;&#160;&#160;"><var>$ship&#160;-&gt;</var><text>set&#160;local&#160;variable:&#160;name=</text><var>'last.marines'</var><text>&#160;value=</text><var>$current.time</var></line>
+<line indent="&#160;&#160;&#160;"><text>end</text></line>
+<line indent="&#160;&#160;&#160;"></line>
+<line indent="&#160;&#160;&#160;"><text>remove&#160;element&#160;from&#160;array&#160;</text><var>$aShips</var><text>&#160;at&#160;index&#160;</text><var>$s</var></line>
+<line indent="&#160;&#160;&#160;"></line>
+<line indent="&#160;&#160;&#160;"><text>dec&#160;</text><var>$doAmt&#160;=&#160;</var></line>
+<line indent="&#160;&#160;&#160;"><var>skip&#160;if&#160;</var><text>size&#160;of&#160;array&#160;</text><var>$aShips</var></line>
+<line indent="&#160;&#160;&#160;&#160;"><text>break</text></line>
+<line interruptable="@" indent="&#160;&#160;&#160;"><var>=&#160;</var><text>wait&#160;</text><var>10</var><text>&#160;ms</text></line>
+<line indent="&#160;&#160;"><text>end</text></line>
+<line indent="&#160;"><text>end</text></line>
+<line indent="&#160;"></line>
+<line interruptable="@" indent="&#160;"><var>=&#160;</var><text>wait&#160;</text><var>100</var><text>&#160;ms</text></line>
+<line indent=""><text>end</text></line>
+<line indent=""></line>
+<line indent=""><text>return&#160;</text><var>null</var></line>
+<line indent=""></line>
+<line indent=""><var>sub.AddMarines</var><text>:</text></line>
+<line indent=""><var>skip&#160;if&#160;</var><var>$ship&#160;-&gt;</var><text>&#160;get&#160;true&#160;amount&#160;of&#160;ware&#160;</text><var>Cargo&#160;Lifesupport&#160;System</var><text>&#160;in&#160;cargo&#160;bay</text></line>
+<line indent="&#160;"><var>=&#160;</var><var>$ship&#160;-&gt;</var><text>&#160;install&#160;</text><var>1</var><text>&#160;units&#160;of&#160;</text><var>Cargo&#160;Lifesupport&#160;System</var></line>
+<line indent=""></line>
+<line indent=""><var>$max&#160;=&#160;</var><var>$ship&#160;-&gt;</var><text>&#160;get&#160;maximum&#160;number&#160;of&#160;marines</text></line>
+<line indent=""><var>$free&#160;=&#160;</var><var>$ship&#160;-&gt;</var><text>&#160;free&#160;space&#160;for&#160;marines</text></line>
+<line indent=""><var>$half&#160;=&#160;</var><var>$max</var><text>&#160;</text><var>/</var><text>&#160;</text><var>2</var></line>
+<line indent=""><var>if&#160;</var><var>$free</var><text>&#160;</text><var>&gt;=</var><text>&#160;</text><var>$half</var></line>
+<line indent="&#160;"><var>$amt&#160;=&#160;</var><text>random&#160;value&#160;from&#160;</text><var>$half</var><text>&#160;to&#160;</text><var>$max</var><text>&#160;-&#160;1</text></line>
+<line indent="&#160;"><text>inc&#160;</text><var>$amt&#160;=&#160;</var></line>
+<line indent="&#160;"><var>if&#160;</var><var>$amt</var><text>&#160;</text><var>&gt;</var><text>&#160;</text><var>$free</var></line>
+<line indent="&#160;&#160;"><var>$amt&#160;=&#160;</var><var>$free</var></line>
+<line indent="&#160;"><text>end</text></line>
+<line indent="&#160;"><var>$task&#160;=&#160;</var><var>$ship&#160;-&gt;</var><text>&#160;get&#160;next&#160;available&#160;task:&#160;starting=</text><var>100</var></line>
+<line indent="&#160;"><var>$ship&#160;-&gt;</var><text>start&#160;task&#160;</text><var>$task</var><text>&#160;with&#160;script&#160;</text><call>!galaxyeditor.obj.addmarine</call><text>&#160;and&#160;prio&#160;</text><var>10</var><text>:&#160;arg1=</text><var>$amt</var><text>&#160;arg2=</text><var>[TRUE]</var><text>&#160;arg3=</text><var>null</var><text>&#160;arg4=</text><var>null</var><text>&#160;arg5=</text><var>null</var></line>
+<line indent=""><text>end</text></line>
+<line indent=""><text>endsub</text></line>
+<line indent=""><text>return&#160;</text><var>null</var></line>
+</sourcetext>
+<codearray>
+
+<sval type="array" size="10">
+  <sval type="string" val="plugin.boarding.marines.timer"/>
+  <sval type="int" val="65"/>
+  <sval type="string" val="Improved Boarding: Increase amount of marines on NPC's"/>
+  <sval type="int" val="1"/>
+  <sval type="int" val="0"/>
+  <sval type="array" size="16">
+    <sval type="string" val="aRaces"/>
+    <sval type="string" val="count"/>
+    <sval type="string" val="race"/>
+    <sval type="string" val="aShips"/>
+    <sval type="string" val="s.count"/>
+    <sval type="string" val="percent"/>
+    <sval type="string" val="doAmt"/>
+    <sval type="string" val="current.time"/>
+    <sval type="string" val="s"/>
+    <sval type="string" val="ship"/>
+    <sval type="string" val="last.time"/>
+    <sval type="string" val="max"/>
+    <sval type="string" val="free"/>
+    <sval type="string" val="half"/>
+    <sval type="string" val="amt"/>
+    <sval type="string" val="task"/>
+  </sval>
+  <sval type="array" size="43">
+    <sval type="array" size="14">
+      <sval type="int" val="102"/>
+      <sval type="string" val="lib.cycrow.getraces"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="131"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610605815"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="143"/>
+      <sval type="int" val="1"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="1"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="1068"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="12"/>
+      <sval type="int" val="2073"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610606333"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="131"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="102"/>
+      <sval type="string" val="plugin.boarding.marines.getamt"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="21">
+      <sval type="int" val="104"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="13"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="100"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="16"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="13"/>
+      <sval type="int" val="-2"/>
+      <sval type="int" val="17"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="-4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="141"/>
+      <sval type="int" val="7"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610606327"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="131"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="106"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="8"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="8"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="156"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="last.marines"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="30">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610607869"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="65556"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="3600"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="65556"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="16"/>
+      <sval type="int" val="-3"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="-4"/>
+      <sval type="int" val="17"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-6"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="1167"/>
+      <sval type="int" val="28"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="155"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="last.marines"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="136"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="8"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="143"/>
+      <sval type="int" val="6"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="131"/>
+      <sval type="int" val="-536865017"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="25"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="105"/>
+      <sval type="int" val="-2147483647"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="11"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="105"/>
+      <sval type="int" val="-2147483647"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="100"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="101"/>
+      <sval type="string" val="sub.AddMarines"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="619"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="-536862969"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1048615"/>
+    </sval>
+    <sval type="array" size="8">
+      <sval type="int" val="647"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="-2147483647"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1048615"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="1427"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="11"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="1434"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="12"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="13"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610602237"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="12"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="13"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="110"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="13"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="11"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="142"/>
+      <sval type="int" val="14"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610602749"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="12"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="12"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="1462"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="100"/>
+    </sval>
+    <sval type="array" size="18">
+      <sval type="int" val="1017"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="9"/>
+      <sval type="string" val="!galaxyeditor.obj.addmarine"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="1">
+      <sval type="int" val="1168"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+  </sval>
+  <sval type="int" val="0"/>
+  <sval type="array" size="18">
+    <sval type="array" size="2">
+      <sval type="int" val="1"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="5"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="5"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="get all big ships from race"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="10"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="15"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="19"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="19"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="20"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="23"/>
+      <sval type="int" val="7"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="25"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="25"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="25"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="27"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="27"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="28"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="31"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="39"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="41"/>
+      <sval type="int" val="4"/>
+    </sval>
+  </sval>
+  <sval type="int" val="0"/>
+</sval>
+
+</codearray>
+<nosignature>3576</nosignature>
+</script>
