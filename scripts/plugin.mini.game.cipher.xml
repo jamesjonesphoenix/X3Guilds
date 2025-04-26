@@ -1,0 +1,2917 @@
+<?xml version="1.0" standalone="yes" ?>
+<?xml-stylesheet href="x2script.xsl" type="text/xsl" ?>
+<script>
+<name>plugin.mini.game.cipher</name>
+<version>7</version>
+<engineversion>62</engineversion>
+<description>The cipher minigame script. Returns 1 on success, 0 on failure.</description>
+<arguments>
+</arguments>
+<sourceplaintext>
+<![CDATA[
+  * ************************************************
+  * SCRIPT NAME: plugin.mini.game.cipher
+  * DESCRIPTION: Cipher mini-game. Part of the Hacking Mini-Game package 
+  * for the X3 AP Community Project.
+  * Requires array of sector names (or other easy text) defined in setup script.
+  * 
+  * AUTHOR: jack775544          DATE: January 2013
+  * ************************************************
+  * History:
+  * Bullwinkle 2013-03-27
+  *  - Changed ! to 0 for easier understanding (-X2-Illuminatus).
+  *  - Removed duplicate incoming message on failure (X2-Illuminatus).
+  *  - Reduced number of info lines in main and help menues (-X2-Illuminatus).
+  *  - Fixed bug in language file that caused menu heights to fill screen (Terre).
+  *  - Language file ID's 1602-1604 added. 
+  *  - Language file ID's 1550-1551 changed.
+  *  - Language file ID's 1565-1570 changed.
+  * 
+  * jack775544 29/01/2013
+  *  - Uses info lines now for better presentation and a cleaner t file
+  *  - Opens as a custom info menu instead of a custom menu for a 
+  *    nice widescreen design
+  *  - Adds a configurable menu height that can be defined in the t file
+  *  - Adds an author for the incoming message
+  * 
+  * Bullwinkle 2013-01-14 
+  *  - Integrated with Mini Game shell. 
+  *  - Performance tuning.
+  *  - Dynamic color-coding of menu for easier navigation.
+  *  - Minor ease-of-use and esthetic enhancements (script and t file).
+  * 
+  * jack775544 8/01/2013
+  *  - Changed to forward cipher
+  *  - Uses new menu based interface
+  * 
+  * jack775544 2/01/2013
+  *  - Initial Release
+  * 
+  * Made by jack775544 for the X3 AP Community Project
+  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+  
+  
+  $PageID = get global variable: name='mini.game.PageID'
+  
+  * Constants
+  $c.cipher.max.variation = read text: page=$PageID id=1601
+  $c.cipher.max.variation = string $c.cipher.max.variation to integer
+  $c.text.subtitle.start.game = read text: page=$PageID id=56
+  $c.sound.check.click = 1119
+  $c.page7.min = read text: page=$PageID id=57
+  $c.page7.min = string $c.page7.min to integer
+  $c.page7.max = read text: page=$PageID id=58
+  $c.page7.max = string $c.page7.max to integer
+  $c.color.none = read text: page=$PageID id=33
+  $c.color.cyan = read text: page=$PageID id=34
+  $c.color.red = read text: page=$PageID id=35
+  $c.color.yellow = read text: page=$PageID id=36
+  $c.color.green = read text: page=$PageID id=37
+  $c.color.white = read text: page=$PageID id=38
+  $c.color.blue = read text: page=$PageID id=39
+  $c.color.magenta = read text: page=$PageID id=32
+  $c.color.orange = read text: page=$PageID id=31
+  $c.main.menu.height = read text: page=$PageID id=1603
+  $c.main.menu.height = string $c.main.menu.height to integer
+  $c.help.menu.height = read text: page=$PageID id=1604
+  $c.help.menu.height = string $c.help.menu.height to integer
+  $c.name.boardcomputer = read text: page=$PageID id=1602
+  
+  * Setup
+  $Pos = [FALSE]
+  $Result = [FALSE]
+  
+  * Get a word for enciphering
+  * BW: =============================== 
+  * $Texts = get global variable: name='mini.game.texts'
+  $Texts = get global variable: name='mini.game.sector.names'
+  * BW: =============================== 
+  
+  $Size = size of array $Texts
+  $Rnd = random value from 0 to $Size - 1
+  $Password = $Texts[$Rnd]
+  
+@ $PasswordLC = null -> call script plugin.mini.game.lower.case :  String will be converted to Lower Case=$Password
+  
+  * Gets the alphabet
+  $Alphabet = read text: page id=$PageID, from 1500 to 1549 to array, include empty=[FALSE]
+  $Alphabetlength = size of array $Alphabet
+  
+  * Fixes bug where z would be a
+  inc $Alphabetlength = 
+  
+  * Makes a number for enciphering
+  $lengthP = get length of string $PasswordLC
+  $Pass = ''
+  $CipherStr = ''
+  $Count = 0
+  while $Count < $lengthP
+    $CharP = get substring of $PasswordLC offset=$Count length=1
+    
+  * BW: ===============================
+  * This loop is very slow; mostly due to calling an external script and passing an array to it. 
+  * Changing the call to a sub does not help much, so just put the code in-line here.
+  * $Pos = null-> call script 'plugin.mini.game.posinarray' : Value=$CharP Array=$Alphabet
+    $Pos = [FALSE]
+    $pia.Size = size of array $Alphabet
+    $pia.Count = 0
+    while $pia.Count < $pia.Size
+      $ValArr = $Alphabet[$pia.Count]
+      if $CharP == $ValArr
+        $Pos = $pia.Count
+      end
+      $pia.Count = $pia.Count + 1
+    end
+  * BW: ===============================
+    
+    if is datatype[ $Pos ] == DATATYPE_INT
+      
+  * BW: ===============================
+  * Allow easier ciphers by reducing the maximum variation in each bit of the cipher key.
+      $Cipher = random value from 0 to $c.cipher.max.variation - 1
+  * BW: ===============================
+      
+      $CipherStrTemp = convert number $Cipher to string
+      inc $Pos = 
+      $New = $Pos + $Cipher
+  * In case the value is over the number of letters in the alphabet
+      $New = $New mod $Alphabetlength
+  * Do this, for use in arrays. Remember programmers count from 0, people from 1!
+      dec $New = 
+      if $New == -1
+        $New = 0
+      end
+      $PassC = $Alphabet[$New]
+      $Pass = sprintf: fmt='%s%s', $Pass, $PassC, null, null, null
+      $CipherStr = sprintf: fmt='%s%s', $CipherStr, $CipherStrTemp, null, null, null
+      
+    else if $CharP == ' '
+      $CipherStr = sprintf: fmt='%s%s', $CipherStr, ' ', null, null, null
+      $Pass = sprintf: fmt='%s%s', $Pass, ' ', null, null, null
+      
+    else
+  * BW: -2013-03-27: $CipherStr = sprintf: fmt='%s%s', $CipherStr, '!', null, null, null
+      $CipherStr = sprintf: fmt='%s%s', $CipherStr, '0', null, null, null
+      $Pass = sprintf: fmt='%s%s', $Pass, $CharP, null, null, null
+      
+  * BW: Umlaut support
+      $Special = read text: page=$PageID id=4000
+      $SChar = find position of pattern $CharP in $Special
+      if $SChar != -1
+        inc $Count = 
+      end
+      
+    end
+    inc $Count = 
+@   = wait 1 ms
+  end
+  
+  * Pass is the encrypted password (the answer)
+  * CipherStr is the cipher that needs to be used
+  * Password is the string to encrypt (PasswordLC is that in lower case)
+  
+  $RetVal = ''
+  OpenMain:
+  if is datatype[ $RetValNew ] == DATATYPE_STRING
+    $RetVal = $RetValNew
+  end
+  $Menu = create custom menu array
+  set menu option: $Menu, maximum menu height=$c.main.menu.height lines
+  $line1a = read text: page=$PageID id=1550
+  $line1b = read text: page=$PageID id=1551
+  $line1c = read text: page=$PageID id=1552
+  
+  * BW: =============================== 
+  * Color-code and put strings on single line.
+  $line2 = read text: page=$PageID id=1554
+  $PasswordDisp = sprintf: pageid=$PageID textid=1593, $Password, null, null, null, null
+  $line2 = $line2 + $PasswordDisp
+  
+  $line3 = read text: page=$PageID id=1555
+  $CipherDisp = sprintf: pageid=$PageID textid=1593, $CipherStr, null, null, null, null
+  $line3 = $line3 + $CipherDisp
+  * BW: =============================== 
+  
+  * BW: =============================== 
+  * Dynamic Color-coded menu for easier navigation.
+  if $RetVal == ''
+  * Green Enter Solution
+    $line4 = read text: page=$PageID id=1556
+    $line4 = $c.color.green + $line4 + $c.color.none
+    
+  * Gray Submit
+    $line6 = read text: page=$PageID id=1559
+  else
+  * Orange Enter Solution
+    $line4 = read text: page=$PageID id=1556
+    $line4 = $c.color.orange + $line4 + $c.color.none
+    
+  * Green Submit
+    $line6 = read text: page=$PageID id=1559
+    $line6 = $c.color.green + $line6 + $c.color.none
+  end
+  * BW: =============================== 
+  
+  $linehelp = read text: page=$PageID id=1557
+  
+  * BW: =============================== 
+  * Color code and single line.
+  $line5 = read text: page=$PageID id=1558
+  $RetValDisp = sprintf: pageid=$PageID textid=1590, $RetVal, null, null, null, null
+  $line5 = $line5 + $c.color.cyan + $RetValDisp + $c.color.none
+  * BW: ===============================
+  
+  $TitleMain = read text: page=$PageID id=1580
+  $DescMain = read text: page=$PageID id=1581
+  * Description
+  add custom menu info line to array $Menu: text=$line1a
+  * BW: -2013-03-27: add custom menu info line to array $Menu: text=$line1b
+  * BW: -2013-03-27: add custom menu info line to array $Menu: text=$line1c
+  * The Password is:
+  add non selectable menu item: $Menu, text=$line2
+  
+  * The cipher is:
+  add non selectable menu item: $Menu, text=$line3
+  
+  * Enter Solution
+  add custom menu item to array $Menu: text=$line4 returnvalue='enter'
+  add non selectable menu item: $Menu, text='____________________________'
+  * Your answer:
+  add non selectable menu item: $Menu, text=$line5
+  
+  * Submit Answer
+  add custom menu item to array $Menu: text=$line6 returnvalue='finish'
+  add non selectable menu item: $Menu, text='____________________________'
+  * Help
+  add custom menu item to array $Menu: text=$linehelp returnvalue='help'
+  
+  * Show Menu
+  set menu option: $Menu, maximum menu height=15 lines
+@ $MenuRet = open custom menu: title=$TitleMain description=$DescMain option array=$Menu
+  
+  if $MenuRet == 'enter'
+    gosub EnterVal
+    goto label OpenMain
+    
+  * BW: ===============================
+  * Add case to handle player cancel (Esc).
+  else if $MenuRet == -1
+  * Player Canceled
+    $Result = -1
+    return $Result
+  * BW: ===============================
+    
+  else if $MenuRet == 'help'
+    gosub Help
+    goto label OpenMain
+  end
+  
+  * Convert to lower case
+@ $RetValLC = null -> call script plugin.mini.game.lower.case :  String will be converted to Lower Case=$RetVal
+  
+  * Displays whether success or failure
+  if $RetValLC == $Pass
+  * Success
+  * $msg = read text: page=$PageID id=1591
+    $msg = sprintf: pageid=$PageID textid=1591, $c.name.boardcomputer, null, null, null, null
+    send incoming message $msg to player: type:[Log.Alert], display it=[TRUE], log it=null
+  * BW: ===============================
+  * 1 and True are not exactly the same. We use 3-state logic when appropriate.
+    $Result = 1
+  * BW: =============================== 
+  else
+  * Fail
+    $msg = sprintf: pageid=$PageID textid=1592, $c.name.boardcomputer, null, null, null, null
+  * BW: 2013-03-27: send incoming message $msg to player: display it=[TRUE]
+    
+  * BW: =============================== 
+    $Result = 0
+  * BW: =============================== 
+  end
+  
+  return $Result
+  
+  * ----------------------------------------------------------------------------------
+  EnterVal:
+  $Desc = sprintf: fmt='%s - %s', $Password, $CipherStr, null, null, null
+  $RetValNew = null -> get user input: type=String, title=$Desc
+  endsub
+  * ----------------------------------------------------------------------------------
+  
+  * ----------------------------------------------------------------------------------
+  Help:
+  $HelpMenu = create custom menu array
+  set menu option: $HelpMenu, maximum menu height=$c.help.menu.height lines
+  set menu option: $HelpMenu, maximum infolines=30
+  $HelplTitle = read text: page=$PageID id=1582
+  $HelplDesc = read text: page=$PageID id=1583
+  $XStudio.Hidden = read text: page=$PageID id=1560
+  add custom menu info line to array $HelpMenu: text=$XStudio.Hidden
+  add custom menu info line to array $HelpMenu: text='____________________________'
+  * for $Count = 1565 to 1570 step 1
+  * add custom menu info line to array $HelpMenu: page=$PageID id=$Count
+  * end
+  $XStudio.Hidden = read text: page=$PageID id=1565
+  add custom menu info line to array $HelpMenu: text=$XStudio.Hidden
+  $XStudio.Hidden = read text: page=$PageID id=1574
+  add custom menu item to array $HelpMenu: text=$XStudio.Hidden returnvalue=-1
+  set menu option: $HelpMenu, maximum menu height=16 lines
+@ $Nothing = open custom menu: title=$HelplTitle description=$HelplDesc option array=$HelpMenu
+  endsub
+  * ----------------------------------------------------------------------------------
+  
+  
+  
+  return null
+]]>
+</sourceplaintext>
+<sourcetext>
+<line indent=""><comment><text>*&#160;</text><var>************************************************</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>SCRIPT&#160;NAME:&#160;plugin.mini.game.cipher</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>DESCRIPTION:&#160;Cipher&#160;mini-game.&#160;Part&#160;of&#160;the&#160;Hacking&#160;Mini-Game&#160;package&#160;</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>for&#160;the&#160;X3&#160;AP&#160;Community&#160;Project.</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>Requires&#160;array&#160;of&#160;sector&#160;names&#160;(or&#160;other&#160;easy&#160;text)&#160;defined&#160;in&#160;setup&#160;script.</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var></var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>AUTHOR:&#160;jack775544&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;DATE:&#160;January&#160;2013</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>************************************************</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>History:</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>Bullwinkle&#160;2013-03-27</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>&#160;-&#160;Changed&#160;!&#160;to&#160;0&#160;for&#160;easier&#160;understanding&#160;(-X2-Illuminatus).</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>&#160;-&#160;Removed&#160;duplicate&#160;incoming&#160;message&#160;on&#160;failure&#160;(X2-Illuminatus).</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>&#160;-&#160;Reduced&#160;number&#160;of&#160;info&#160;lines&#160;in&#160;main&#160;and&#160;help&#160;menues&#160;(-X2-Illuminatus).</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>&#160;-&#160;Fixed&#160;bug&#160;in&#160;language&#160;file&#160;that&#160;caused&#160;menu&#160;heights&#160;to&#160;fill&#160;screen&#160;(Terre).</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>&#160;-&#160;Language&#160;file&#160;ID's&#160;1602-1604&#160;added.&#160;</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>&#160;-&#160;Language&#160;file&#160;ID's&#160;1550-1551&#160;changed.</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>&#160;-&#160;Language&#160;file&#160;ID's&#160;1565-1570&#160;changed.</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var></var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>jack775544&#160;29/01/2013</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>&#160;-&#160;Uses&#160;info&#160;lines&#160;now&#160;for&#160;better&#160;presentation&#160;and&#160;a&#160;cleaner&#160;t&#160;file</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>&#160;-&#160;Opens&#160;as&#160;a&#160;custom&#160;info&#160;menu&#160;instead&#160;of&#160;a&#160;custom&#160;menu&#160;for&#160;a&#160;</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>&#160;&#160;&#160;nice&#160;widescreen&#160;design</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>&#160;-&#160;Adds&#160;a&#160;configurable&#160;menu&#160;height&#160;that&#160;can&#160;be&#160;defined&#160;in&#160;the&#160;t&#160;file</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>&#160;-&#160;Adds&#160;an&#160;author&#160;for&#160;the&#160;incoming&#160;message</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var></var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>Bullwinkle&#160;2013-01-14&#160;</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>&#160;-&#160;Integrated&#160;with&#160;Mini&#160;Game&#160;shell.&#160;</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>&#160;-&#160;Performance&#160;tuning.</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>&#160;-&#160;Dynamic&#160;color-coding&#160;of&#160;menu&#160;for&#160;easier&#160;navigation.</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>&#160;-&#160;Minor&#160;ease-of-use&#160;and&#160;esthetic&#160;enhancements&#160;(script&#160;and&#160;t&#160;file).</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var></var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>jack775544&#160;8/01/2013</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>&#160;-&#160;Changed&#160;to&#160;forward&#160;cipher</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>&#160;-&#160;Uses&#160;new&#160;menu&#160;based&#160;interface</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var></var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>jack775544&#160;2/01/2013</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>&#160;-&#160;Initial&#160;Release</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var></var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>Made&#160;by&#160;jack775544&#160;for&#160;the&#160;X3&#160;AP&#160;Community&#160;Project</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>-&#160;-&#160;-&#160;-&#160;-&#160;-&#160;-&#160;-&#160;-&#160;-&#160;-&#160;-&#160;-&#160;-&#160;-&#160;-&#160;-&#160;-&#160;-&#160;-&#160;-&#160;-&#160;-&#160;-&#160;-&#160;-&#160;-&#160;-&#160;-&#160;-&#160;-&#160;-&#160;-&#160;-&#160;-&#160;-&#160;-&#160;-&#160;-&#160;-&#160;</var></comment></line>
+<line indent=""></line>
+<line indent=""></line>
+<line indent=""><var>$PageID&#160;=&#160;</var><text>get&#160;global&#160;variable:&#160;name=</text><var>'mini.game.PageID'</var></line>
+<line indent=""></line>
+<line indent=""><comment><text>*&#160;</text><var>Constants</var></comment></line>
+<line indent=""><var>$c.cipher.max.variation&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$PageID</var><text>&#160;id=</text><var>1601</var></line>
+<line indent=""><var>$c.cipher.max.variation&#160;=&#160;</var><text>string&#160;</text><var>$c.cipher.max.variation</var><text>&#160;to&#160;integer</text></line>
+<line indent=""><var>$c.text.subtitle.start.game&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$PageID</var><text>&#160;id=</text><var>56</var></line>
+<line indent=""><var>$c.sound.check.click&#160;=&#160;</var><var>1119</var></line>
+<line indent=""><var>$c.page7.min&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$PageID</var><text>&#160;id=</text><var>57</var></line>
+<line indent=""><var>$c.page7.min&#160;=&#160;</var><text>string&#160;</text><var>$c.page7.min</var><text>&#160;to&#160;integer</text></line>
+<line indent=""><var>$c.page7.max&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$PageID</var><text>&#160;id=</text><var>58</var></line>
+<line indent=""><var>$c.page7.max&#160;=&#160;</var><text>string&#160;</text><var>$c.page7.max</var><text>&#160;to&#160;integer</text></line>
+<line indent=""><var>$c.color.none&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$PageID</var><text>&#160;id=</text><var>33</var></line>
+<line indent=""><var>$c.color.cyan&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$PageID</var><text>&#160;id=</text><var>34</var></line>
+<line indent=""><var>$c.color.red&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$PageID</var><text>&#160;id=</text><var>35</var></line>
+<line indent=""><var>$c.color.yellow&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$PageID</var><text>&#160;id=</text><var>36</var></line>
+<line indent=""><var>$c.color.green&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$PageID</var><text>&#160;id=</text><var>37</var></line>
+<line indent=""><var>$c.color.white&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$PageID</var><text>&#160;id=</text><var>38</var></line>
+<line indent=""><var>$c.color.blue&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$PageID</var><text>&#160;id=</text><var>39</var></line>
+<line indent=""><var>$c.color.magenta&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$PageID</var><text>&#160;id=</text><var>32</var></line>
+<line indent=""><var>$c.color.orange&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$PageID</var><text>&#160;id=</text><var>31</var></line>
+<line indent=""><var>$c.main.menu.height&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$PageID</var><text>&#160;id=</text><var>1603</var></line>
+<line indent=""><var>$c.main.menu.height&#160;=&#160;</var><text>string&#160;</text><var>$c.main.menu.height</var><text>&#160;to&#160;integer</text></line>
+<line indent=""><var>$c.help.menu.height&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$PageID</var><text>&#160;id=</text><var>1604</var></line>
+<line indent=""><var>$c.help.menu.height&#160;=&#160;</var><text>string&#160;</text><var>$c.help.menu.height</var><text>&#160;to&#160;integer</text></line>
+<line indent=""><var>$c.name.boardcomputer&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$PageID</var><text>&#160;id=</text><var>1602</var></line>
+<line indent=""></line>
+<line indent=""><comment><text>*&#160;</text><var>Setup</var></comment></line>
+<line indent=""><var>$Pos&#160;=&#160;</var><var>[FALSE]</var></line>
+<line indent=""><var>$Result&#160;=&#160;</var><var>[FALSE]</var></line>
+<line indent=""></line>
+<line indent=""><comment><text>*&#160;</text><var>Get&#160;a&#160;word&#160;for&#160;enciphering</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>BW:&#160;===============================&#160;</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>$Texts&#160;=&#160;get&#160;global&#160;variable:&#160;name='mini.game.texts'</var></comment></line>
+<line indent=""><var>$Texts&#160;=&#160;</var><text>get&#160;global&#160;variable:&#160;name=</text><var>'mini.game.sector.names'</var></line>
+<line indent=""><comment><text>*&#160;</text><var>BW:&#160;===============================&#160;</var></comment></line>
+<line indent=""></line>
+<line indent=""><var>$Size&#160;=&#160;</var><text>size&#160;of&#160;array&#160;</text><var>$Texts</var></line>
+<line indent=""><var>$Rnd&#160;=&#160;</var><text>random&#160;value&#160;from&#160;0&#160;to&#160;</text><var>$Size</var><text>&#160;-&#160;1</text></line>
+<line indent=""><var>$Password&#160;=&#160;</var><var>$Texts</var><text>[</text><var>$Rnd</var><text>]</text></line>
+<line indent=""></line>
+<line interruptable="@" indent=""><var>$PasswordLC&#160;=&#160;</var><var>null&#160;-&gt;</var><text>&#160;call&#160;script&#160;</text><call>plugin.mini.game.lower.case</call><text>&#160;:&#160;</text><text>&#160;String&#160;will&#160;be&#160;converted&#160;to&#160;Lower&#160;Case=</text><var>$Password</var></line>
+<line indent=""></line>
+<line indent=""><comment><text>*&#160;</text><var>Gets&#160;the&#160;alphabet</var></comment></line>
+<line indent=""><var>$Alphabet&#160;=&#160;</var><text>read&#160;text:&#160;page&#160;id=</text><var>$PageID</var><text>,&#160;from&#160;</text><var>1500</var><text>&#160;to&#160;</text><var>1549</var><text>&#160;to&#160;array,&#160;include&#160;empty=</text><var>[FALSE]</var></line>
+<line indent=""><var>$Alphabetlength&#160;=&#160;</var><text>size&#160;of&#160;array&#160;</text><var>$Alphabet</var></line>
+<line indent=""></line>
+<line indent=""><comment><text>*&#160;</text><var>Fixes&#160;bug&#160;where&#160;z&#160;would&#160;be&#160;a</var></comment></line>
+<line indent=""><text>inc&#160;</text><var>$Alphabetlength&#160;=&#160;</var></line>
+<line indent=""></line>
+<line indent=""><comment><text>*&#160;</text><var>Makes&#160;a&#160;number&#160;for&#160;enciphering</var></comment></line>
+<line indent=""><var>$lengthP&#160;=&#160;</var><text>get&#160;length&#160;of&#160;string&#160;</text><var>$PasswordLC</var></line>
+<line indent=""><var>$Pass&#160;=&#160;</var><var>''</var></line>
+<line indent=""><var>$CipherStr&#160;=&#160;</var><var>''</var></line>
+<line indent=""><var>$Count&#160;=&#160;</var><var>0</var></line>
+<line indent=""><var>while&#160;</var><var>$Count</var><text>&#160;</text><var>&lt;</var><text>&#160;</text><var>$lengthP</var></line>
+<line indent="&#160;"><var>$CharP&#160;=&#160;</var><text>get&#160;substring&#160;of&#160;</text><var>$PasswordLC</var><text>&#160;offset=</text><var>$Count</var><text>&#160;length=</text><var>1</var></line>
+<line indent="&#160;"></line>
+<line indent=""><comment><text>*&#160;</text><var>BW:&#160;===============================</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>This&#160;loop&#160;is&#160;very&#160;slow;&#160;mostly&#160;due&#160;to&#160;calling&#160;an&#160;external&#160;script&#160;and&#160;passing&#160;an&#160;array&#160;to&#160;it.&#160;</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>Changing&#160;the&#160;call&#160;to&#160;a&#160;sub&#160;does&#160;not&#160;help&#160;much,&#160;so&#160;just&#160;put&#160;the&#160;code&#160;in-line&#160;here.</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>$Pos&#160;=&#160;null-&gt;&#160;call&#160;script&#160;'plugin.mini.game.posinarray'&#160;:&#160;Value=$CharP&#160;Array=$Alphabet</var></comment></line>
+<line indent="&#160;"><var>$Pos&#160;=&#160;</var><var>[FALSE]</var></line>
+<line indent="&#160;"><var>$pia.Size&#160;=&#160;</var><text>size&#160;of&#160;array&#160;</text><var>$Alphabet</var></line>
+<line indent="&#160;"><var>$pia.Count&#160;=&#160;</var><var>0</var></line>
+<line indent="&#160;"><var>while&#160;</var><var>$pia.Count</var><text>&#160;</text><var>&lt;</var><text>&#160;</text><var>$pia.Size</var></line>
+<line indent="&#160;&#160;"><var>$ValArr&#160;=&#160;</var><var>$Alphabet</var><text>[</text><var>$pia.Count</var><text>]</text></line>
+<line indent="&#160;&#160;"><var>if&#160;</var><var>$CharP</var><text>&#160;</text><var>==</var><text>&#160;</text><var>$ValArr</var></line>
+<line indent="&#160;&#160;&#160;"><var>$Pos&#160;=&#160;</var><var>$pia.Count</var></line>
+<line indent="&#160;&#160;"><text>end</text></line>
+<line indent="&#160;&#160;"><var>$pia.Count&#160;=&#160;</var><var>$pia.Count</var><text>&#160;</text><var>+</var><text>&#160;</text><var>1</var></line>
+<line indent="&#160;"><text>end</text></line>
+<line indent=""><comment><text>*&#160;</text><var>BW:&#160;===============================</var></comment></line>
+<line indent="&#160;"></line>
+<line indent="&#160;"><var>if&#160;</var><text>is&#160;datatype[&#160;</text><var>$Pos</var><text>&#160;]&#160;==&#160;</text><var>DATATYPE_INT</var></line>
+<line indent="&#160;&#160;"></line>
+<line indent=""><comment><text>*&#160;</text><var>BW:&#160;===============================</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>Allow&#160;easier&#160;ciphers&#160;by&#160;reducing&#160;the&#160;maximum&#160;variation&#160;in&#160;each&#160;bit&#160;of&#160;the&#160;cipher&#160;key.</var></comment></line>
+<line indent="&#160;&#160;"><var>$Cipher&#160;=&#160;</var><text>random&#160;value&#160;from&#160;</text><var>0</var><text>&#160;to&#160;</text><var>$c.cipher.max.variation</var><text>&#160;-&#160;1</text></line>
+<line indent=""><comment><text>*&#160;</text><var>BW:&#160;===============================</var></comment></line>
+<line indent="&#160;&#160;"></line>
+<line indent="&#160;&#160;"><var>$CipherStrTemp&#160;=&#160;</var><text>convert&#160;number&#160;</text><var>$Cipher</var><text>&#160;to&#160;string</text></line>
+<line indent="&#160;&#160;"><text>inc&#160;</text><var>$Pos&#160;=&#160;</var></line>
+<line indent="&#160;&#160;"><var>$New&#160;=&#160;</var><var>$Pos</var><text>&#160;</text><var>+</var><text>&#160;</text><var>$Cipher</var></line>
+<line indent=""><comment><text>*&#160;</text><var>In&#160;case&#160;the&#160;value&#160;is&#160;over&#160;the&#160;number&#160;of&#160;letters&#160;in&#160;the&#160;alphabet</var></comment></line>
+<line indent="&#160;&#160;"><var>$New&#160;=&#160;</var><var>$New</var><text>&#160;</text><var>mod</var><text>&#160;</text><var>$Alphabetlength</var></line>
+<line indent=""><comment><text>*&#160;</text><var>Do&#160;this,&#160;for&#160;use&#160;in&#160;arrays.&#160;Remember&#160;programmers&#160;count&#160;from&#160;0,&#160;people&#160;from&#160;1!</var></comment></line>
+<line indent="&#160;&#160;"><text>dec&#160;</text><var>$New&#160;=&#160;</var></line>
+<line indent="&#160;&#160;"><var>if&#160;</var><var>$New</var><text>&#160;</text><var>==</var><text>&#160;</text><var>-1</var></line>
+<line indent="&#160;&#160;&#160;"><var>$New&#160;=&#160;</var><var>0</var></line>
+<line indent="&#160;&#160;"><text>end</text></line>
+<line indent="&#160;&#160;"><var>$PassC&#160;=&#160;</var><var>$Alphabet</var><text>[</text><var>$New</var><text>]</text></line>
+<line indent="&#160;&#160;"><var>$Pass&#160;=&#160;</var><text>sprintf:&#160;fmt=</text><var>'%s%s'</var><text>,&#160;</text><var>$Pass</var><text>,&#160;</text><var>$PassC</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var></line>
+<line indent="&#160;&#160;"><var>$CipherStr&#160;=&#160;</var><text>sprintf:&#160;fmt=</text><var>'%s%s'</var><text>,&#160;</text><var>$CipherStr</var><text>,&#160;</text><var>$CipherStrTemp</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var></line>
+<line indent="&#160;&#160;"></line>
+<line indent="&#160;"><var>else&#160;if&#160;</var><var>$CharP</var><text>&#160;</text><var>==</var><text>&#160;</text><var>'&#160;'</var></line>
+<line indent="&#160;&#160;"><var>$CipherStr&#160;=&#160;</var><text>sprintf:&#160;fmt=</text><var>'%s%s'</var><text>,&#160;</text><var>$CipherStr</var><text>,&#160;</text><var>'&#160;'</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var></line>
+<line indent="&#160;&#160;"><var>$Pass&#160;=&#160;</var><text>sprintf:&#160;fmt=</text><var>'%s%s'</var><text>,&#160;</text><var>$Pass</var><text>,&#160;</text><var>'&#160;'</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var></line>
+<line indent="&#160;&#160;"></line>
+<line indent="&#160;"><text>else</text></line>
+<line indent=""><comment><text>*&#160;</text><var>BW:&#160;-2013-03-27:&#160;$CipherStr&#160;=&#160;sprintf:&#160;fmt='%s%s',&#160;$CipherStr,&#160;'!',&#160;null,&#160;null,&#160;null</var></comment></line>
+<line indent="&#160;&#160;"><var>$CipherStr&#160;=&#160;</var><text>sprintf:&#160;fmt=</text><var>'%s%s'</var><text>,&#160;</text><var>$CipherStr</var><text>,&#160;</text><var>'0'</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var></line>
+<line indent="&#160;&#160;"><var>$Pass&#160;=&#160;</var><text>sprintf:&#160;fmt=</text><var>'%s%s'</var><text>,&#160;</text><var>$Pass</var><text>,&#160;</text><var>$CharP</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var></line>
+<line indent="&#160;&#160;"></line>
+<line indent=""><comment><text>*&#160;</text><var>BW:&#160;Umlaut&#160;support</var></comment></line>
+<line indent="&#160;&#160;"><var>$Special&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$PageID</var><text>&#160;id=</text><var>4000</var></line>
+<line indent="&#160;&#160;"><var>$SChar&#160;=&#160;</var><text>find&#160;position&#160;of&#160;pattern&#160;</text><var>$CharP</var><text>&#160;in&#160;</text><var>$Special</var></line>
+<line indent="&#160;&#160;"><var>if&#160;</var><var>$SChar</var><text>&#160;</text><var>!=</var><text>&#160;</text><var>-1</var></line>
+<line indent="&#160;&#160;&#160;"><text>inc&#160;</text><var>$Count&#160;=&#160;</var></line>
+<line indent="&#160;&#160;"><text>end</text></line>
+<line indent="&#160;&#160;"></line>
+<line indent="&#160;"><text>end</text></line>
+<line indent="&#160;"><text>inc&#160;</text><var>$Count&#160;=&#160;</var></line>
+<line interruptable="@" indent="&#160;"><var>=&#160;</var><text>wait&#160;</text><var>1</var><text>&#160;ms</text></line>
+<line indent=""><text>end</text></line>
+<line indent=""></line>
+<line indent=""><comment><text>*&#160;</text><var>Pass&#160;is&#160;the&#160;encrypted&#160;password&#160;(the&#160;answer)</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>CipherStr&#160;is&#160;the&#160;cipher&#160;that&#160;needs&#160;to&#160;be&#160;used</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>Password&#160;is&#160;the&#160;string&#160;to&#160;encrypt&#160;(PasswordLC&#160;is&#160;that&#160;in&#160;lower&#160;case)</var></comment></line>
+<line indent=""></line>
+<line indent=""><var>$RetVal&#160;=&#160;</var><var>''</var></line>
+<line indent=""><var>OpenMain</var><text>:</text></line>
+<line indent=""><var>if&#160;</var><text>is&#160;datatype[&#160;</text><var>$RetValNew</var><text>&#160;]&#160;==&#160;</text><var>DATATYPE_STRING</var></line>
+<line indent="&#160;"><var>$RetVal&#160;=&#160;</var><var>$RetValNew</var></line>
+<line indent=""><text>end</text></line>
+<line indent=""><var>$Menu&#160;=&#160;</var><text>create&#160;custom&#160;menu&#160;array</text></line>
+<line indent=""><text>set&#160;menu&#160;option:&#160;</text><var>$Menu</var><text>,&#160;maximum&#160;menu&#160;height=</text><var>$c.main.menu.height</var><text>&#160;lines</text></line>
+<line indent=""><var>$line1a&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$PageID</var><text>&#160;id=</text><var>1550</var></line>
+<line indent=""><var>$line1b&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$PageID</var><text>&#160;id=</text><var>1551</var></line>
+<line indent=""><var>$line1c&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$PageID</var><text>&#160;id=</text><var>1552</var></line>
+<line indent=""></line>
+<line indent=""><comment><text>*&#160;</text><var>BW:&#160;===============================&#160;</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>Color-code&#160;and&#160;put&#160;strings&#160;on&#160;single&#160;line.</var></comment></line>
+<line indent=""><var>$line2&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$PageID</var><text>&#160;id=</text><var>1554</var></line>
+<line indent=""><var>$PasswordDisp&#160;=&#160;</var><text>sprintf:&#160;pageid=</text><var>$PageID</var><text>&#160;textid=</text><var>1593</var><text>,&#160;</text><var>$Password</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var></line>
+<line indent=""><var>$line2&#160;=&#160;</var><var>$line2</var><text>&#160;</text><var>+</var><text>&#160;</text><var>$PasswordDisp</var></line>
+<line indent=""></line>
+<line indent=""><var>$line3&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$PageID</var><text>&#160;id=</text><var>1555</var></line>
+<line indent=""><var>$CipherDisp&#160;=&#160;</var><text>sprintf:&#160;pageid=</text><var>$PageID</var><text>&#160;textid=</text><var>1593</var><text>,&#160;</text><var>$CipherStr</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var></line>
+<line indent=""><var>$line3&#160;=&#160;</var><var>$line3</var><text>&#160;</text><var>+</var><text>&#160;</text><var>$CipherDisp</var></line>
+<line indent=""><comment><text>*&#160;</text><var>BW:&#160;===============================&#160;</var></comment></line>
+<line indent=""></line>
+<line indent=""><comment><text>*&#160;</text><var>BW:&#160;===============================&#160;</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>Dynamic&#160;Color-coded&#160;menu&#160;for&#160;easier&#160;navigation.</var></comment></line>
+<line indent=""><var>if&#160;</var><var>$RetVal</var><text>&#160;</text><var>==</var><text>&#160;</text><var>''</var></line>
+<line indent=""><comment><text>*&#160;</text><var>Green&#160;Enter&#160;Solution</var></comment></line>
+<line indent="&#160;"><var>$line4&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$PageID</var><text>&#160;id=</text><var>1556</var></line>
+<line indent="&#160;"><var>$line4&#160;=&#160;</var><var>$c.color.green</var><text>&#160;</text><var>+</var><text>&#160;</text><var>$line4</var><text>&#160;</text><var>+</var><text>&#160;</text><var>$c.color.none</var></line>
+<line indent="&#160;"></line>
+<line indent=""><comment><text>*&#160;</text><var>Gray&#160;Submit</var></comment></line>
+<line indent="&#160;"><var>$line6&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$PageID</var><text>&#160;id=</text><var>1559</var></line>
+<line indent=""><text>else</text></line>
+<line indent=""><comment><text>*&#160;</text><var>Orange&#160;Enter&#160;Solution</var></comment></line>
+<line indent="&#160;"><var>$line4&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$PageID</var><text>&#160;id=</text><var>1556</var></line>
+<line indent="&#160;"><var>$line4&#160;=&#160;</var><var>$c.color.orange</var><text>&#160;</text><var>+</var><text>&#160;</text><var>$line4</var><text>&#160;</text><var>+</var><text>&#160;</text><var>$c.color.none</var></line>
+<line indent="&#160;"></line>
+<line indent=""><comment><text>*&#160;</text><var>Green&#160;Submit</var></comment></line>
+<line indent="&#160;"><var>$line6&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$PageID</var><text>&#160;id=</text><var>1559</var></line>
+<line indent="&#160;"><var>$line6&#160;=&#160;</var><var>$c.color.green</var><text>&#160;</text><var>+</var><text>&#160;</text><var>$line6</var><text>&#160;</text><var>+</var><text>&#160;</text><var>$c.color.none</var></line>
+<line indent=""><text>end</text></line>
+<line indent=""><comment><text>*&#160;</text><var>BW:&#160;===============================&#160;</var></comment></line>
+<line indent=""></line>
+<line indent=""><var>$linehelp&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$PageID</var><text>&#160;id=</text><var>1557</var></line>
+<line indent=""></line>
+<line indent=""><comment><text>*&#160;</text><var>BW:&#160;===============================&#160;</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>Color&#160;code&#160;and&#160;single&#160;line.</var></comment></line>
+<line indent=""><var>$line5&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$PageID</var><text>&#160;id=</text><var>1558</var></line>
+<line indent=""><var>$RetValDisp&#160;=&#160;</var><text>sprintf:&#160;pageid=</text><var>$PageID</var><text>&#160;textid=</text><var>1590</var><text>,&#160;</text><var>$RetVal</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var></line>
+<line indent=""><var>$line5&#160;=&#160;</var><var>$line5</var><text>&#160;</text><var>+</var><text>&#160;</text><var>$c.color.cyan</var><text>&#160;</text><var>+</var><text>&#160;</text><var>$RetValDisp</var><text>&#160;</text><var>+</var><text>&#160;</text><var>$c.color.none</var></line>
+<line indent=""><comment><text>*&#160;</text><var>BW:&#160;===============================</var></comment></line>
+<line indent=""></line>
+<line indent=""><var>$TitleMain&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$PageID</var><text>&#160;id=</text><var>1580</var></line>
+<line indent=""><var>$DescMain&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$PageID</var><text>&#160;id=</text><var>1581</var></line>
+<line indent=""><comment><text>*&#160;</text><var>Description</var></comment></line>
+<line indent=""><text>add&#160;custom&#160;menu&#160;info&#160;line&#160;to&#160;array&#160;</text><var>$Menu</var><text>:&#160;text=</text><var>$line1a</var></line>
+<line indent=""><comment><text>*&#160;</text><var>BW:&#160;-2013-03-27:&#160;add&#160;custom&#160;menu&#160;info&#160;line&#160;to&#160;array&#160;$Menu:&#160;text=$line1b</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>BW:&#160;-2013-03-27:&#160;add&#160;custom&#160;menu&#160;info&#160;line&#160;to&#160;array&#160;$Menu:&#160;text=$line1c</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>The&#160;Password&#160;is:</var></comment></line>
+<line indent=""><text>add&#160;non&#160;selectable&#160;menu&#160;item:&#160;</text><var>$Menu</var><text>,&#160;text=</text><var>$line2</var></line>
+<line indent=""></line>
+<line indent=""><comment><text>*&#160;</text><var>The&#160;cipher&#160;is:</var></comment></line>
+<line indent=""><text>add&#160;non&#160;selectable&#160;menu&#160;item:&#160;</text><var>$Menu</var><text>,&#160;text=</text><var>$line3</var></line>
+<line indent=""></line>
+<line indent=""><comment><text>*&#160;</text><var>Enter&#160;Solution</var></comment></line>
+<line indent=""><text>add&#160;custom&#160;menu&#160;item&#160;to&#160;array&#160;</text><var>$Menu</var><text>:&#160;text=</text><var>$line4</var><text>&#160;returnvalue=</text><var>'enter'</var></line>
+<line indent=""><text>add&#160;non&#160;selectable&#160;menu&#160;item:&#160;</text><var>$Menu</var><text>,&#160;text=</text><var>'____________________________'</var></line>
+<line indent=""><comment><text>*&#160;</text><var>Your&#160;answer:</var></comment></line>
+<line indent=""><text>add&#160;non&#160;selectable&#160;menu&#160;item:&#160;</text><var>$Menu</var><text>,&#160;text=</text><var>$line5</var></line>
+<line indent=""></line>
+<line indent=""><comment><text>*&#160;</text><var>Submit&#160;Answer</var></comment></line>
+<line indent=""><text>add&#160;custom&#160;menu&#160;item&#160;to&#160;array&#160;</text><var>$Menu</var><text>:&#160;text=</text><var>$line6</var><text>&#160;returnvalue=</text><var>'finish'</var></line>
+<line indent=""><text>add&#160;non&#160;selectable&#160;menu&#160;item:&#160;</text><var>$Menu</var><text>,&#160;text=</text><var>'____________________________'</var></line>
+<line indent=""><comment><text>*&#160;</text><var>Help</var></comment></line>
+<line indent=""><text>add&#160;custom&#160;menu&#160;item&#160;to&#160;array&#160;</text><var>$Menu</var><text>:&#160;text=</text><var>$linehelp</var><text>&#160;returnvalue=</text><var>'help'</var></line>
+<line indent=""></line>
+<line indent=""><comment><text>*&#160;</text><var>Show&#160;Menu</var></comment></line>
+<line indent=""><text>set&#160;menu&#160;option:&#160;</text><var>$Menu</var><text>,&#160;maximum&#160;menu&#160;height=</text><var>15</var><text>&#160;lines</text></line>
+<line interruptable="@" indent=""><var>$MenuRet&#160;=&#160;</var><text>open&#160;custom&#160;menu:&#160;title=</text><var>$TitleMain</var><text>&#160;description=</text><var>$DescMain</var><text>&#160;option&#160;array=</text><var>$Menu</var></line>
+<line indent=""></line>
+<line indent=""><var>if&#160;</var><var>$MenuRet</var><text>&#160;</text><var>==</var><text>&#160;</text><var>'enter'</var></line>
+<line indent="&#160;"><text>gosub&#160;</text><var>EnterVal</var></line>
+<line indent="&#160;"><text>goto&#160;label&#160;</text><var>OpenMain</var></line>
+<line indent="&#160;"></line>
+<line indent=""><comment><text>*&#160;</text><var>BW:&#160;===============================</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>Add&#160;case&#160;to&#160;handle&#160;player&#160;cancel&#160;(Esc).</var></comment></line>
+<line indent=""><var>else&#160;if&#160;</var><var>$MenuRet</var><text>&#160;</text><var>==</var><text>&#160;</text><var>-1</var></line>
+<line indent=""><comment><text>*&#160;</text><var>Player&#160;Canceled</var></comment></line>
+<line indent="&#160;"><var>$Result&#160;=&#160;</var><var>-1</var></line>
+<line indent="&#160;"><text>return&#160;</text><var>$Result</var></line>
+<line indent=""><comment><text>*&#160;</text><var>BW:&#160;===============================</var></comment></line>
+<line indent="&#160;"></line>
+<line indent=""><var>else&#160;if&#160;</var><var>$MenuRet</var><text>&#160;</text><var>==</var><text>&#160;</text><var>'help'</var></line>
+<line indent="&#160;"><text>gosub&#160;</text><var>Help</var></line>
+<line indent="&#160;"><text>goto&#160;label&#160;</text><var>OpenMain</var></line>
+<line indent=""><text>end</text></line>
+<line indent=""></line>
+<line indent=""><comment><text>*&#160;</text><var>Convert&#160;to&#160;lower&#160;case</var></comment></line>
+<line interruptable="@" indent=""><var>$RetValLC&#160;=&#160;</var><var>null&#160;-&gt;</var><text>&#160;call&#160;script&#160;</text><call>plugin.mini.game.lower.case</call><text>&#160;:&#160;</text><text>&#160;String&#160;will&#160;be&#160;converted&#160;to&#160;Lower&#160;Case=</text><var>$RetVal</var></line>
+<line indent=""></line>
+<line indent=""><comment><text>*&#160;</text><var>Displays&#160;whether&#160;success&#160;or&#160;failure</var></comment></line>
+<line indent=""><var>if&#160;</var><var>$RetValLC</var><text>&#160;</text><var>==</var><text>&#160;</text><var>$Pass</var></line>
+<line indent=""><comment><text>*&#160;</text><var>Success</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>$msg&#160;=&#160;read&#160;text:&#160;page=$PageID&#160;id=1591</var></comment></line>
+<line indent="&#160;"><var>$msg&#160;=&#160;</var><text>sprintf:&#160;pageid=</text><var>$PageID</var><text>&#160;textid=</text><var>1591</var><text>,&#160;</text><var>$c.name.boardcomputer</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var></line>
+<line indent="&#160;"><text>send&#160;incoming&#160;message&#160;</text><var>$msg</var><text>&#160;to&#160;player:&#160;type:</text><var>[Log.Alert]</var><text>,&#160;display&#160;it=</text><var>[TRUE]</var><text>,&#160;log&#160;it=</text><var>null</var></line>
+<line indent=""><comment><text>*&#160;</text><var>BW:&#160;===============================</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>1&#160;and&#160;True&#160;are&#160;not&#160;exactly&#160;the&#160;same.&#160;We&#160;use&#160;3-state&#160;logic&#160;when&#160;appropriate.</var></comment></line>
+<line indent="&#160;"><var>$Result&#160;=&#160;</var><var>1</var></line>
+<line indent=""><comment><text>*&#160;</text><var>BW:&#160;===============================&#160;</var></comment></line>
+<line indent=""><text>else</text></line>
+<line indent=""><comment><text>*&#160;</text><var>Fail</var></comment></line>
+<line indent="&#160;"><var>$msg&#160;=&#160;</var><text>sprintf:&#160;pageid=</text><var>$PageID</var><text>&#160;textid=</text><var>1592</var><text>,&#160;</text><var>$c.name.boardcomputer</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var></line>
+<line indent=""><comment><text>*&#160;</text><var>BW:&#160;2013-03-27:&#160;send&#160;incoming&#160;message&#160;$msg&#160;to&#160;player:&#160;display&#160;it=[TRUE]</var></comment></line>
+<line indent="&#160;"></line>
+<line indent=""><comment><text>*&#160;</text><var>BW:&#160;===============================&#160;</var></comment></line>
+<line indent="&#160;"><var>$Result&#160;=&#160;</var><var>0</var></line>
+<line indent=""><comment><text>*&#160;</text><var>BW:&#160;===============================&#160;</var></comment></line>
+<line indent=""><text>end</text></line>
+<line indent=""></line>
+<line indent=""><text>return&#160;</text><var>$Result</var></line>
+<line indent=""></line>
+<line indent=""><comment><text>*&#160;</text><var>----------------------------------------------------------------------------------</var></comment></line>
+<line indent=""><var>EnterVal</var><text>:</text></line>
+<line indent=""><var>$Desc&#160;=&#160;</var><text>sprintf:&#160;fmt=</text><var>'%s&#160;-&#160;%s'</var><text>,&#160;</text><var>$Password</var><text>,&#160;</text><var>$CipherStr</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var></line>
+<line indent=""><var>$RetValNew&#160;=&#160;</var><var>null&#160;-&gt;</var><text>&#160;get&#160;user&#160;input:&#160;type=</text><var>String</var><text>,&#160;title=</text><var>$Desc</var></line>
+<line indent=""><text>endsub</text></line>
+<line indent=""><comment><text>*&#160;</text><var>----------------------------------------------------------------------------------</var></comment></line>
+<line indent=""></line>
+<line indent=""><comment><text>*&#160;</text><var>----------------------------------------------------------------------------------</var></comment></line>
+<line indent=""><var>Help</var><text>:</text></line>
+<line indent=""><var>$HelpMenu&#160;=&#160;</var><text>create&#160;custom&#160;menu&#160;array</text></line>
+<line indent=""><text>set&#160;menu&#160;option:&#160;</text><var>$HelpMenu</var><text>,&#160;maximum&#160;menu&#160;height=</text><var>$c.help.menu.height</var><text>&#160;lines</text></line>
+<line indent=""><text>set&#160;menu&#160;option:&#160;</text><var>$HelpMenu</var><text>,&#160;maximum&#160;infolines=</text><var>30</var></line>
+<line indent=""><var>$HelplTitle&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$PageID</var><text>&#160;id=</text><var>1582</var></line>
+<line indent=""><var>$HelplDesc&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$PageID</var><text>&#160;id=</text><var>1583</var></line>
+<line indent=""><var>$XStudio.Hidden&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$PageID</var><text>&#160;id=</text><var>1560</var></line>
+<line indent=""><text>add&#160;custom&#160;menu&#160;info&#160;line&#160;to&#160;array&#160;</text><var>$HelpMenu</var><text>:&#160;text=</text><var>$XStudio.Hidden</var></line>
+<line indent=""><text>add&#160;custom&#160;menu&#160;info&#160;line&#160;to&#160;array&#160;</text><var>$HelpMenu</var><text>:&#160;text=</text><var>'____________________________'</var></line>
+<line indent=""><comment><text>*&#160;</text><var>for&#160;$Count&#160;=&#160;1565&#160;to&#160;1570&#160;step&#160;1</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>add&#160;custom&#160;menu&#160;info&#160;line&#160;to&#160;array&#160;$HelpMenu:&#160;page=$PageID&#160;id=$Count</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>end</var></comment></line>
+<line indent=""><var>$XStudio.Hidden&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$PageID</var><text>&#160;id=</text><var>1565</var></line>
+<line indent=""><text>add&#160;custom&#160;menu&#160;info&#160;line&#160;to&#160;array&#160;</text><var>$HelpMenu</var><text>:&#160;text=</text><var>$XStudio.Hidden</var></line>
+<line indent=""><var>$XStudio.Hidden&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$PageID</var><text>&#160;id=</text><var>1574</var></line>
+<line indent=""><text>add&#160;custom&#160;menu&#160;item&#160;to&#160;array&#160;</text><var>$HelpMenu</var><text>:&#160;text=</text><var>$XStudio.Hidden</var><text>&#160;returnvalue=</text><var>-1</var></line>
+<line indent=""><text>set&#160;menu&#160;option:&#160;</text><var>$HelpMenu</var><text>,&#160;maximum&#160;menu&#160;height=</text><var>16</var><text>&#160;lines</text></line>
+<line interruptable="@" indent=""><var>$Nothing&#160;=&#160;</var><text>open&#160;custom&#160;menu:&#160;title=</text><var>$HelplTitle</var><text>&#160;description=</text><var>$HelplDesc</var><text>&#160;option&#160;array=</text><var>$HelpMenu</var></line>
+<line indent=""><text>endsub</text></line>
+<line indent=""><comment><text>*&#160;</text><var>----------------------------------------------------------------------------------</var></comment></line>
+<line indent=""></line>
+<line indent=""></line>
+<line indent=""></line>
+<line indent=""><text>return&#160;</text><var>null</var></line>
+</sourcetext>
+<codearray>
+
+<sval type="array" size="10">
+  <sval type="string" val="plugin.mini.game.cipher"/>
+  <sval type="int" val="62"/>
+  <sval type="string" val="The cipher minigame script. Returns 1 on success, 0 on failure."/>
+  <sval type="int" val="7"/>
+  <sval type="int" val="0"/>
+  <sval type="array" size="67">
+    <sval type="string" val="PageID"/>
+    <sval type="string" val="c.cipher.max.variation"/>
+    <sval type="string" val="c.text.subtitle.start.game"/>
+    <sval type="string" val="c.sound.check.click"/>
+    <sval type="string" val="c.page7.min"/>
+    <sval type="string" val="c.page7.max"/>
+    <sval type="string" val="c.color.none"/>
+    <sval type="string" val="c.color.cyan"/>
+    <sval type="string" val="c.color.red"/>
+    <sval type="string" val="c.color.yellow"/>
+    <sval type="string" val="c.color.green"/>
+    <sval type="string" val="c.color.white"/>
+    <sval type="string" val="c.color.blue"/>
+    <sval type="string" val="c.color.magenta"/>
+    <sval type="string" val="c.color.orange"/>
+    <sval type="string" val="c.main.menu.height"/>
+    <sval type="string" val="c.help.menu.height"/>
+    <sval type="string" val="c.name.boardcomputer"/>
+    <sval type="string" val="Pos"/>
+    <sval type="string" val="Result"/>
+    <sval type="string" val="Texts"/>
+    <sval type="string" val="Size"/>
+    <sval type="string" val="Rnd"/>
+    <sval type="string" val="Password"/>
+    <sval type="string" val="PasswordLC"/>
+    <sval type="string" val="Alphabet"/>
+    <sval type="string" val="Alphabetlength"/>
+    <sval type="string" val="lengthP"/>
+    <sval type="string" val="Pass"/>
+    <sval type="string" val="CipherStr"/>
+    <sval type="string" val="Count"/>
+    <sval type="string" val="CharP"/>
+    <sval type="string" val="pia.Size"/>
+    <sval type="string" val="pia.Count"/>
+    <sval type="string" val="ValArr"/>
+    <sval type="string" val="Cipher"/>
+    <sval type="string" val="CipherStrTemp"/>
+    <sval type="string" val="New"/>
+    <sval type="string" val="PassC"/>
+    <sval type="string" val="Special"/>
+    <sval type="string" val="SChar"/>
+    <sval type="string" val="RetVal"/>
+    <sval type="string" val="RetValNew"/>
+    <sval type="string" val="Menu"/>
+    <sval type="string" val="line1a"/>
+    <sval type="string" val="line1b"/>
+    <sval type="string" val="line1c"/>
+    <sval type="string" val="line2"/>
+    <sval type="string" val="PasswordDisp"/>
+    <sval type="string" val="line3"/>
+    <sval type="string" val="CipherDisp"/>
+    <sval type="string" val="line4"/>
+    <sval type="string" val="line6"/>
+    <sval type="string" val="linehelp"/>
+    <sval type="string" val="line5"/>
+    <sval type="string" val="RetValDisp"/>
+    <sval type="string" val="TitleMain"/>
+    <sval type="string" val="DescMain"/>
+    <sval type="string" val="MenuRet"/>
+    <sval type="string" val="RetValLC"/>
+    <sval type="string" val="msg"/>
+    <sval type="string" val="Desc"/>
+    <sval type="string" val="HelpMenu"/>
+    <sval type="string" val="HelplTitle"/>
+    <sval type="string" val="HelplDesc"/>
+    <sval type="string" val="XStudio.Hidden"/>
+    <sval type="string" val="Nothing"/>
+  </sval>
+  <sval type="array" size="156">
+    <sval type="array" size="4">
+      <sval type="int" val="158"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="mini.game.PageID"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1601"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="1078"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="1"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="56"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1119"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="57"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="1078"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="58"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="1078"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="5"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="33"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="34"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="35"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="36"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="37"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="38"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="12"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="39"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="13"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="32"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="31"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1603"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="1078"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="15"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="16"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1604"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="1078"/>
+      <sval type="int" val="16"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="16"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="17"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1602"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="18"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="19"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="158"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="mini.game.sector.names"/>
+      <sval type="int" val="20"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="131"/>
+      <sval type="int" val="21"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="20"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="106"/>
+      <sval type="int" val="22"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="21"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="23"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="20"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="22"/>
+    </sval>
+    <sval type="array" size="8">
+      <sval type="int" val="102"/>
+      <sval type="string" val="plugin.mini.game.lower.case"/>
+      <sval type="int" val="24"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="23"/>
+    </sval>
+    <sval type="array" size="10">
+      <sval type="int" val="1337"/>
+      <sval type="int" val="25"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1500"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1549"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="9"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="131"/>
+      <sval type="int" val="26"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="25"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="142"/>
+      <sval type="int" val="26"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="1075"/>
+      <sval type="int" val="27"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="24"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="28"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val=""/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="29"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val=""/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="30"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610593783"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="30"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="27"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="8">
+      <sval type="int" val="1077"/>
+      <sval type="int" val="31"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="24"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="30"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="18"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="131"/>
+      <sval type="int" val="32"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="25"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="33"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610600439"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="33"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="32"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="34"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="25"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="33"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610600957"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="31"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="34"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="18"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="33"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="33"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="33"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="42"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="125"/>
+      <sval type="int" val="-1610597117"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="18"/>
+      <sval type="int" val="20"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="110"/>
+      <sval type="int" val="35"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="1"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="1474"/>
+      <sval type="int" val="36"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="35"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="142"/>
+      <sval type="int" val="18"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="37"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="18"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="35"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="37"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="37"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="26"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="143"/>
+      <sval type="int" val="37"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610598141"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="37"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="37"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="38"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="25"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="37"/>
+    </sval>
+    <sval type="array" size="14">
+      <sval type="int" val="149"/>
+      <sval type="int" val="28"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="%s%s"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="28"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="38"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="14">
+      <sval type="int" val="149"/>
+      <sval type="int" val="29"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="%s%s"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="29"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="36"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="71"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610596091"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="31"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val=" "/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="14">
+      <sval type="int" val="149"/>
+      <sval type="int" val="29"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="%s%s"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="29"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val=" "/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="14">
+      <sval type="int" val="149"/>
+      <sval type="int" val="28"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="%s%s"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="28"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val=" "/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="71"/>
+    </sval>
+    <sval type="array" size="14">
+      <sval type="int" val="149"/>
+      <sval type="int" val="29"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="%s%s"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="29"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="14">
+      <sval type="int" val="149"/>
+      <sval type="int" val="28"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="%s%s"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="28"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="31"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="39"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="4000"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="1076"/>
+      <sval type="int" val="40"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="39"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="31"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610594557"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="40"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="142"/>
+      <sval type="int" val="30"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="142"/>
+      <sval type="int" val="30"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="105"/>
+      <sval type="int" val="-2147483647"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="37"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="41"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val=""/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="101"/>
+      <sval type="string" val="OpenMain"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="125"/>
+      <sval type="int" val="-1610592765"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="42"/>
+      <sval type="int" val="20"/>
+      <sval type="int" val="5"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="41"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="42"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="1445"/>
+      <sval type="int" val="43"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="1596"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="43"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="15"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="44"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1550"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="45"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1551"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="46"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1552"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="47"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1554"/>
+    </sval>
+    <sval type="array" size="16">
+      <sval type="int" val="150"/>
+      <sval type="int" val="48"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1593"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="23"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="47"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="47"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="48"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="49"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1555"/>
+    </sval>
+    <sval type="array" size="16">
+      <sval type="int" val="150"/>
+      <sval type="int" val="50"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1593"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="29"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="49"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="49"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="50"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610588669"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="41"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val=""/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="51"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1556"/>
+    </sval>
+    <sval type="array" size="19">
+      <sval type="int" val="104"/>
+      <sval type="int" val="51"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="51"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="-2"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="-4"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="52"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1559"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="98"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="51"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1556"/>
+    </sval>
+    <sval type="array" size="19">
+      <sval type="int" val="104"/>
+      <sval type="int" val="51"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="51"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="-2"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="-4"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="52"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1559"/>
+    </sval>
+    <sval type="array" size="19">
+      <sval type="int" val="104"/>
+      <sval type="int" val="52"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="52"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="-2"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="-4"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="53"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1557"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="54"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1558"/>
+    </sval>
+    <sval type="array" size="16">
+      <sval type="int" val="150"/>
+      <sval type="int" val="55"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1590"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="41"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="25">
+      <sval type="int" val="104"/>
+      <sval type="int" val="54"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="54"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="55"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="-2"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="-4"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="-6"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="56"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1580"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="57"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1581"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="1446"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="43"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="44"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="1556"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="43"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="47"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="1556"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="43"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="49"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="1447"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="43"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="51"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="enter"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="1556"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="43"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="____________________________"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="1556"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="43"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="54"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="1447"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="43"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="52"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="finish"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="1556"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="43"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="____________________________"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="1447"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="43"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="53"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="help"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="1596"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="43"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="15"/>
+    </sval>
+    <sval type="array" size="8">
+      <sval type="int" val="1230"/>
+      <sval type="int" val="58"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="56"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="57"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="43"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610582269"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="58"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="enter"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="1167"/>
+      <sval type="int" val="135"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="100"/>
+      <sval type="int" val="75"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="126"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610581243"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="58"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="19"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="19"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="126"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610580475"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="58"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="help"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="1167"/>
+      <sval type="int" val="139"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="100"/>
+      <sval type="int" val="75"/>
+    </sval>
+    <sval type="array" size="8">
+      <sval type="int" val="102"/>
+      <sval type="string" val="plugin.mini.game.lower.case"/>
+      <sval type="int" val="59"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="41"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610578941"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="59"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="28"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="16">
+      <sval type="int" val="150"/>
+      <sval type="int" val="60"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1591"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="17"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="9">
+      <sval type="int" val="203"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="60"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="361"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="19"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="134"/>
+    </sval>
+    <sval type="array" size="16">
+      <sval type="int" val="150"/>
+      <sval type="int" val="60"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1592"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="17"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="19"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="19"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="101"/>
+      <sval type="string" val="EnterVal"/>
+    </sval>
+    <sval type="array" size="14">
+      <sval type="int" val="149"/>
+      <sval type="int" val="61"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="%s - %s"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="23"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="29"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="8">
+      <sval type="int" val="1329"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="42"/>
+      <sval type="int" val="24"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="61"/>
+    </sval>
+    <sval type="array" size="1">
+      <sval type="int" val="1168"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="101"/>
+      <sval type="string" val="Help"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="1445"/>
+      <sval type="int" val="62"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="1596"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="62"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="16"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="1552"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="62"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="30"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="63"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1582"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="64"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1583"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="65"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1560"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="1446"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="62"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="65"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="1446"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="62"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="____________________________"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="65"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1565"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="1446"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="62"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="65"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="65"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1574"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="1447"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="62"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="65"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="1596"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="62"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="16"/>
+    </sval>
+    <sval type="array" size="8">
+      <sval type="int" val="1230"/>
+      <sval type="int" val="66"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="63"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="64"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="62"/>
+    </sval>
+    <sval type="array" size="1">
+      <sval type="int" val="1168"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+  </sval>
+  <sval type="int" val="0"/>
+  <sval type="array" size="166">
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="************************************************"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="SCRIPT NAME: plugin.mini.game.cipher"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="DESCRIPTION: Cipher mini-game. Part of the Hacking Mini-Game package "/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="for the X3 AP Community Project."/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Requires array of sector names (or other easy text) defined in setup script."/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val=""/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="AUTHOR: jack775544          DATE: January 2013"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="************************************************"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="History:"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Bullwinkle 2013-03-27"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val=" - Changed ! to 0 for easier understanding (-X2-Illuminatus)."/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val=" - Removed duplicate incoming message on failure (X2-Illuminatus)."/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val=" - Reduced number of info lines in main and help menues (-X2-Illuminatus)."/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val=" - Fixed bug in language file that caused menu heights to fill screen (Terre)."/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val=" - Language file ID's 1602-1604 added. "/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val=" - Language file ID's 1550-1551 changed."/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val=" - Language file ID's 1565-1570 changed."/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val=""/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="jack775544 29/01/2013"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val=" - Uses info lines now for better presentation and a cleaner t file"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val=" - Opens as a custom info menu instead of a custom menu for a "/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="   nice widescreen design"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val=" - Adds a configurable menu height that can be defined in the t file"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val=" - Adds an author for the incoming message"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val=""/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Bullwinkle 2013-01-14 "/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val=" - Integrated with Mini Game shell. "/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val=" - Performance tuning."/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val=" - Dynamic color-coding of menu for easier navigation."/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val=" - Minor ease-of-use and esthetic enhancements (script and t file)."/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val=""/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="jack775544 8/01/2013"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val=" - Changed to forward cipher"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val=" - Uses new menu based interface"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val=""/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="jack775544 2/01/2013"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val=" - Initial Release"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val=""/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Made by jack775544 for the X3 AP Community Project"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - "/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="0"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="0"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="1"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="1"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Constants"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="23"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="23"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Setup"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="25"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="25"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Get a word for enciphering"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="25"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="BW: =============================== "/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="25"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="$Texts = get global variable: name='mini.game.texts'"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="26"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="BW: =============================== "/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="26"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="29"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="30"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="30"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Gets the alphabet"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="32"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="32"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Fixes bug where z would be a"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="33"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="33"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Makes a number for enciphering"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="39"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="39"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="BW: ==============================="/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="39"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="This loop is very slow; mostly due to calling an external script and passing an array to it. "/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="39"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Changing the call to a sub does not help much, so just put the code in-line here."/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="39"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="$Pos = null-&gt; call script 'plugin.mini.game.posinarray' : Value=$CharP Array=$Alphabet"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="46"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="48"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="48"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="BW: ==============================="/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="48"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="49"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="49"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="BW: ==============================="/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="49"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Allow easier ciphers by reducing the maximum variation in each bit of the cipher key."/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="50"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="BW: ==============================="/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="50"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="53"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="In case the value is over the number of letters in the alphabet"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="54"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Do this, for use in arrays. Remember programmers count from 0, people from 1!"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="57"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="60"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="64"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="65"/>
+      <sval type="int" val="5"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="65"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="BW: -2013-03-27: $CipherStr = sprintf: fmt='%s%s', $CipherStr, '!', null, null, null"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="67"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="67"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="BW: Umlaut support"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="71"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="71"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="71"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="74"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="74"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="74"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Pass is the encrypted password (the answer)"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="74"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="CipherStr is the cipher that needs to be used"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="74"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Password is the string to encrypt (PasswordLC is that in lower case)"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="74"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="78"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="83"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="83"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="BW: =============================== "/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="83"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Color-code and put strings on single line."/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="86"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="89"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="BW: =============================== "/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="89"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="89"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="BW: =============================== "/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="89"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Dynamic Color-coded menu for easier navigation."/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="90"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Green Enter Solution"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="92"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="92"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Gray Submit"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="94"/>
+      <sval type="int" val="5"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="94"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Orange Enter Solution"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="96"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="96"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Green Submit"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="98"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="98"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="BW: =============================== "/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="98"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="99"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="99"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="BW: =============================== "/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="99"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Color code and single line."/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="102"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="BW: ==============================="/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="102"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="104"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Description"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="105"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="BW: -2013-03-27: add custom menu info line to array $Menu: text=$line1b"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="105"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="BW: -2013-03-27: add custom menu info line to array $Menu: text=$line1c"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="105"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="The Password is:"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="106"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="106"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="The cipher is:"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="107"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="107"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Enter Solution"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="109"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Your answer:"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="110"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="110"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Submit Answer"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="112"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Help"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="113"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="113"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Show Menu"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="115"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="118"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="118"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="BW: ==============================="/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="118"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Add case to handle player cancel (Esc)."/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="120"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Player Canceled"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="122"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="BW: ==============================="/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="122"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="126"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="126"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="126"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Convert to lower case"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="127"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="127"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Displays whether success or failure"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="128"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Success"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="128"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="$msg = read text: page=$PageID id=1591"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="130"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="BW: ==============================="/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="130"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="1 and True are not exactly the same. We use 3-state logic when appropriate."/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="131"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="BW: =============================== "/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="132"/>
+      <sval type="int" val="5"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="132"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Fail"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="133"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="BW: 2013-03-27: send incoming message $msg to player: display it=[TRUE]"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="133"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="133"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="BW: =============================== "/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="134"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="BW: =============================== "/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="134"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="134"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="135"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="135"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="----------------------------------------------------------------------------------"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="139"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="----------------------------------------------------------------------------------"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="139"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="139"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="----------------------------------------------------------------------------------"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="148"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="for $Count = 1565 to 1570 step 1"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="148"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="add custom menu info line to array $HelpMenu: page=$PageID id=$Count"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="148"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="end"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="155"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="----------------------------------------------------------------------------------"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="155"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="155"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="155"/>
+      <sval type="int" val="2"/>
+    </sval>
+  </sval>
+  <sval type="int" val="0"/>
+</sval>
+
+</codearray>
+<nosignature>5404</nosignature>
+</script>
