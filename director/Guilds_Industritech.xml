@@ -1,0 +1,1196 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<?xml-stylesheet href="director.xsl" type="text/xsl" ?>
+<director name="Industritech Expansion" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="director.xsd">
+	<documentation>
+		<author name="Cycrow" />
+		<content reference="guilds" name="Industritech Expansion" description="Guilds Plot - Industritech Expansion"/>
+		<version number="1.0" date="27/05/2024" />
+	</documentation>
+	<cues>
+		<cue name="Industritech_Expansion">
+			<condition>
+				<cue_is_complete cue="Guilds_Start"/>
+			</condition>
+			<timing>
+				<time exact="2s"/>
+			</timing>
+			<action>
+				<do_all>
+					<!--
+						Industritech Expansion
+						
+						Contact: Name=Janit Hang  Face=106  Voice=129     Polly: US - Patrick
+						Contact: Name=Hatibmanckuttall  Face=401  Voice=420     Polly: US - Joey
+					-->
+
+					<!-- Global Values -->
+					<find_sector name="Industritech_Expansion.StartSector" x="8" y="16"/>
+					<find_sector name="Industritech_Expansion.InfiltratorSector" x="13" y="5"/>
+					<find_sector name="Industritech_Expansion.TerranStartSector" x="11" y="1"/>
+
+					<!-- Settings -->
+					<set_value name="Industritech_Expansion.ShowVoice" exact="1"/>
+
+					<set_value name="Industritech_Expansion.Status" exact="4"/>
+
+				</do_all>
+			</action>
+			<cues>
+				<cue name="Industritech_Expansion Start">
+					<condition>
+						<check_all>
+							<check_value value="{value@NO PLOTS}" exact="0"/>
+							<check_value value="{player.traderank}" min="2000"/>
+							<check_value value="{player.notoriety.paranid}" min="{lookup.notoriety@notop5}"/>
+						</check_all>
+					</condition>
+					<timing>
+						<time exact="10s"/>
+					</timing>
+					<action>
+						<do_all>
+							<find_station name="Industritech_Expansion.StartStation" race="paranid" class="dock">
+								<sector sector="{sector@Industritech_Expansion.StartSector}"/>
+								<jumps max="0"/>
+							</find_station>
+						</do_all>
+					</action>
+					<cues>
+						<cue name="Industritech_Expansion CheckStation">
+							<condition>
+								<check_all>
+									<cue_is_complete cue="Industritech_Expansion Start"/>
+									<check_value value="{object.exists@Industritech_Expansion.StartStation}" exact="0"/>
+									<check_value value="{value@Industritech_Expansion.Status}" max="0"/>
+								</check_all>
+							</condition>
+							<timing>
+								<time min="10s" max="20s"/>
+							</timing>
+							<action>
+								<reset_cue cue="Industritech_Expansion Start"/>
+							</action>
+						</cue>
+						<cue name="Industritech_Expansion CreateAgent">
+							<condition>
+								<check_all>
+									<cue_is_complete cue="Industritech_Expansion Start"/>
+									<check_value value="{object.exists@Industritech_Expansion.StartStation}" exact="1"/>
+								</check_all>
+							</condition>
+							<action>
+								<do_all>
+									<cancel_cue cue="Industritech_Expansion CheckStation"/>
+									<set_invincible object="Industritech_Expansion.StartStation" invincible="1"/>
+									<create_actor name="Industritech_Expansion.Agent" character="{9620,2000001}" face="401" voice="420" gender="male" invincible="1" race="paranid" object="Industritech_Expansion.StartStation"/>
+									<create_offer actor="Industritech_Expansion.Agent" cue="Industritech_Expansion" conversation="L3GPL_02_01" discipline="XXXXP"/>
+								</do_all>
+							</action>
+							<cues>
+								<cue name="Industritech_Expansion CheckStatus_Reset">
+									<condition>
+										<check_any>
+											<check_value value="{player.traderank}" min="2000" negate="1"/>
+											<check_value value="{player.notoriety.paranid}" min="{lookup.notoriety@notop5}" negate="1"/>											
+										</check_any>
+									</condition>
+									<action>
+										<do_all>
+											<set_invincible object="Industritech_Expansion.StartStation" invincible="0"/>
+											<remove_offer actor="Industritech_Expansion.Agent" conversation="L3GPL_02_01" discipline="XXXXP"/>
+											<destroy_actor actor="Industritech_Expansion.Agent"/>
+											<reset_cue cue="Industritech_Expansion Start"/>
+										</do_all>
+									</action>
+								</cue>
+
+								<cue name="Industritech_Expansion Accept">
+									<condition>
+										<conversation_completed answer="accept" conversation="L3GPL_02_01" actor="Industritech_Expansion.Agent"/>
+									</condition>
+									<action>
+										<do_all>
+											<set_value name="Industritech_Expansion.StationType" exact="1"/>
+											<set_value name="Industritech_Expansion.StationType" exact="{lookup.type@SS_FAC_F247}"/>
+											<set_value name="Industritech_Expansion.Reward" exact="250000"/>
+											<cancel_cue cue="Industritech_Expansion CheckStatus_Reset"/>
+											<remove_offer actor="Industritech_Expansion.Agent" conversation="L3GPL_02_01" discipline="XXXXP"/>
+											<create_briefing cue="Industritech_Expansion" race="industritech" targetrace="industritech" story="{9620,2000000}" title="{9620,2000000}" text="{9620,2000001}" background="industritech_build.tga">
+												<mission discipline="XXXXP" level="average"/>
+												<reward money="{value@Industritech_Expansion.Reward}"/>
+												<objectives>
+													<objective step="1">
+														<talkto actor="Industritech_Expansion.Agent"/>
+													</objective>
+													<objective step="2">
+														<custom action="{35,2001}" text="{lookup.type.maker.name@{value@Industritech_Expansion.StationType}} {lookup.type.name@{value@Industritech_Expansion.StationType}}" icon="build">
+															<sector sector="Industritech_Expansion.StartSector"/>
+														</custom>
+													</objective>
+												</objectives>
+											</create_briefing>
+											<set_objective cue="Industritech_Expansion" race="industritech" targetrace="industritech" story="{9620,2000000}" title="{9620,2000000}" text="{9620,2000001}" noabort="1">
+												<briefing cue="Industritech_Expansion" step="2"/>
+												<mission discipline="XXXXP" level="average"/>
+												<reward money="{value@Industritech_Expansion.Reward}"/>
+												<custom action="{35,2001}" text="{lookup.type.maker.name@{value@Industritech_Expansion.StationType}} {lookup.type.name@{value@Industritech_Expansion.StationType}}" icon="build">
+													<sector sector="Industritech_Expansion.StartSector"/>
+												</custom>
+											</set_objective>
+										</do_all>
+									</action>
+									<cues>
+										<cue name="Industritech_Expansion BuildStation" instantiate="static" delay="1s">
+											<condition>
+												<player_built_station />
+											</condition>
+											<action>
+												<do_all>
+													<do_if value="{object.isclass.complex@{event.object}}" exact="1" negate="1" comment="If the station built is a complex, stop the check.">
+														<do_if value="{object.sector@{event.object}}" exact="{sector@Industritech_Expansion.StartSector}">
+															<set_object name="Industritech_Expansion.BuiltStation" value="{event.object}"/>
+														</do_if>
+													</do_if>
+												</do_all>
+											</action>
+											<cues>
+												<cue name="Industritech_Expansion CheckBuiltStation" delay="1s">
+													<condition>
+														<check_all>
+															  <object_exists object="Industritech_Expansion.BuiltStation" />
+															  <match_object object="Industritech_Expansion.BuiltStation" class="complex" negate="1"/>
+															  <match_object object="Industritech_Expansion.BuiltStation" race="player" />
+															<check_value value="{object.type@Industritech_Expansion.BuiltStation}" exact="{lookup.type@{value@Industritech_Expansion.StationType}}"/>
+														</check_all>
+													</condition>
+													<timing>
+														<time exact="4s"/>
+													</timing>
+													<action>
+														<do_choose>
+															<do_when value="{object.race@Industritech_Expansion.BuiltStation}" exact="{lookup.race@player}">
+																<remove_briefing cue="Industritech_Expansion" />
+																<remove_objective cue="Industritech_Expansion" status="complete"/>
+																<reward_player>
+																	<money exact="{value@Industritech_Expansion.Reward}" transactionpage="9620" transactionid="2000003"/>
+																	<notoriety>
+																		<relation race="industritech" exact="2000"/>
+																	</notoriety>
+																</reward_player>
+																<set_owner object="Industritech_Expansion.BuiltStation" race="industritech"/>
+																<remove_object object="Industritech_Expansion.BuiltStation"/>
+																<set_value name="Industritech_Expansion.Status" exact="1"/>
+																<play_text actor="Industritech_Expansion.Agent" textid="100001" priority="99"/>
+																<do_if value="{value@Industritech_Expansion.ShowVoice}" exact="1">
+																	<play_subtitles text="{actor.name@Industritech_Expansion.Agent}: {420,100001}" duration="5000"/>
+																</do_if>
+																<cancel_cue cue="Industritech_Expansion BuildStation"/>
+															</do_when>
+															<do_otherwise>
+																<reset_cue cue="Industritech_Expansion CheckBuiltStation"/>													
+															</do_otherwise>
+														</do_choose>
+													</action>
+												</cue>
+											</cues>
+										</cue>
+										<cue name="Industritech_Expansion CompletePrelude">
+											<condition>
+												<check_value value="{value@Industritech_Expansion.Status}" exact="1"/>
+											</condition>
+											<timing>
+												<time min="30s" max="60s"/>
+											</timing>												
+											<action>
+												<do_all>
+													<cancel_cue cue="Industritech_Expansion BuildStation"/>
+													<cancel_cue cue="Industritech_Expansion CheckBuiltStation"/>
+													<set_value name="Industritech_Expansion.Status" exact="2"/>
+													<set_invincible object="Industritech_Expansion.StartStation" invincible="0"/>
+													<destroy_actor actor="Industritech_Expansion.Agent"/>
+													<remove_object object="Industritech_Expansion.StartStation"/>
+												</do_all>
+											</action>
+										</cue>
+									</cues>
+								</cue>
+							</cues>
+						</cue>
+					</cues>
+				</cue>
+
+				<cue name="Industritech_Expansion StartMain" delay="1s">
+					<condition>
+						<check_value value="{value@Industritech_Expansion.Status}" exact="2"/>
+					</condition>
+					<timing>
+						<time min="10s" max="20s"/>
+					</timing>
+					<action>
+						<do_all>
+							<find_station name="Industritech_Expansion.StartStation" race="paranid" class="dock">
+								<sector sector="{sector@Industritech_Expansion.StartSector}"/>
+								<jumps max="0"/>
+							</find_station>
+							<do_if value="{object.exists@Industritech_Expansion.StartStation}" exact="0" >
+								<find_station name="Industritech_Expansion.StartStation" race="paranid" class="dock">
+									<sector sector="{sector@Industritech_Expansion.StartSector}"/>
+									<jumps max="1"/>
+								</find_station>
+							</do_if>
+							<set_invincible object="Industritech_Expansion.StartStation" invincible="1"/>
+							<create_actor name="Industritech_Expansion.Agent" character="{9620,2000001}" face="401" voice="420" gender="male" invincible="1" race="paranid" object="Industritech_Expansion.StartStation"/>
+							<create_offer actor="Industritech_Expansion.Agent" cue="Industritech_Expansion" conversation="L3GPL_02_02_01" discipline="XXXXP"/>
+							<create_briefing cue="Industritech_Expansion" race="industritech" targetrace="industritech" story="{9620,2000000}" title="{9620,2000004}" text="{9620,2000005}" background="industritech_gate.tga">
+								<mission discipline="XXXXP" level="average"/>
+								<reward money="20000"/>
+								<objectives>
+									<objective step="1">
+										<talkto actor="Industritech_Expansion.Agent"/>
+									</objective>
+								</objectives>
+							</create_briefing>
+							<set_objective cue="Industritech_Expansion" race="industritech" targetrace="industritech" story="{9620,2000000}" title="{9620,2000004}" text="{9620,2000005}" noabort="1">
+								<briefing cue="Industritech_Expansion" step="1"/>
+								<mission discipline="XXXXP" level="average"/>
+								<reward money="20000"/>
+								<talkto actor="Industritech_Expansion.Agent"/>
+							</set_objective>
+						</do_all>
+					</action>
+					<cues>
+						<cue name="Industritech_Expansion Stage1_Accept" delay="1s">
+							<condition>
+								<conversation_completed answer="accept" conversation="L3GPL_02_02_01" actor="Industritech_Expansion.Agent"/>
+							</condition>
+							<action>
+								<do_all>
+									<remove_offer actor="Industritech_Expansion.Agent" conversation="L3GPL_02_02_01" discipline="XXXXP"/>
+									<set_invincible object="Industritech_Expansion.StartStation" invincible="0"/>
+									<find_station name="Industritech_Expansion.InfiltratorStation" race="argon" class="dock">
+										<sector sector="{sector@Industritech_Expansion.InfiltratorSector}"/>
+										<jumps max="0"/>
+									</find_station>
+									<do_if value="{object.exists@Industritech_Expansion.InfiltratorStation}" exact="0" >
+										<find_station name="Industritech_Expansion.InfiltratorStation" race="argon" class="dock">
+											<sector sector="{sector@Industritech_Expansion.InfiltratorSector}"/>
+											<jumps max="1"/>
+										</find_station>
+									</do_if>
+									<do_if value="{object.exists@Industritech_Expansion.InfiltratorStation}" exact="0" >
+										<find_station name="Industritech_Expansion.InfiltratorStation" race="argon">
+											<sector sector="{sector@Industritech_Expansion.InfiltratorSector}"/>
+											<jumps max="1"/>
+										</find_station>
+									</do_if>
+									<do_if value="{object.exists@Industritech_Expansion.InfiltratorStation}" exact="0" >
+										<find_station name="Industritech_Expansion.InfiltratorStation" race="argon">
+											<sector sector="{sector@Industritech_Expansion.InfiltratorSector}"/>
+											<jumps max="4"/>
+										</find_station>
+									</do_if>
+									<set_invincible object="Industritech_Expansion.InfiltratorStation" invincible="1"/>
+									<create_actor name="Industritech_Expansion.Infiltrator" character="{9620,2000016}" face="106" voice="129" gender="male" invincible="1" race="argon" object="Industritech_Expansion.InfiltratorStation"/>
+									<create_offer actor="Industritech_Expansion.Infiltrator" cue="Industritech_Expansion" conversation="L3GPL_02_02_02" discipline="XXXXP"/>
+									<create_briefing cue="Industritech_Expansion" race="industritech" targetrace="industritech" story="{9620,2000000}" title="{9620,2000004}" text="{9620,2000005}" background="industritech_gate.tga">
+										<mission discipline="XXXXP" level="average"/>
+										<reward money="20000"/>
+										<objectives>
+											<objective step="1">
+												<custom action="{35,2012}" text="{actor.name@Industritech_Expansion.Agent}"/>
+											</objective>
+											<objective step="2">
+												<talkto actor="Industritech_Expansion.Infiltrator"/>
+											</objective>
+										</objectives>
+									</create_briefing>
+									<set_objective cue="Industritech_Expansion" race="industritech" targetrace="industritech" story="{9620,2000000}" title="{9620,2000004}" text="{9620,2000005}" noabort="1">
+										<briefing cue="Industritech_Expansion" step="2"/>
+										<mission discipline="XXXXP" level="average"/>
+										<reward money="20000"/>
+										<talkto actor="Industritech_Expansion.Infiltrator"/>
+									</set_objective>
+									<destroy_actor actor="Industritech_Expansion.Agent"/>
+								</do_all>
+							</action>
+							<cues>
+								<cue name="Industritech_Expansion Stage1_AcceptInfitrator" delay="1s">
+									<condition>
+										<conversation_completed answer="accept" conversation="L3GPL_02_02_02" actor="Industritech_Expansion.Infiltrator"/>
+									</condition>
+									<action>
+										<do_all>
+											<remove_offer actor="Industritech_Expansion.Infiltrator" conversation="L3GPL_02_02_02" discipline="XXXXP"/>
+											<create_briefing cue="Industritech_Expansion" race="industritech" targetrace="industritech" story="{9620,2000000}" title="{9620,2000004}" text="{9620,2000005}" background="industritech_gate.tga">
+												<mission discipline="XXXXP" level="average"/>
+												<reward money="20000"/>
+												<requirements>
+													<requirement type="equipment" value="SS_WARE_LIFESUPPORT"/>
+												</requirements>
+												<objectives>
+													<objective step="3">
+														<custom actor="Industritech_Expansion.Infiltrator" action="{35,2043}" text="{actor.name@Industritech_Expansion.Infiltrator}"/>
+													</objective>
+												</objectives>
+											</create_briefing>
+											<set_objective cue="Industritech_Expansion" race="industritech" targetrace="industritech" story="{9620,2000000}" title="{9620,2000004}" text="{9620,2000005}" noabort="1">
+												<briefing cue="Industritech_Expansion" step="3"/>
+												<mission discipline="XXXXP" level="average"/>
+												<reward money="20000"/>
+												<custom actor="Industritech_Expansion.Infiltrator" action="{35,2043}" text="{actor.name@Industritech_Expansion.Infiltrator}"/>
+											</set_objective>
+										</do_all>
+									</action>
+									<cues>
+										<cue name="Industritech_Expansion Stage1_Docked_NoLifeSupport" delay="2s">
+											<condition>
+												<check_all>
+													<object_docked param="{object@Industritech_Expansion.InfiltratorStation}" />
+													<check_value value="{player.ship.cargo.SS_WARE_LIFESUPPORT.exists}" exact="0"/>
+												</check_all>
+											</condition>
+											<timing>
+												<time min="3s" max="5s"/>
+											</timing>
+											<action>
+												<do_all>
+													<play_text actor="Industritech_Expansion.Infiltrator" textid="906" priority="99"/>
+													<show_help text="{{actor.voice@Industritech_Expansion.Infiltrator},906}"/>
+												</do_all>
+											</action>
+											<cues>
+												<cue name="Industritech_Expansion Stage1_Docked_NoLifeSupport_Reset" delay="1s">
+													<condition>
+														<cue_is_complete cue="Industritech_Expansion Stage1_Docked_NoLifeSupport"/>
+													</condition>
+													<timing>
+														<time exact="10s"/>
+													</timing>
+													<action>
+														<reset_cue cue="Industritech_Expansion Stage1_Docked_NoLifeSupport"/>
+													</action>
+												</cue>
+											</cues>
+										</cue>
+										<cue name="Industritech_Expansion Stage1_Docked_NoSpace" delay="2s">
+											<condition>
+												<check_all>
+													<object_docked param="{object@Industritech_Expansion.InfiltratorStation}" />
+													<check_value value="{player.ship.cargo.SS_WARE_LIFESUPPORT.exists}" exact="1"/>
+													<check_any>
+														<check_value value="{player.ship.cargoclass}" max="{lookup.type.cargoclass@SS_WARE_PASSENGER}-1"/>
+														<check_value value="{player.ship.cargospace}" max="{lookup.type.cargospace@SS_WARE_PASSENGER}-1"/>
+													</check_any>
+												</check_all>
+											</condition>
+											<timing>
+												<time min="3s" max="5s"/>
+											</timing>
+											<action>
+												<do_all>
+													<play_text actor="Industritech_Expansion.Infiltrator" textid="905" priority="99"/>
+													<show_help text="{9620,2000017}"/>
+												</do_all>
+											</action>
+											<cues>
+												<cue name="Industritech_Expansion Stage1_Docked_NoLifeSupport_Reset" delay="1s">
+													<condition>
+														<cue_is_complete cue="Industritech_Expansion Stage1_Docked_NoSpace"/>
+													</condition>
+													<timing>
+														<time exact="10s"/>
+													</timing>
+													<action>
+														<reset_cue cue="Industritech_Expansion Stage1_Docked_NoSpace"/>
+													</action>
+												</cue>
+											</cues>
+										</cue>
+										<cue name="Industritech_Expansion Stage1_Docked" delay="2s">
+											<condition>
+												<check_all>
+													<object_docked param="{object@Industritech_Expansion.InfiltratorStation}" />
+													<check_value value="{player.ship.cargo.SS_WARE_LIFESUPPORT.exists}" exact="1"/>
+													<check_value value="{player.ship.cargoclass}" min="{lookup.type.cargoclass@SS_WARE_PASSENGER}"/>
+													<check_value value="{player.ship.cargospace}" min="{lookup.type.cargospace@SS_WARE_PASSENGER}"/>
+												</check_all>
+											</condition>
+											<timing>
+												<time min="3s" max="5s"/>
+											</timing>
+											<action>
+												<do_choose>
+													<do_when value="{object.dockobject@{player.ship}}" exact="{object@Industritech_Expansion.InfiltratorStation}">
+														<set_actor_location actor="Industritech_Expansion.Infiltrator" location="passenger" object="{player.ship}"/>
+														<set_pilot_data object="{actor@Industritech_Expansion.Infiltrator}" noeject="1"/>
+														<set_actor_invincible actor="Industritech_Expansion.Infiltrator" invincible="1"/>
+														<set_value name="Industritech_Expansion.Stations" exact="3"/>
+														<set_value name="Industritech_Expansion.Status" exact="3"/>
+														<cancel_cue cue="Industritech_Expansion Stage1_Docked_NoLifeSupport"/>
+														<cancel_cue cue="Industritech_Expansion Stage1_Docked_NoSpace"/>
+													</do_when>
+													<do_otherwise>
+														<reset_cue cue="Industritech_Expansion Stage1_Docked"/>
+													</do_otherwise>
+												</do_choose>
+											</action>
+											<cues>
+												<cue name="Industritech_Expansion Stage1_DoNextStation" delay="1s">
+													<condition>
+														<check_all>
+															<check_value value="{value@Industritech_Expansion.Status}" exact="3"/>
+															<check_value value="{value@Industritech_Expansion.Stations}" min="1"/>
+														</check_all>
+													</condition>
+													<action>
+														<do_all>
+															<find_station name="Industritech_Expansion.TargetStation" race="terran">
+																<sector sector="Industritech_Expansion.TerranStartSector"/>
+																<jumps min="0" max="10"/>
+															</find_station>
+															<set_invincible object="Industritech_Expansion.TargetStation" invincible="1"/>
+															<create_briefing cue="Industritech_Expansion" race="industritech" targetrace="industritech" story="{9620,2000000}" title="{9620,2000004}" text="{9620,2000005}" background="industritech_gate.tga">
+																<mission discipline="XXXXP" level="average"/>
+																<reward money="20000"/>
+																<requirements>
+																	<requirement type="equipment" value="SS_WARE_LIFESUPPORT"/>
+																</requirements>
+																<objectives>
+																	<objective step="4">
+																		<dockat object="Industritech_Expansion.TargetStation"/>
+																	</objective>
+																</objectives>
+															</create_briefing>
+															<set_objective cue="Industritech_Expansion" race="industritech" targetrace="industritech" story="{9620,2000000}" title="{9620,2000004}" text="{9620,2000005}" noabort="1">
+																<briefing cue="Industritech_Expansion" step="4"/>
+																<mission discipline="XXXXP" level="average"/>
+																<reward money="20000"/>
+																<dockat object="Industritech_Expansion.TargetStation"/>
+															</set_objective>
+															<play_text actor="Industritech_Expansion.Infiltrator" priority="90">
+																<line actor="Industritech_Expansion.Infiltrator" textid="900"/>
+																<line actor="Industritech_Expansion.Infiltrator" textid="901"/>
+															</play_text>
+														</do_all>
+													</action>
+													<cues>
+														<cue name="Industritech_Expansion Stage1_DockStation" delay="1s">
+															<condition>
+																<object_is_docked dockobject="{object@Industritech_Expansion.TargetStation}"/>
+															</condition>
+															<timing>
+																<time min="3s" max="5s"/>
+															</timing>
+															<action>
+																<do_choose>
+																	<do_when value="{object.dockobject@{player.ship}}" exact="{object@Industritech_Expansion.TargetStation}">
+																		<set_actor_location actor="Industritech_Expansion.Infiltrator" location="crew" object="Industritech_Expansion.TargetStation"/>
+																		<set_value name="Industritech_Expansion.Timer" exact="20"/>
+																		<create_briefing cue="Industritech_Expansion" race="industritech" targetrace="industritech" story="{9620,2000000}" title="{9620,2000004}" text="{9620,2000005}" background="industritech_gate.tga">
+																			<mission discipline="XXXXP" level="average"/>
+																			<reward money="20000"/>
+																			<requirements>
+																				<requirement type="equipment" value="SS_WARE_LIFESUPPORT"/>
+																			</requirements>
+																			<objectives>
+																				<objective step="4">
+																					<custom action="{35,2048}" text="{actor.name@Industritech_Expansion.Infiltrator}" object="Industritech_Expansion.TargetStation"/>
+																				</objective>
+																			</objectives>
+																		</create_briefing>
+																		<set_objective cue="Industritech_Expansion" race="industritech" targetrace="industritech" story="{9620,2000000}" title="{9620,2000004}" text="{9620,2000005}" noabort="1">
+																			<briefing cue="Industritech_Expansion" step="4"/>
+																			<mission discipline="XXXXP" level="average"/>
+																			<reward money="20000"/>
+																			<custom action="{35,2048}" text="{actor.name@Industritech_Expansion.Infiltrator}" object="Industritech_Expansion.TargetStation"/>
+																		</set_objective>
+																		<play_text actor="Industritech_Expansion.Infiltrator" priority="90">
+																			<line actor="Industritech_Expansion.Infiltrator" textid="903"/>
+																		</play_text>
+																	</do_when>
+																	<do_otherwise>
+																		<reset_cue cue="Industritech_Expansion Stage1_DockStation"/>
+																	</do_otherwise>
+																</do_choose>
+															</action>
+															<cues>
+																<cue name="Industritech_Expansion Stage1_DockWait" delay="1s">
+																	<condition>
+																		<check_all>
+																			<cue_is_complete cue="Industritech_Expansion Stage1_DockStation"/>
+																			<object_is_docked dockobject="{object@Industritech_Expansion.TargetStation}"/>
+																		</check_all>
+																	</condition>
+																	<timing>
+																		<time exact="{value@Industritech_Expansion.Timer}s"/>
+																	</timing>
+																	<action>
+																		<do_all>
+																			<set_invincible object="Industritech_Expansion.TargetStation" invincible="0"/>
+																			<set_value name="Industritech_Expansion.Stations" exact="1" operation="subtract"/>
+																			<set_pilot_data object="{actor@Industritech_Expansion.Infiltrator}" noeject="1"/>
+																			<set_actor_invincible actor="Industritech_Expansion.Infiltrator" invincible="1"/>
+																			<set_actor_location actor="Industritech_Expansion.Infiltrator" location="passenger" object="{player.ship}"/>
+																			<remove_object object="Industritech_Expansion.TargetStation"/>
+																			<cancel_cue cue="Industritech_Expansion Stage1_UnDocked"/>
+																			<reset_cue cue="Industritech_Expansion Stage1_DoNextStation"/>
+																		</do_all>
+																	</action>
+																	<cues>
+																		<cue name="Industritech_Expansion Stage1_UnDocked" delay="1s">
+																			<condition>
+																				<check_all>
+																					<cue_is_complete cue="Industritech_Expansion Stage1_DockStation"/>
+																					<object_is_docked dockobject="{object@Industritech_Expansion.TargetStation}" negate="1"/>
+																				</check_all>
+																			</condition>
+																			<timing>
+																				<time min="2s" max="3s"/>
+																			</timing>
+																			<action>
+																				<do_all>
+																					<create_briefing cue="Industritech_Expansion" race="industritech" targetrace="industritech" story="{9620,2000000}" title="{9620,2000004}" text="{9620,2000005}" background="industritech_gate.tga">
+																						<mission discipline="XXXXP" level="average"/>
+																						<reward money="20000"/>
+																						<requirements>
+																							<requirement type="equipment" value="SS_WARE_LIFESUPPORT"/>
+																						</requirements>
+																						<objectives>
+																							<objective step="4">
+																								<dockat object="Industritech_Expansion.TargetStation"/>
+																							</objective>
+																						</objectives>
+																					</create_briefing>
+																					<set_objective cue="Industritech_Expansion" race="industritech" targetrace="industritech" story="{9620,2000000}" title="{9620,2000004}" text="{9620,2000005}" noabort="1">
+																						<briefing cue="Industritech_Expansion" step="4"/>
+																						<mission discipline="XXXXP" level="average"/>
+																						<reward money="20000"/>
+																						<dockat object="Industritech_Expansion.TargetStation"/>
+																					</set_objective>
+																					<cancel_cue cue="Industritech_Expansion Stage1_DockWait"/>
+																					<reset_cue cue="Industritech_Expansion Stage1_DockStation"/>
+																				</do_all>
+																			</action>
+																		</cue>																		
+																	</cues>
+																</cue>
+															</cues>
+														</cue>
+													</cues>
+												</cue>
+
+												<cue name="Industritech_Expansion Stage1_FinishedNextStation" delay="1s">
+													<condition>
+														<check_all>
+															<check_value value="{value@Industritech_Expansion.Status}" exact="3"/>
+															<check_value value="{value@Industritech_Expansion.Stations}" max="0"/>
+														</check_all>
+													</condition>
+													<timing>
+														<time min="3s" max="5s"/>
+													</timing>
+													<action>
+														<do_all>
+															<set_invincible object="Industritech_Expansion.TargetStation" invincible="0"/>
+															<set_pilot_data object="{actor@Industritech_Expansion.Infiltrator}" noeject="1"/>
+															<set_actor_invincible actor="Industritech_Expansion.Infiltrator" invincible="1"/>
+															<set_actor_location actor="Industritech_Expansion.Infiltrator" location="passenger" object="{player.ship}"/>
+															<remove_object object="Industritech_Expansion.TargetStation"/>
+															<cancel_cue cue="Industritech_Expansion Stage1_UnDocked"/>
+															<play_text actor="Industritech_Expansion.Infiltrator" textid="100004" priority="99"/>
+															<create_briefing cue="Industritech_Expansion" race="industritech" targetrace="industritech" story="{9620,2000000}" title="{9620,2000004}" text="{9620,2000005}" background="industritech_gate.tga">
+																<mission discipline="XXXXP" level="average"/>
+																<reward money="20000"/>
+																<requirements>
+																	<requirement type="equipment" value="SS_WARE_LIFESUPPORT"/>
+																</requirements>
+																<objectives>
+																	<objective step="5">
+																		<dockat object="Industritech_Expansion.InfiltratorStation"/>
+																	</objective>
+																</objectives>
+															</create_briefing>
+															<set_objective cue="Industritech_Expansion" race="industritech" targetrace="industritech" story="{9620,2000000}" title="{9620,2000004}" text="{9620,2000005}" noabort="1">
+																<briefing cue="Industritech_Expansion" step="5"/>
+																<mission discipline="XXXXP" level="average"/>
+																<reward money="20000"/>
+																<dockat object="Industritech_Expansion.InfiltratorStation"/>
+															</set_objective>
+														</do_all>
+													</action>
+													<cues>
+														<cue name="Industritech_Expansion Stage1_ReturnHome" delay="1s">
+															<condition>
+																<check_all>
+																	<cue_is_complete cue="Industritech_Expansion Stage1_FinishedNextStation"/>
+																	<object_docked param="{object@Industritech_Expansion.InfiltratorStation}" />
+																</check_all>
+															</condition>
+															<timing>
+																<time min="1s" max="3s"/>
+															</timing>
+															<action>
+																<do_all>
+																	<set_actor_location actor="Industritech_Expansion.Infiltrator" location="crew" object="Industritech_Expansion.InfiltratorStation"/>
+																	<remove_briefing cue="Industritech_Expansion"/>
+																	<remove_objective cue="Industritech_Expansion" status="complete"/>
+																	<play_text actor="Industritech_Expansion.Infiltrator" textid="100005" priority="99"/>
+																	<set_value name="Industritech_Expansion.Status" exact="4"/>
+																	<reward_player>
+																		<money exact="20000" transactionpage="9620" transactionid="2000003"/>
+																		<notoriety>
+																			<relation race="industritech" exact="5000"/>
+																		</notoriety>
+																	</reward_player>
+																</do_all>
+															</action>
+															<cues>
+																<cue name="Industritech_Expansion Stage1_Phase1Cleanup" delay="1s">
+																	<condition>
+																		<cue_is_complete cue="Industritech_Expansion Stage1_ReturnHome"/>
+																	</condition>
+																	<timing>
+																		<time exact="30s"/>
+																	</timing>
+																	<action>
+																		<do_all>
+																			<destroy_actor actor="Industritech_Expansion.Infiltrator"/>
+																			<set_invincible object="Industritech_Expansion.InfiltratorStation" invincible="0"/>
+																		</do_all>
+																	</action>
+																</cue>
+															</cues>
+														</cue>
+													</cues>
+												</cue>												
+											</cues>
+										</cue>
+									</cues>
+								</cue>
+							</cues>
+						</cue>
+					</cues>
+				</cue>
+				<cue name="Industritech_Expansion_Stage1_Phase2" delay="1s">
+					<condition>
+						<check_value value="{value@Industritech_Expansion.Status}" exact="4"/>
+					</condition>
+					<timing>
+						<time min="10s" max="15s"/>
+					</timing>
+					<action>
+						<do_all>
+							<find_station name="Industritech_Expansion.InfiltratorStation" race="argon" class="dock">
+								<sector sector="{sector@Industritech_Expansion.InfiltratorSector}"/>
+								<jumps max="0"/>
+							</find_station>
+							<do_if value="{object.exists@Industritech_Expansion.InfiltratorStation}" exact="0" >
+								<find_station name="Industritech_Expansion.InfiltratorStation" race="argon" class="dock">
+									<sector sector="{sector@Industritech_Expansion.InfiltratorSector}"/>
+									<jumps max="1"/>
+								</find_station>
+							</do_if>
+							<do_if value="{object.exists@Industritech_Expansion.InfiltratorStation}" exact="0" >
+								<find_station name="Industritech_Expansion.InfiltratorStation" race="argon">
+									<sector sector="{sector@Industritech_Expansion.InfiltratorSector}"/>
+									<jumps max="1"/>
+								</find_station>
+							</do_if>
+							<do_if value="{object.exists@Industritech_Expansion.InfiltratorStation}" exact="0" >
+								<find_station name="Industritech_Expansion.InfiltratorStation" race="argon">
+									<sector sector="{sector@Industritech_Expansion.InfiltratorSector}"/>
+									<jumps max="4"/>
+								</find_station>
+							</do_if>
+							<set_invincible object="Industritech_Expansion.InfiltratorStation" invincible="1"/>
+							<create_actor name="Industritech_Expansion.Infiltrator" character="{9620,2000016}" face="106" voice="129" gender="male" invincible="1" race="argon" object="Industritech_Expansion.InfiltratorStation"/>
+							<create_offer actor="Industritech_Expansion.Infiltrator" cue="Industritech_Expansion" conversation="L3GPL_02_02_03" discipline="XXXXP"/>
+							<create_briefing cue="Industritech_Expansion" race="industritech" targetrace="industritech" story="{9620,2000000}" title="{9620,2000004}" text="{9620,2000005}" background="industritech_gate.tga">
+								<mission discipline="XXXXP" level="average"/>
+								<reward money="50000"/>
+								<objectives>
+									<objective step="1">
+										<talkto actor="Industritech_Expansion.Infiltrator"/>
+									</objective>
+								</objectives>
+							</create_briefing>
+							<set_objective cue="Industritech_Expansion" race="industritech" targetrace="industritech" story="{9620,2000000}" title="{9620,2000004}" text="{9620,2000005}" noabort="1">
+								<briefing cue="Industritech_Expansion" step="1"/>
+								<mission discipline="XXXXP" level="average"/>
+								<reward money="50000"/>
+								<talkto actor="Industritech_Expansion.Infiltrator"/>
+							</set_objective>
+							<play_text actor="Industritech_Expansion.Infiltrator" textid="100006" priority="99"/>
+						</do_all>
+					</action>
+					<cues>
+						<cue name="Industritech_Expansion_Stage1_Phase2_Accept" delay="1s">
+							<condition>
+								<conversation_completed answer="accept" conversation="L3GPL_02_02_03" actor="Industritech_Expansion.Infiltrator"/>
+							</condition>
+							<action>
+								<do_all>
+									<remove_offer actor="Industritech_Expansion.Infiltrator" conversation="L3GPL_02_02_03" discipline="XXXXP"/>
+									<set_value name="Industritech_Expansion.Status" exact="5"/>
+									<set_value name="Industritech_Expansion.Attempts" exact="1"/>
+								</do_all>
+							</action>
+							<cues>
+								<cue name="Industritech_Expansion_Stage1_Phase2_GotCystal" delay="2s">
+									<condition>
+										<check_value value="{player.ship.cargo.SS_WARE_GATECRYSTAL.count}" min="1"/>
+									</condition>
+									<action>
+										<set_value name="Industritech_Expansion.Status" exact="10"/>
+									</action>
+								</cue>
+
+								<cue name="Industritech_Expansion_Stage1_Phase2_StartCapture" delay="1s">
+									<condition>
+										<check_all>
+											<check_value value="{player.ship.cargo.SS_WARE_GATECRYSTAL.count}" max="0"/>
+											<check_value value="{value@Industritech_Expansion.Status}" exact="5"/>
+											<object_exists object="Industritech_Expansion.TargetShip" negate="1"/>
+										</check_all>
+									</condition>
+									<action>
+										<do_all>
+											<find_sector sector="Industritech_Expansion.TerranStartSector" min="0" max="8" border="1" race="terran" name="Industritech_Expansion.TargetSector"/>
+											<create_ship name="Industritech_Expansion.TargetShip" race="terran" typename="{lookup.race.shiptype.m4@terran}">
+												<position x="0" y="0" z="0" min="5km" max="30km"/>
+												<sector sector="Industritech_Expansion.TargetSector"/>
+												<equipment loadout="maximum"/>
+												<command command="idle"/>											
+											</create_ship>
+											<set_value name="this.random" min="{value@Industritech_Expansion.Attempts}*10" max="100"/>
+											<do_choose>
+												<do_when value="{value@this.random}" min="70">
+													<set_value name="Industritech_Expansion.TargetCorrect" min="1"/>
+													<add_cargo object="Industritech_Expansion.TargetShip">
+														<ware typename="SS_WARE_GATECRYSTAL" exact="1"/>
+													</add_cargo>
+												</do_when>
+												<do_otherwise>
+													<set_value name="Industritech_Expansion.TargetCorrect" min="0"/>
+												</do_otherwise>
+											</do_choose>
+											<create_briefing cue="Industritech_Expansion" race="industritech" targetrace="industritech" story="{9620,2000000}" title="{9620,2000004}" text="{9620,2000005}" background="industritech_gate.tga">
+												<mission discipline="XXXXP" level="average"/>
+												<reward money="50000"/>
+												<requirements name="{35,812}">
+													<requirement value="{lookup.type@SS_WARE_GATECRYSTAL}" type="warelink" />
+													<requirement value="{lookup.type@SS_WARE_L_TR}" type="warelink" />
+													<requirement value="{lookup.type@SS_WARE_SW_CARGOHACK}" type="warelink" />
+													<requirement value="{lookup.type@SS_WARE_TECH276}" type="warelink" />
+												</requirements>
+												<objectives>
+													<objective step="2">
+														<custom action="{35,2077}" text="{17,92363}" object="Industritech_Expansion.TargetShip"/>
+													</objective>
+												</objectives>
+											</create_briefing>
+											<set_objective cue="Industritech_Expansion" race="industritech" targetrace="industritech" story="{9620,2000000}" title="{9620,2000004}" text="{9620,2000005}" noabort="1">
+												<briefing cue="Industritech_Expansion" step="2"/>
+												<mission discipline="XXXXP" level="average"/>
+												<reward money="50000"/>
+												<custom action="{35,2077}" text="{17,92363}" object="Industritech_Expansion.TargetShip" />
+											</set_objective>
+										</do_all>
+									</action>
+									<cues>
+										<cue name="Industritech_Expansion_Stage1_Phase2_Captured" delay="1s">
+											<condition>
+												<check_all>
+													<check_value value="{value@Industritech_Expansion.Status}" exact="5"/>
+													<object_captured object="Industritech_Expansion.TargetShip"/>
+													<check_value value="{object.cargo.SS_WARE_GATECRYSTAL.count@Industritech_Expansion.TargetShip}" min="1"/>
+												</check_all>
+											</condition>
+											<timing>
+												<time exact="2s"/>
+											</timing>
+											<action>
+												<do_all>
+													<remove_object object="Industritech_Expansion.TargetShip"/>
+													<add_cargo object="Industritech_Expansion.TargetShip">
+														<ware typename="SS_WARE_GATECRYSTAL" exact="-1"/>
+													</add_cargo>
+													<reset_cue cue="Industritech_Expansion_Stage1_Phase2_StartCapture"/>
+												</do_all>
+											</action>
+										</cue>
+
+										<cue name="Industritech_Expansion_Stage1_Phase2_Dead" delay="1s">
+											<condition>
+												<check_all>
+													<check_value value="{value@Industritech_Expansion.Status}" list="5|6"/>
+													<check_any>
+														<object_destroyed object="Industritech_Expansion.TargetShip"/>
+														<object_destroyed_by_player object="Industritech_Expansion.TargetShip"/>
+														<check_all>
+															<object_captured object="Industritech_Expansion.TargetShip"/>
+															<check_value value="{object.cargo.SS_WARE_GATECRYSTAL.count@Industritech_Expansion.TargetShip}" max="0"/>
+														</check_all>
+													</check_any>
+												</check_all>
+											</condition>
+											<timing>
+												<time exact="3s"/>
+											</timing>
+											<action>
+												<do_all>
+													<find_crate typename="SS_WARE_GATECRYSTAL" category="dock" name="Industritech_Expansion.TargetShipCargo" silent="1">
+														<sector sector="{player.sector}"/>
+														<jumps exact="0"/>
+													</find_crate>
+													<remove_object object="Industritech_Expansion.TargetShip"/>
+													<do_choose>
+														<do_when value="{object.exists@Industritech_Expansion.TargetShipCargo}" exact="1">
+															<set_invincible object="Industritech_Expansion.TargetShipCargo" invincible="1"/>	
+															<set_value name="Industritech_Expansion.Status" exact="7"/>
+															<create_briefing cue="Industritech_Expansion" race="industritech" targetrace="industritech" story="{9620,2000000}" title="{9620,2000004}" text="{9620,2000005}" background="industritech_gate.tga">
+																<mission discipline="XXXXP" level="average"/>
+																<reward money="50000"/>
+																<requirements name="{35,812}">
+																	<requirement value="{lookup.type@SS_WARE_GATECRYSTAL}" type="warelink" />
+																	<requirement value="{lookup.type@SS_WARE_L_TR}" type="warelink" />
+																	<requirement value="{lookup.type@SS_WARE_SW_CARGOHACK}" type="warelink" />
+																	<requirement value="{lookup.type@SS_WARE_TECH276}" type="warelink" />
+																</requirements>
+																<objectives>
+																	<objective step="3">
+																		<custom action="{35,2042}" text="{17,92363}" object="Industritech_Expansion.TargetShipCargo" icon="find"/>
+																	</objective>
+																</objectives>
+															</create_briefing>
+															<set_objective cue="Industritech_Expansion" race="industritech" targetrace="industritech" story="{9620,2000000}" title="{9620,2000004}" text="{9620,2000005}" noabort="1">
+																<briefing cue="Industritech_Expansion" step="3"/>
+																<mission discipline="XXXXP" level="average"/>
+																<reward money="50000"/>
+																<custom action="{35,2042}" text="{17,92363}" object="Industritech_Expansion.TargetShipCargo" icon="find"/>
+															</set_objective>
+														</do_when>
+														<do_otherwise>
+															<add_cargo object="Industritech_Expansion.TargetShip">
+																<ware typename="SS_WARE_GATECRYSTAL" exact="-1"/>
+															</add_cargo>
+															<reset_cue cue="Industritech_Expansion_Stage1_Phase2_StartCapture"/>
+														</do_otherwise>
+													</do_choose>
+												</do_all>
+											</action>
+										</cue>
+
+										<cue name="Industritech_Expansion_Stage1_Phase2_Scanned" delay="1s">
+											<condition>
+												<check_all>
+													<check_value value="{object.race@Industritech_Expansion.TargetShip}" exact="{lookup.race@player}" negate="1"/>
+													<object_scanned object="Industritech_Expansion.TargetShip"/>
+												</check_all>
+											</condition>
+											<action>
+												<do_choose>
+													<do_when value="{object.cargo.SS_WARE_GATECRYSTAL.count@Industritech_Expansion.TargetShip}" min="1">
+														<set_value name="Industritech_Expansion.Status" exact="6"/>
+														<create_briefing cue="Industritech_Expansion" race="industritech" targetrace="industritech" story="{9620,2000000}" title="{9620,2000004}" text="{9620,2000005}" background="industritech_gate.tga">
+															<mission discipline="XXXXP" level="average"/>
+															<reward money="50000"/>
+															<requirements name="{35,812}">
+																<requirement value="{lookup.type@SS_WARE_GATECRYSTAL}" type="warelink" />
+																<requirement value="{lookup.type@SS_WARE_L_TR}" type="warelink" />
+																<requirement value="{lookup.type@SS_WARE_SW_CARGOHACK}" type="warelink" />
+															</requirements>
+															<objectives>
+																<objective step="2">
+																	<custom action="{35,2030}" text="{17,92363}" object="Industritech_Expansion.TargetShip"/>
+																</objective>
+															</objectives>
+														</create_briefing>
+														<set_objective cue="Industritech_Expansion" race="industritech" targetrace="industritech" story="{9620,2000000}" title="{9620,2000004}" text="{9620,2000005}" noabort="1">
+															<briefing cue="Industritech_Expansion" step="2"/>
+															<mission discipline="XXXXP" level="average"/>
+															<reward money="50000"/>
+															<custom action="{35,2030}" text="{17,92363}" object="Industritech_Expansion.TargetShip" />
+														</set_objective>
+													</do_when>
+													<do_otherwise>
+														<do_if value="{value@Industritech_Expansion.Attempts}" max="9">
+															<set_value name="Industritech_Expansion.Attempts" exact="1" operation="add"/>
+														</do_if>
+														<start_script script="plugin.guilds.dockout">
+															<scriptargs>
+																<scriptvalue datatype="ship" datavalue="{object@Industritech_Expansion.TargetShip}"/>
+															</scriptargs>
+														</start_script>
+														<remove_object object="Industritech_Expansion.TargetShip"/>
+														<reset_cue cue="Industritech_Expansion_Stage1_Phase2_StartCapture"/>
+													</do_otherwise>
+												</do_choose>
+											</action>
+											<cues>
+												<cue name="Industritech_Expansion_Stage1_Phase2_CapturedScanned" delay="1s">
+													<condition>
+														<check_all>															
+															<check_value value="{value@Industritech_Expansion.Status}" exact="6"/>
+															<object_captured object="Industritech_Expansion.TargetShip"/>
+															<check_value value="{object.cargo.SS_WARE_GATECRYSTAL.count@Industritech_Expansion.TargetShip}" min="1"/>
+														</check_all>
+													</condition>
+													<timing>
+														<time exact="2s"/>
+													</timing>
+													<action>
+														<do_all>
+															<do_if value="{object.cargo.SS_WARE_GATECRYSTAL.count@Industritech_Expansion.TargetShip}" max="0">
+																<add_cargo object="Industritech_Expansion.TargetShip">
+																	<ware typename="SS_WARE_GATECRYSTAL" exact="1"/>
+																</add_cargo>
+															</do_if>
+															<create_briefing cue="Industritech_Expansion" race="industritech" targetrace="industritech" story="{9620,2000000}" title="{9620,2000004}" text="{9620,2000005}" background="industritech_gate.tga">
+																<mission discipline="XXXXP" level="average"/>
+																<reward money="50000"/>
+																<requirements name="{35,812}">
+																	<requirement value="{lookup.type@SS_WARE_GATECRYSTAL}" type="warelink" />
+																	<requirement value="{lookup.type@SS_WARE_L_TR}" type="warelink" />
+																	<requirement value="{lookup.type@SS_WARE_SW_CARGOHACK}" type="warelink" />
+																	<requirement value="{lookup.type@SS_WARE_TECH276}" type="warelink" />
+																</requirements>
+																<objectives>
+																	<objective step="3">
+																		<custom action="{35,2062}" text="{object.name@Industritech_Expansion.TargetShip}" object="Industritech_Expansion.TargetShip" icon="find"/>
+																	</objective>
+																</objectives>
+															</create_briefing>
+															<set_objective cue="Industritech_Expansion" race="industritech" targetrace="industritech" story="{9620,2000000}" title="{9620,2000004}" text="{9620,2000005}" noabort="1">
+																<briefing cue="Industritech_Expansion" step="3"/>
+																<mission discipline="XXXXP" level="average"/>
+																<reward money="50000"/>
+																<custom action="{35,2062}" text="{object.name@Industritech_Expansion.TargetShip}" object="Industritech_Expansion.TargetShip" icon="find"/>
+															</set_objective>
+														</do_all>
+													</action>
+													<cues>
+														<cue name="Industritech_Expansion_Stage1_Phase2_Claimed" delay="2s">
+															<condition>
+																<object_claimed object="Industritech_Expansion.TargetShip"/>
+															</condition>
+															<action>
+																<do_all>
+																	<create_briefing cue="Industritech_Expansion" race="industritech" targetrace="industritech" story="{9620,2000000}" title="{9620,2000004}" text="{9620,2000005}" background="industritech_gate.tga">
+																		<mission discipline="XXXXP" level="average"/>
+																		<reward money="50000"/>
+																		<requirements name="{35,812}">
+																			<requirement value="{lookup.type@SS_WARE_GATECRYSTAL}" type="warelink" />
+																			<requirement value="{lookup.type@SS_WARE_L_TR}" type="warelink" />
+																			<requirement value="{lookup.type@SS_WARE_SW_CARGOHACK}" type="warelink" />
+																			<requirement value="{lookup.type@SS_WARE_TECH276}" type="warelink" />
+																		</requirements>
+																		<objectives>
+																			<objective step="3">
+																				<custom action="{9620,2000019}" text="{lookup.type.name@SS_WARE_GATECRYSTAL}" object="Industritech_Expansion.TargetShip" icon="flyto"/>
+																			</objective>
+																		</objectives>
+																	</create_briefing>
+																	<set_objective cue="Industritech_Expansion" race="industritech" targetrace="industritech" story="{9620,2000000}" title="{9620,2000004}" text="{9620,2000005}" noabort="1">
+																		<briefing cue="Industritech_Expansion" step="3"/>
+																		<mission discipline="XXXXP" level="average"/>
+																		<reward money="50000"/>
+																		<custom action="{9620,2000019}" text="{lookup.type.name@SS_WARE_GATECRYSTAL}" object="Industritech_Expansion.TargetShip" icon="flyto"/>
+																	</set_objective>
+																</do_all>
+															</action>
+														</cue>
+													</cues>
+												</cue>
+											</cues>
+										</cue>
+									</cues>
+								</cue>
+							</cues>
+						</cue>
+					</cues>
+				</cue>
+				
+				<cue name="Industritech_Expansion_Stage1_Phase2_Got" delay="1s">
+					<condition>
+						<check_value value="{value@Industritech_Expansion.Status}" exact="10"/>
+					</condition>
+					<timing>
+						<time min="2s" max="3s"/>						
+					</timing>
+					<action>
+						<do_all>
+							<set_object name="Industritech_Expansion.PlayerShip" value="{player.ship}"/>
+							<create_briefing cue="Industritech_Expansion" race="industritech" targetrace="industritech" story="{9620,2000000}" title="{9620,2000004}" text="{9620,2000005}" background="industritech_gate.tga">
+								<mission discipline="XXXXP" level="average"/>
+								<reward money="50000"/>
+								<requirements name="{35,812}">
+									<requirement value="{lookup.type@SS_WARE_GATECRYSTAL}" type="warelink" />
+									<requirement value="{lookup.type@SS_WARE_L_TR}" type="warelink" />
+									<requirement value="{lookup.type@SS_WARE_SW_CARGOHACK}" type="warelink" />
+								</requirements>
+								<objectives>
+									<objective step="4">
+										<deliver object="Industritech_Expansion.InfiltratorStation">
+											<ware typename="SS_WARE_GATECRYSTAL" exact="1"/>
+										</deliver>
+									</objective>
+								</objectives>
+							</create_briefing>
+							<set_objective cue="Industritech_Expansion" race="industritech" targetrace="industritech" story="{9620,2000000}" title="{9620,2000004}" text="{9620,2000005}" noabort="1">
+								<briefing cue="Industritech_Expansion" step="4"/>
+								<mission discipline="XXXXP" level="average"/>
+								<reward money="50000"/>
+								<deliver object="Industritech_Expansion.InfiltratorStation">
+									<ware typename="SS_WARE_GATECRYSTAL" exact="1"/>
+								</deliver>
+							</set_objective>
+							<play_text actor="Industritech_Expansion.Infiltrator" textid="100009" priority="99"/>
+						</do_all>
+					</action>
+					<cues>
+						<cue name="Industritech_Expansion_Stage1_Phase2_LeaveShip" delay="2s">
+							<condition>
+								<check_all>
+									<object_exists object="Industritech_Expansion.PlayerShip"/>
+									<check_value value="{player.ship}" exact="{object@Industritech_Expansion.PlayerShip}" negate="1"/>
+								</check_all>
+							</condition>
+							<action>
+								<do_choose>
+									<do_when value="{player.ship.cargo.SS_WARE_GATECRYSTAL.count}" min="1">
+										<set_object name="Industritech_Expansion.PlayerShip" value="{player.ship}"/>
+										<reset_cue cue="Industritech_Expansion_Stage1_Phase2_LeaveShip"/>
+									</do_when>
+									<do_otherwise>
+										<create_briefing cue="Industritech_Expansion" race="industritech" targetrace="industritech" story="{9620,2000000}" title="{9620,2000004}" text="{9620,2000005}" background="industritech_gate.tga">
+											<mission discipline="XXXXP" level="average"/>
+											<reward money="50000"/>
+											<requirements name="{35,812}">
+												<requirement value="{lookup.type@SS_WARE_GATECRYSTAL}" type="warelink" />
+												<requirement value="{lookup.type@SS_WARE_L_TR}" type="warelink" />
+												<requirement value="{lookup.type@SS_WARE_SW_CARGOHACK}" type="warelink" />
+											</requirements>
+											<objectives>
+												<objective step="4">
+													<custom action="{35,2067}" text="{object.name@Industritech_Expansion.PlayerShip}" object="Industritech_Expansion.PlayerShip" />
+												</objective>
+											</objectives>
+										</create_briefing>
+										<set_objective cue="Industritech_Expansion" race="industritech" targetrace="industritech" story="{9620,2000000}" title="{9620,2000004}" text="{9620,2000005}" noabort="1">
+											<briefing cue="Industritech_Expansion" step="4"/>
+											<mission discipline="XXXXP" level="average"/>
+											<reward money="50000"/>
+											<custom action="{35,2067}" text="{object.name@Industritech_Expansion.PlayerShip}" object="Industritech_Expansion.PlayerShip" />
+										</set_objective>
+									</do_otherwise>
+								</do_choose>
+							</action>
+							<cues>
+								<cue name="Industritech_Expansion_Stage1_Phase2_EnterNewShip" delay="2s">
+									<condition>									
+										<check_all>
+											<check_value value="{player.ship.cargo.SS_WARE_GATECRYSTAL.count}" min="1"/>
+										</check_all>
+									</condition>
+									<action>
+										<do_all>
+											<set_object name="Industritech_Expansion.PlayerShip" value="{player.ship}"/>
+											<reset_cue cue="Industritech_Expansion_Stage1_Phase2_LeaveShip"/>
+										</do_all>
+									</action>
+								</cue>
+
+								<cue name="Industritech_Expansion_Stage1_Phase2_EnterShip" delay="2s">
+									<condition>
+										<check_all>
+											<object_exists object="Industritech_Expansion.PlayerShip"/>
+											<check_value value="{player.ship}" exact="{object@Industritech_Expansion.PlayerShip}"/>
+										</check_all>
+									</condition>
+									<timing>
+										<time exact="2s"/>
+									</timing>
+									<action>
+										<do_all>
+											<create_briefing cue="Industritech_Expansion" race="industritech" targetrace="industritech" story="{9620,2000000}" title="{9620,2000004}" text="{9620,2000005}" background="industritech_gate.tga">
+												<mission discipline="XXXXP" level="average"/>
+												<reward money="50000"/>
+												<requirements name="{35,812}">
+													<requirement value="{lookup.type@SS_WARE_GATECRYSTAL}" type="warelink" />
+													<requirement value="{lookup.type@SS_WARE_L_TR}" type="warelink" />
+													<requirement value="{lookup.type@SS_WARE_SW_CARGOHACK}" type="warelink" />
+												</requirements>
+												<objectives>
+													<objective step="4">
+														<deliver object="Industritech_Expansion.InfiltratorStation">
+															<ware typename="SS_WARE_GATECRYSTAL" exact="1"/>
+														</deliver>
+													</objective>
+												</objectives>
+											</create_briefing>
+											<set_objective cue="Industritech_Expansion" race="industritech" targetrace="industritech" story="{9620,2000000}" title="{9620,2000004}" text="{9620,2000005}" noabort="1">
+												<briefing cue="Industritech_Expansion" step="4"/>
+												<mission discipline="XXXXP" level="average"/>
+												<reward money="50000"/>
+												<deliver object="Industritech_Expansion.InfiltratorStation">
+													<ware typename="SS_WARE_GATECRYSTAL" exact="1"/>
+												</deliver>
+											</set_objective>
+											<reset_cue cue="Industritech_Expansion_Stage1_Phase2_LeaveShip"/>
+										</do_all>
+									</action>
+								</cue>
+							</cues>
+						</cue>
+
+						<cue name="Industritech_Expansion_Stage1_Phase2_Delivered" delay="2s">
+							<condition>
+								<check_all>
+									<object_docked param="{object@Industritech_Expansion.InfiltratorStation}"/>
+									<check_value value="{player.ship.cargo.SS_WARE_GATECRYSTAL.count}" min="1"/>
+								</check_all>
+							</condition>
+							<timing>
+								<time min="3s" max="5s"/>
+							</timing>
+							<action>
+								<do_all>
+									<add_cargo>
+										<ware typename="SS_WARE_GATECRYSTAL" exact="-1"/>
+									</add_cargo>
+									<play_text actor="Industritech_Expansion.Infiltrator" textid="100010" priority="99"/>
+									<remove_objective cue="Industritech_Expansion" status="complete"/>
+									<remove_briefing cue="Industritech_Expansion"/>
+									<reward_player>
+										<money exact="50000" transactionpage="9620" transactionid="2000003"/>
+										<notoriety>
+											<relation race="industritech" exact="2000"/>
+										</notoriety>
+									</reward_player>
+								</do_all>
+							</action>
+							<cues>
+								<cue name="Industritech_Expansion_Stage1_Phase2_Cleanup" delay="2s">
+									<condition>
+										<cue_is_complete cue="Industritech_Expansion_Stage1_Phase2_Delivered"/>
+									</condition>
+									<timing>
+										<time exact="30s"/>
+									</timing>
+									<action>
+										<do_all>
+											<set_invincible object="Industritech_Expansion.InfiltratorStation" invincible="0"/>
+											<destroy_actor actor="Industritech_Expansion.Infiltrator"/>
+											<set_value name="Industritech_Expansion.Status" exact="11"/>
+										</do_all>
+									</action>
+								</cue>
+							</cues>
+						</cue>
+					</cues>
+				</cue>				
+			</cues>
+		</cue>
+	</cues>
+</director>
