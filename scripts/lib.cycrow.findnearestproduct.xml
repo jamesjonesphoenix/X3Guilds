@@ -1,0 +1,706 @@
+<?xml version="1.0" standalone="yes" ?>
+<?xml-stylesheet href="x2script.xsl" type="text/xsl" ?>
+<script>
+<name>lib.cycrow.findnearestproduct</name>
+<version>1</version>
+<engineversion>45</engineversion>
+<description>Cycrow Library: Find nearest station selling a product</description>
+<arguments>
+<argument index="1" name="a.product" type="Var/Ware" desc="Product" />
+</arguments>
+<sourceplaintext>
+<![CDATA[
+  $aDone = array alloc: size=0
+  
+  $jumps = 0
+  while $jumps < 100
+    $best.dist = 2147483647
+    $best.station = null
+    
+    $sectors = [THIS] -> find all sectors within $jumps jumps: Only known sectors=[TRUE]
+    inc $jumps = 
+    $count = size of array $sectors
+    while $count
+      dec $count = 
+      $s = $sectors[$count]
+      
+  * only do the sector once
+      do if find $s in array: $aDone
+        continue
+      
+  * get all stations in sector and check for the product
+      $aStations = $s -> get station array from sector
+      $station.count = size of array $aStations
+      while $station.count
+        dec $station.count = 
+        $station = $aStations[$station.count]
+        skip if $station -> can sell ware $a.product
+          continue
+        skip if $station -> is known
+          continue
+        skip if [THIS] -> is docking allowed at $station
+          continue
+        skip if $station -> is docking possible of [THIS]
+          continue
+        
+  * if we are in the sector, check the distance from the ship
+        if $s == [SECTOR]
+          $dist = get distance between [THIS] and $station
+          gosub sub.bestDist
+  * otherwise check the distance to the closest gate
+        else
+          gosub sub.closestGate
+          if $gate -> exists
+            $dist = get distance between $gate and $station
+            gosub sub.bestDist
+          end
+        end
+      end
+      
+      append $s to array $aDone
+    end
+    
+    do if $best.station -> exists
+      return $best.station
+    
+  end
+  
+  return null
+  
+  
+  
+  sub.bestDist:
+  if $dist < $best.dist
+    $best.dist = $dist
+    $best.station = $station
+  end
+  endsub
+  
+  sub.closestGate:
+  $aPos = $station -> get position as array
+  $aSize = size of array $aPos
+  if $aSize < 4
+    $sec = $station -> get sector
+    append $sec to array $aPos
+  end
+@ $gate = [THIS] -> call script lib.cycrow.findbestgate :  targetpos=$aPos  Jumpable Gate=[TRUE]
+  endsub
+  return null
+]]>
+</sourceplaintext>
+<sourcetext>
+<line indent=""><var>$aDone&#160;=&#160;</var><text>array&#160;alloc:&#160;size=</text><var>0</var></line>
+<line indent=""></line>
+<line indent=""><var>$jumps&#160;=&#160;</var><var>0</var></line>
+<line indent=""><var>while&#160;</var><var>$jumps</var><text>&#160;</text><var>&lt;</var><text>&#160;</text><var>100</var></line>
+<line indent="&#160;"><var>$best.dist&#160;=&#160;</var><var>2147483647</var></line>
+<line indent="&#160;"><var>$best.station&#160;=&#160;</var><var>null</var></line>
+<line indent="&#160;"></line>
+<line indent="&#160;"><var>$sectors&#160;=&#160;</var><var>[THIS]&#160;-&gt;</var><text>&#160;find&#160;all&#160;sectors&#160;within&#160;</text><var>$jumps</var><text>&#160;jumps:&#160;Only&#160;known&#160;sectors=</text><var>[TRUE]</var></line>
+<line indent="&#160;"><text>inc&#160;</text><var>$jumps&#160;=&#160;</var></line>
+<line indent="&#160;"><var>$count&#160;=&#160;</var><text>size&#160;of&#160;array&#160;</text><var>$sectors</var></line>
+<line indent="&#160;"><var>while&#160;</var><var>$count</var></line>
+<line indent="&#160;&#160;"><text>dec&#160;</text><var>$count&#160;=&#160;</var></line>
+<line indent="&#160;&#160;"><var>$s&#160;=&#160;</var><var>$sectors</var><text>[</text><var>$count</var><text>]</text></line>
+<line indent="&#160;&#160;"></line>
+<line indent=""><comment><text>*&#160;</text><var>only&#160;do&#160;the&#160;sector&#160;once</var></comment></line>
+<line indent="&#160;&#160;"><var>do&#160;if&#160;</var><text>find&#160;</text><var>$s</var><text>&#160;in&#160;array:&#160;</text><var>$aDone</var></line>
+<line indent="&#160;&#160;&#160;"><text>continue</text></line>
+<line indent="&#160;&#160;"></line>
+<line indent=""><comment><text>*&#160;</text><var>get&#160;all&#160;stations&#160;in&#160;sector&#160;and&#160;check&#160;for&#160;the&#160;product</var></comment></line>
+<line indent="&#160;&#160;"><var>$aStations&#160;=&#160;</var><var>$s&#160;-&gt;</var><text>&#160;get&#160;station&#160;array&#160;from&#160;sector</text></line>
+<line indent="&#160;&#160;"><var>$station.count&#160;=&#160;</var><text>size&#160;of&#160;array&#160;</text><var>$aStations</var></line>
+<line indent="&#160;&#160;"><var>while&#160;</var><var>$station.count</var></line>
+<line indent="&#160;&#160;&#160;"><text>dec&#160;</text><var>$station.count&#160;=&#160;</var></line>
+<line indent="&#160;&#160;&#160;"><var>$station&#160;=&#160;</var><var>$aStations</var><text>[</text><var>$station.count</var><text>]</text></line>
+<line indent="&#160;&#160;&#160;"><var>skip&#160;if&#160;</var><var>$station&#160;-&gt;</var><text>&#160;can&#160;sell&#160;ware&#160;</text><var>$a.product</var></line>
+<line indent="&#160;&#160;&#160;&#160;"><text>continue</text></line>
+<line indent="&#160;&#160;&#160;"><var>skip&#160;if&#160;</var><var>$station&#160;-&gt;</var><text>&#160;is&#160;known</text></line>
+<line indent="&#160;&#160;&#160;&#160;"><text>continue</text></line>
+<line indent="&#160;&#160;&#160;"><var>skip&#160;if&#160;</var><var>[THIS]&#160;-&gt;</var><text>&#160;is&#160;docking&#160;allowed&#160;at&#160;</text><var>$station</var></line>
+<line indent="&#160;&#160;&#160;&#160;"><text>continue</text></line>
+<line indent="&#160;&#160;&#160;"><var>skip&#160;if&#160;</var><var>$station&#160;-&gt;</var><text>&#160;is&#160;docking&#160;possible&#160;of&#160;</text><var>[THIS]</var></line>
+<line indent="&#160;&#160;&#160;&#160;"><text>continue</text></line>
+<line indent="&#160;&#160;&#160;"></line>
+<line indent=""><comment><text>*&#160;</text><var>if&#160;we&#160;are&#160;in&#160;the&#160;sector,&#160;check&#160;the&#160;distance&#160;from&#160;the&#160;ship</var></comment></line>
+<line indent="&#160;&#160;&#160;"><var>if&#160;</var><var>$s</var><text>&#160;</text><var>==</var><text>&#160;</text><var>[SECTOR]</var></line>
+<line indent="&#160;&#160;&#160;&#160;"><var>$dist&#160;=&#160;</var><text>get&#160;distance&#160;between&#160;</text><var>[THIS]</var><text>&#160;and&#160;</text><var>$station</var></line>
+<line indent="&#160;&#160;&#160;&#160;"><text>gosub&#160;</text><var>sub.bestDist</var></line>
+<line indent=""><comment><text>*&#160;</text><var>otherwise&#160;check&#160;the&#160;distance&#160;to&#160;the&#160;closest&#160;gate</var></comment></line>
+<line indent="&#160;&#160;&#160;"><text>else</text></line>
+<line indent="&#160;&#160;&#160;&#160;"><text>gosub&#160;</text><var>sub.closestGate</var></line>
+<line indent="&#160;&#160;&#160;&#160;"><var>if&#160;</var><var>$gate&#160;-&gt;</var><text>&#160;exists</text></line>
+<line indent="&#160;&#160;&#160;&#160;&#160;"><var>$dist&#160;=&#160;</var><text>get&#160;distance&#160;between&#160;</text><var>$gate</var><text>&#160;and&#160;</text><var>$station</var></line>
+<line indent="&#160;&#160;&#160;&#160;&#160;"><text>gosub&#160;</text><var>sub.bestDist</var></line>
+<line indent="&#160;&#160;&#160;&#160;"><text>end</text></line>
+<line indent="&#160;&#160;&#160;"><text>end</text></line>
+<line indent="&#160;&#160;"><text>end</text></line>
+<line indent="&#160;&#160;"></line>
+<line indent="&#160;&#160;"><text>append&#160;</text><var>$s</var><text>&#160;to&#160;array&#160;</text><var>$aDone</var></line>
+<line indent="&#160;"><text>end</text></line>
+<line indent="&#160;"></line>
+<line indent="&#160;"><var>do&#160;if&#160;</var><var>$best.station&#160;-&gt;</var><text>&#160;exists</text></line>
+<line indent="&#160;&#160;"><text>return&#160;</text><var>$best.station</var></line>
+<line indent="&#160;"></line>
+<line indent=""><text>end</text></line>
+<line indent=""></line>
+<line indent=""><text>return&#160;</text><var>null</var></line>
+<line indent=""></line>
+<line indent=""></line>
+<line indent=""></line>
+<line indent=""><var>sub.bestDist</var><text>:</text></line>
+<line indent=""><var>if&#160;</var><var>$dist</var><text>&#160;</text><var>&lt;</var><text>&#160;</text><var>$best.dist</var></line>
+<line indent="&#160;"><var>$best.dist&#160;=&#160;</var><var>$dist</var></line>
+<line indent="&#160;"><var>$best.station&#160;=&#160;</var><var>$station</var></line>
+<line indent=""><text>end</text></line>
+<line indent=""><text>endsub</text></line>
+<line indent=""></line>
+<line indent=""><var>sub.closestGate</var><text>:</text></line>
+<line indent=""><var>$aPos&#160;=&#160;</var><var>$station&#160;-&gt;</var><text>&#160;get&#160;position&#160;as&#160;array</text></line>
+<line indent=""><var>$aSize&#160;=&#160;</var><text>size&#160;of&#160;array&#160;</text><var>$aPos</var></line>
+<line indent=""><var>if&#160;</var><var>$aSize</var><text>&#160;</text><var>&lt;</var><text>&#160;</text><var>4</var></line>
+<line indent="&#160;"><var>$sec&#160;=&#160;</var><var>$station&#160;-&gt;</var><text>&#160;get&#160;sector</text></line>
+<line indent="&#160;"><text>append&#160;</text><var>$sec</var><text>&#160;to&#160;array&#160;</text><var>$aPos</var></line>
+<line indent=""><text>end</text></line>
+<line interruptable="@" indent=""><var>$gate&#160;=&#160;</var><var>[THIS]&#160;-&gt;</var><text>&#160;call&#160;script&#160;</text><call>lib.cycrow.findbestgate</call><text>&#160;:&#160;</text><text>&#160;targetpos=</text><var>$aPos</var><text>&#160;</text><text>&#160;Jumpable&#160;Gate=</text><var>[TRUE]</var></line>
+<line indent=""><text>endsub</text></line>
+<line indent=""><text>return&#160;</text><var>null</var></line>
+</sourcetext>
+<codearray>
+
+<sval type="array" size="10">
+  <sval type="string" val="lib.cycrow.findnearestproduct"/>
+  <sval type="int" val="45"/>
+  <sval type="string" val="Cycrow Library: Find nearest station selling a product"/>
+  <sval type="int" val="1"/>
+  <sval type="int" val="0"/>
+  <sval type="array" size="16">
+    <sval type="string" val="a.product"/>
+    <sval type="string" val="aDone"/>
+    <sval type="string" val="jumps"/>
+    <sval type="string" val="best.dist"/>
+    <sval type="string" val="best.station"/>
+    <sval type="string" val="sectors"/>
+    <sval type="string" val="count"/>
+    <sval type="string" val="s"/>
+    <sval type="string" val="aStations"/>
+    <sval type="string" val="station.count"/>
+    <sval type="string" val="station"/>
+    <sval type="string" val="dist"/>
+    <sval type="string" val="gate"/>
+    <sval type="string" val="aPos"/>
+    <sval type="string" val="aSize"/>
+    <sval type="string" val="sec"/>
+  </sval>
+  <sval type="array" size="55">
+    <sval type="array" size="4">
+      <sval type="int" val="128"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610602487"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="100"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="2147483647"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="8">
+      <sval type="int" val="1334"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="142"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="131"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="5"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610603255"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="143"/>
+      <sval type="int" val="6"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="6"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="1406"/>
+      <sval type="int" val="-1610609400"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="1"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="8"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="1009"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="8"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="131"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="8"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610603767"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="143"/>
+      <sval type="int" val="9"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="9"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="625"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="-536865785"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="15"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="1061"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="-536865273"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="15"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="513"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-536864761"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="15"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="746"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="-536864249"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="15"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610605053"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="738"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="1167"/>
+      <sval type="int" val="41"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="34"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="1167"/>
+      <sval type="int" val="46"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="706"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="12"/>
+      <sval type="int" val="-1610604029"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="738"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="12"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="1167"/>
+      <sval type="int" val="41"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="15"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="135"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="8"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="706"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="-1610602744"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="101"/>
+      <sval type="string" val="sub.bestDist"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610601213"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="1">
+      <sval type="int" val="1168"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="101"/>
+      <sval type="string" val="sub.closestGate"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="795"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="13"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="131"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="13"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610599421"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="703"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="15"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="135"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="13"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="15"/>
+    </sval>
+    <sval type="array" size="10">
+      <sval type="int" val="102"/>
+      <sval type="string" val="lib.cycrow.findbestgate"/>
+      <sval type="int" val="12"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="13"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="1">
+      <sval type="int" val="1168"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+  </sval>
+  <sval type="array" size="1">
+    <sval type="array" size="2">
+      <sval type="int" val="13"/>
+      <sval type="string" val="Product"/>
+    </sval>
+  </sval>
+  <sval type="array" size="30">
+    <sval type="array" size="2">
+      <sval type="int" val="1"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="5"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="11"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="11"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="only do the sector once"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="13"/>
+      <sval type="int" val="6"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="13"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="13"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="get all stations in sector and check for the product"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="20"/>
+      <sval type="int" val="6"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="22"/>
+      <sval type="int" val="6"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="24"/>
+      <sval type="int" val="6"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="26"/>
+      <sval type="int" val="6"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="26"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="26"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="if we are in the sector, check the distance from the ship"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="29"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="otherwise check the distance to the closest gate"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="30"/>
+      <sval type="int" val="5"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="34"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="34"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="35"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="35"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="37"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="37"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="39"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="40"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="40"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="41"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="41"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="41"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="45"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="46"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="52"/>
+      <sval type="int" val="4"/>
+    </sval>
+  </sval>
+  <sval type="int" val="0"/>
+</sval>
+
+</codearray>
+<nosignature>6930</nosignature>
+</script>

@@ -1,0 +1,1072 @@
+<?xml version="1.0" standalone="yes" ?>
+<?xml-stylesheet href="x2script.xsl" type="text/xsl" ?>
+<script>
+<name>lib.cycrow.menu.mystations</name>
+<version>2</version>
+<engineversion>62</engineversion>
+<description>Cycrow Library: Creates a menu for my stations</description>
+<arguments>
+<argument index="1" name="a.ignore" type="Value" desc="Ignore Array" />
+<argument index="2" name="a.race" type="Var/Race" desc="Race" />
+<argument index="3" name="a.class" type="Value" desc="Class Filter" />
+<argument index="4" name="a.title" type="Var/String" desc="Title" />
+<argument index="5" name="a.returnMenu" type="Var/Boolean" desc="Return Menu?" />
+<argument index="6" name="a.search" type="Var/String" desc="Search String" />
+</arguments>
+<sourceplaintext>
+<![CDATA[
+  skip if $a.class
+    $a.class = Station
+  
+  $stations =  get station array: of race $a.race class/type=$a.class
+  
+  * first get all sectors
+  $tSectors = table alloc
+  $count = size of array $stations
+  while $count
+    dec $count = 
+    $s = $stations[$count]
+    if $a.ignore
+      if is datatype[ $a.ignore ] == DATATYPE_ARRAY
+        do if find $s in array: $a.ignore
+          continue
+      else if is datatype[ $a.ignore ] == DATATYPE_TABLE
+        do if $a.ignore[$s]
+          continue
+      else if $a.ignore == $s
+        continue
+      end
+    end
+    
+    if $a.search
+      skip if case insensitive string match, is $a.search in $s
+        continue
+    end
+    
+    $sector = $s -> get sector
+    $tStations = $tSectors[$sector]
+    if not $tStations
+      $tStations = table alloc
+      $tSectors[$sector] = $tStations
+    end
+    $tStations[$s] = [TRUE]
+  end
+  
+  if not size of table $tSectors
+    if $a.returnMenu
+      $menu = create custom menu array
+      $read.text = read text: page=[Page.Menus] id=711
+      add non selectable menu item: $menu, text=$read.text
+      set menu option: $menu, icon=21
+      return $menu
+    end
+    return null
+  end
+  
+  * sort the sectors
+  $aSorted = sort table keys: table=$tSectors
+  
+  $menu = create custom menu array
+  
+  * now display the stations, sector by sector
+  $i = 0
+  $count = size of array $aSorted
+  while $i < $count
+    $sector = $aSorted[$i]
+    inc $i = 
+    
+    $text.cols = array alloc: size=2
+    $text = $sector -> get name
+    $text.col = create custom menu column string, position=0 length=250 right=[FALSE] colour=null text=$text
+    $text.cols[0] = $text.col
+    $read.text = read text: page=[Page.Menus] id=722
+    $text.col = create custom menu column string, position=-1 length=100 right=[TRUE] colour=null text=$read.text
+    $text.cols[1] = $text.col
+    add custom menu heading to array $menu: title=$text.cols
+    
+    $tStations = $tSectors[$sector]
+    $aStations = sort table keys: table=$tStations
+    
+    $s.count = size of array $aStations
+    $s.i = 0
+    while $s.i < $s.count
+      $s = $aStations[$s.i]
+      inc $s.i = 
+      $text.cols = array alloc: size=3
+      $text = $s ->create custom menu string object icon
+      $text.col = create custom menu column string, position=0 length=10 right=[FALSE] colour=null text=$text
+      $text.cols[0] = $text.col
+      $text = $s -> get name
+      $text.col = create custom menu column string, position=10 length=240 right=[FALSE] colour=null text=$text
+      $text.cols[1] = $text.col
+      $text = '*'
+      $text.col = create custom menu column string, position=-1 length=100 right=[TRUE] colour=null text=$text
+      $text.cols[2] = $text.col
+      add custom menu item to array $menu: text=$text.cols returnvalue=$s
+    end
+  end
+  
+  set menu option: $menu, icon=21
+  
+  if $a.returnMenu
+    return $menu
+  end
+  
+  $text = read text: page=1265 id=27
+  if $a.title
+@   $ret = open custom menu: title=$text description=$a.title option array=$menu
+  else
+@   $ret = open custom menu: title=$text description=$text option array=$menu
+  end
+  skip if $ret == -1
+    return $ret
+  return null
+]]>
+</sourceplaintext>
+<sourcetext>
+<line indent=""><var>skip&#160;if&#160;</var><var>$a.class</var></line>
+<line indent="&#160;"><var>$a.class&#160;=&#160;</var><var>Station</var></line>
+<line indent=""></line>
+<line indent=""><var>$stations&#160;=&#160;</var><text>&#160;get&#160;station&#160;array:&#160;of&#160;race&#160;</text><var>$a.race</var><text>&#160;class/type=</text><var>$a.class</var></line>
+<line indent=""></line>
+<line indent=""><comment><text>*&#160;</text><var>first&#160;get&#160;all&#160;sectors</var></comment></line>
+<line indent=""><var>$tSectors&#160;=&#160;</var><text>table&#160;alloc</text></line>
+<line indent=""><var>$count&#160;=&#160;</var><text>size&#160;of&#160;array&#160;</text><var>$stations</var></line>
+<line indent=""><var>while&#160;</var><var>$count</var></line>
+<line indent="&#160;"><text>dec&#160;</text><var>$count&#160;=&#160;</var></line>
+<line indent="&#160;"><var>$s&#160;=&#160;</var><var>$stations</var><text>[</text><var>$count</var><text>]</text></line>
+<line indent="&#160;"><var>if&#160;</var><var>$a.ignore</var></line>
+<line indent="&#160;&#160;"><var>if&#160;</var><text>is&#160;datatype[&#160;</text><var>$a.ignore</var><text>&#160;]&#160;==&#160;</text><var>DATATYPE_ARRAY</var></line>
+<line indent="&#160;&#160;&#160;"><var>do&#160;if&#160;</var><text>find&#160;</text><var>$s</var><text>&#160;in&#160;array:&#160;</text><var>$a.ignore</var></line>
+<line indent="&#160;&#160;&#160;&#160;"><text>continue</text></line>
+<line indent="&#160;&#160;"><var>else&#160;if&#160;</var><text>is&#160;datatype[&#160;</text><var>$a.ignore</var><text>&#160;]&#160;==&#160;</text><var>DATATYPE_TABLE</var></line>
+<line indent="&#160;&#160;&#160;"><var>do&#160;if&#160;</var><var>$a.ignore</var><text>[</text><var>$s</var><text>]</text></line>
+<line indent="&#160;&#160;&#160;&#160;"><text>continue</text></line>
+<line indent="&#160;&#160;"><var>else&#160;if&#160;</var><var>$a.ignore</var><text>&#160;</text><var>==</var><text>&#160;</text><var>$s</var></line>
+<line indent="&#160;&#160;&#160;"><text>continue</text></line>
+<line indent="&#160;&#160;"><text>end</text></line>
+<line indent="&#160;"><text>end</text></line>
+<line indent="&#160;"></line>
+<line indent="&#160;"><var>if&#160;</var><var>$a.search</var></line>
+<line indent="&#160;&#160;"><var>skip&#160;if&#160;</var><text>case&#160;insensitive&#160;string&#160;match,&#160;is&#160;</text><var>$a.search</var><text>&#160;in&#160;</text><var>$s</var></line>
+<line indent="&#160;&#160;&#160;"><text>continue</text></line>
+<line indent="&#160;"><text>end</text></line>
+<line indent="&#160;"></line>
+<line indent="&#160;"><var>$sector&#160;=&#160;</var><var>$s&#160;-&gt;</var><text>&#160;get&#160;sector</text></line>
+<line indent="&#160;"><var>$tStations&#160;=&#160;</var><var>$tSectors</var><text>[</text><var>$sector</var><text>]</text></line>
+<line indent="&#160;"><var>if&#160;not&#160;</var><var>$tStations</var></line>
+<line indent="&#160;&#160;"><var>$tStations&#160;=&#160;</var><text>table&#160;alloc</text></line>
+<line indent="&#160;&#160;"><var>$tSectors</var><text>[</text><var>$sector</var><text>]&#160;=&#160;</text><var>$tStations</var></line>
+<line indent="&#160;"><text>end</text></line>
+<line indent="&#160;"><var>$tStations</var><text>[</text><var>$s</var><text>]&#160;=&#160;</text><var>[TRUE]</var></line>
+<line indent=""><text>end</text></line>
+<line indent=""></line>
+<line indent=""><var>if&#160;not&#160;</var><text>size&#160;of&#160;table&#160;</text><var>$tSectors</var></line>
+<line indent="&#160;"><var>if&#160;</var><var>$a.returnMenu</var></line>
+<line indent="&#160;&#160;"><var>$menu&#160;=&#160;</var><text>create&#160;custom&#160;menu&#160;array</text></line>
+<line indent="&#160;&#160;"><var>$read.text&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>[Page.Menus]</var><text>&#160;id=</text><var>711</var></line>
+<line indent="&#160;&#160;"><text>add&#160;non&#160;selectable&#160;menu&#160;item:&#160;</text><var>$menu</var><text>,&#160;text=</text><var>$read.text</var></line>
+<line indent="&#160;&#160;"><text>set&#160;menu&#160;option:&#160;</text><var>$menu</var><text>,&#160;icon=</text><var>21</var></line>
+<line indent="&#160;&#160;"><text>return&#160;</text><var>$menu</var></line>
+<line indent="&#160;"><text>end</text></line>
+<line indent="&#160;"><text>return&#160;</text><var>null</var></line>
+<line indent=""><text>end</text></line>
+<line indent=""></line>
+<line indent=""><comment><text>*&#160;</text><var>sort&#160;the&#160;sectors</var></comment></line>
+<line indent=""><var>$aSorted&#160;=&#160;</var><text>sort&#160;table&#160;keys:&#160;table=</text><var>$tSectors</var></line>
+<line indent=""></line>
+<line indent=""><var>$menu&#160;=&#160;</var><text>create&#160;custom&#160;menu&#160;array</text></line>
+<line indent=""></line>
+<line indent=""><comment><text>*&#160;</text><var>now&#160;display&#160;the&#160;stations,&#160;sector&#160;by&#160;sector</var></comment></line>
+<line indent=""><var>$i&#160;=&#160;</var><var>0</var></line>
+<line indent=""><var>$count&#160;=&#160;</var><text>size&#160;of&#160;array&#160;</text><var>$aSorted</var></line>
+<line indent=""><var>while&#160;</var><var>$i</var><text>&#160;</text><var>&lt;</var><text>&#160;</text><var>$count</var></line>
+<line indent="&#160;"><var>$sector&#160;=&#160;</var><var>$aSorted</var><text>[</text><var>$i</var><text>]</text></line>
+<line indent="&#160;"><text>inc&#160;</text><var>$i&#160;=&#160;</var></line>
+<line indent="&#160;"></line>
+<line indent="&#160;"><var>$text.cols&#160;=&#160;</var><text>array&#160;alloc:&#160;size=</text><var>2</var></line>
+<line indent="&#160;"><var>$text&#160;=&#160;</var><var>$sector&#160;-&gt;</var><text>&#160;get&#160;name</text></line>
+<line indent="&#160;"><var>$text.col&#160;=&#160;</var><text>create&#160;custom&#160;menu&#160;column&#160;string,&#160;position=</text><var>0</var><text>&#160;length=</text><var>250</var><text>&#160;right=</text><var>[FALSE]</var><text>&#160;colour=</text><var>null</var><text>&#160;text=</text><var>$text</var></line>
+<line indent="&#160;"><var>$text.cols</var><text>[</text><var>0</var><text>]&#160;=&#160;</text><var>$text.col</var></line>
+<line indent="&#160;"><var>$read.text&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>[Page.Menus]</var><text>&#160;id=</text><var>722</var></line>
+<line indent="&#160;"><var>$text.col&#160;=&#160;</var><text>create&#160;custom&#160;menu&#160;column&#160;string,&#160;position=</text><var>-1</var><text>&#160;length=</text><var>100</var><text>&#160;right=</text><var>[TRUE]</var><text>&#160;colour=</text><var>null</var><text>&#160;text=</text><var>$read.text</var></line>
+<line indent="&#160;"><var>$text.cols</var><text>[</text><var>1</var><text>]&#160;=&#160;</text><var>$text.col</var></line>
+<line indent="&#160;"><text>add&#160;custom&#160;menu&#160;heading&#160;to&#160;array&#160;</text><var>$menu</var><text>:&#160;title=</text><var>$text.cols</var></line>
+<line indent="&#160;"></line>
+<line indent="&#160;"><var>$tStations&#160;=&#160;</var><var>$tSectors</var><text>[</text><var>$sector</var><text>]</text></line>
+<line indent="&#160;"><var>$aStations&#160;=&#160;</var><text>sort&#160;table&#160;keys:&#160;table=</text><var>$tStations</var></line>
+<line indent="&#160;"></line>
+<line indent="&#160;"><var>$s.count&#160;=&#160;</var><text>size&#160;of&#160;array&#160;</text><var>$aStations</var></line>
+<line indent="&#160;"><var>$s.i&#160;=&#160;</var><var>0</var></line>
+<line indent="&#160;"><var>while&#160;</var><var>$s.i</var><text>&#160;</text><var>&lt;</var><text>&#160;</text><var>$s.count</var></line>
+<line indent="&#160;&#160;"><var>$s&#160;=&#160;</var><var>$aStations</var><text>[</text><var>$s.i</var><text>]</text></line>
+<line indent="&#160;&#160;"><text>inc&#160;</text><var>$s.i&#160;=&#160;</var></line>
+<line indent="&#160;&#160;"><var>$text.cols&#160;=&#160;</var><text>array&#160;alloc:&#160;size=</text><var>3</var></line>
+<line indent="&#160;&#160;"><var>$text&#160;=&#160;</var><var>$s&#160;-&gt;</var><text>create&#160;custom&#160;menu&#160;string&#160;object&#160;icon</text></line>
+<line indent="&#160;&#160;"><var>$text.col&#160;=&#160;</var><text>create&#160;custom&#160;menu&#160;column&#160;string,&#160;position=</text><var>0</var><text>&#160;length=</text><var>10</var><text>&#160;right=</text><var>[FALSE]</var><text>&#160;colour=</text><var>null</var><text>&#160;text=</text><var>$text</var></line>
+<line indent="&#160;&#160;"><var>$text.cols</var><text>[</text><var>0</var><text>]&#160;=&#160;</text><var>$text.col</var></line>
+<line indent="&#160;&#160;"><var>$text&#160;=&#160;</var><var>$s&#160;-&gt;</var><text>&#160;get&#160;name</text></line>
+<line indent="&#160;&#160;"><var>$text.col&#160;=&#160;</var><text>create&#160;custom&#160;menu&#160;column&#160;string,&#160;position=</text><var>10</var><text>&#160;length=</text><var>240</var><text>&#160;right=</text><var>[FALSE]</var><text>&#160;colour=</text><var>null</var><text>&#160;text=</text><var>$text</var></line>
+<line indent="&#160;&#160;"><var>$text.cols</var><text>[</text><var>1</var><text>]&#160;=&#160;</text><var>$text.col</var></line>
+<line indent="&#160;&#160;"><var>$text&#160;=&#160;</var><var>'*'</var></line>
+<line indent="&#160;&#160;"><var>$text.col&#160;=&#160;</var><text>create&#160;custom&#160;menu&#160;column&#160;string,&#160;position=</text><var>-1</var><text>&#160;length=</text><var>100</var><text>&#160;right=</text><var>[TRUE]</var><text>&#160;colour=</text><var>null</var><text>&#160;text=</text><var>$text</var></line>
+<line indent="&#160;&#160;"><var>$text.cols</var><text>[</text><var>2</var><text>]&#160;=&#160;</text><var>$text.col</var></line>
+<line indent="&#160;&#160;"><text>add&#160;custom&#160;menu&#160;item&#160;to&#160;array&#160;</text><var>$menu</var><text>:&#160;text=</text><var>$text.cols</var><text>&#160;returnvalue=</text><var>$s</var></line>
+<line indent="&#160;"><text>end</text></line>
+<line indent=""><text>end</text></line>
+<line indent=""></line>
+<line indent=""><text>set&#160;menu&#160;option:&#160;</text><var>$menu</var><text>,&#160;icon=</text><var>21</var></line>
+<line indent=""></line>
+<line indent=""><var>if&#160;</var><var>$a.returnMenu</var></line>
+<line indent="&#160;"><text>return&#160;</text><var>$menu</var></line>
+<line indent=""><text>end</text></line>
+<line indent=""></line>
+<line indent=""><var>$text&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>1265</var><text>&#160;id=</text><var>27</var></line>
+<line indent=""><var>if&#160;</var><var>$a.title</var></line>
+<line interruptable="@" indent="&#160;"><var>$ret&#160;=&#160;</var><text>open&#160;custom&#160;menu:&#160;title=</text><var>$text</var><text>&#160;description=</text><var>$a.title</var><text>&#160;option&#160;array=</text><var>$menu</var></line>
+<line indent=""><text>else</text></line>
+<line interruptable="@" indent="&#160;"><var>$ret&#160;=&#160;</var><text>open&#160;custom&#160;menu:&#160;title=</text><var>$text</var><text>&#160;description=</text><var>$text</var><text>&#160;option&#160;array=</text><var>$menu</var></line>
+<line indent=""><text>end</text></line>
+<line indent=""><var>skip&#160;if&#160;</var><var>$ret</var><text>&#160;</text><var>==</var><text>&#160;</text><var>-1</var></line>
+<line indent="&#160;"><text>return&#160;</text><var>$ret</var></line>
+<line indent=""><text>return&#160;</text><var>null</var></line>
+</sourcetext>
+<codearray>
+
+<sval type="array" size="10">
+  <sval type="string" val="lib.cycrow.menu.mystations"/>
+  <sval type="int" val="62"/>
+  <sval type="string" val="Cycrow Library: Creates a menu for my stations"/>
+  <sval type="int" val="2"/>
+  <sval type="int" val="0"/>
+  <sval type="array" size="23">
+    <sval type="string" val="a.ignore"/>
+    <sval type="string" val="a.race"/>
+    <sval type="string" val="a.class"/>
+    <sval type="string" val="a.title"/>
+    <sval type="string" val="a.returnMenu"/>
+    <sval type="string" val="a.search"/>
+    <sval type="string" val="stations"/>
+    <sval type="string" val="tSectors"/>
+    <sval type="string" val="count"/>
+    <sval type="string" val="s"/>
+    <sval type="string" val="sector"/>
+    <sval type="string" val="tStations"/>
+    <sval type="string" val="menu"/>
+    <sval type="string" val="read.text"/>
+    <sval type="string" val="aSorted"/>
+    <sval type="string" val="i"/>
+    <sval type="string" val="text.cols"/>
+    <sval type="string" val="text"/>
+    <sval type="string" val="text.col"/>
+    <sval type="string" val="aStations"/>
+    <sval type="string" val="s.count"/>
+    <sval type="string" val="s.i"/>
+    <sval type="string" val="ret"/>
+  </sval>
+  <sval type="array" size="83">
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-536870393"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="12"/>
+      <sval type="int" val="2016"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="1069"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="1733"/>
+      <sval type="int" val="7"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="131"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="6"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610605303"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="143"/>
+      <sval type="int" val="8"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="8"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610607869"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="125"/>
+      <sval type="int" val="-1610609405"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="20"/>
+      <sval type="int" val="21"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="1406"/>
+      <sval type="int" val="-1610609656"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="5"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="19"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="125"/>
+      <sval type="int" val="-1610608379"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="20"/>
+      <sval type="int" val="29"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="-1610608632"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="9"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="5"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="19"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610607867"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="5"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610607101"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="1922"/>
+      <sval type="int" val="-536865273"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="9"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="5"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="703"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-536863996"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="1733"/>
+      <sval type="int" val="11"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="130"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="11"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="130"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="5"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="1734"/>
+      <sval type="int" val="-536861436"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610603517"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="1445"/>
+      <sval type="int" val="12"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="13"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1100"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="711"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="1556"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="12"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="13"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="1776"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="12"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="21"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="12"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="2165"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="1445"/>
+      <sval type="int" val="12"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="131"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="14"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610594295"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="15"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="142"/>
+      <sval type="int" val="15"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="128"/>
+      <sval type="int" val="16"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="1028"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="17"/>
+    </sval>
+    <sval type="array" size="12">
+      <sval type="int" val="1781"/>
+      <sval type="int" val="18"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="250"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="17"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="130"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="16"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="18"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="13"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1100"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="722"/>
+    </sval>
+    <sval type="array" size="12">
+      <sval type="int" val="1781"/>
+      <sval type="int" val="18"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="100"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="13"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="130"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="16"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="18"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="1448"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="12"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="16"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="2165"/>
+      <sval type="int" val="19"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="11"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="131"/>
+      <sval type="int" val="20"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="19"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="21"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610594551"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="21"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="20"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="19"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="21"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="142"/>
+      <sval type="int" val="21"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="128"/>
+      <sval type="int" val="16"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="3"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="1672"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="17"/>
+    </sval>
+    <sval type="array" size="12">
+      <sval type="int" val="1781"/>
+      <sval type="int" val="18"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="17"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="130"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="16"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="18"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="1028"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="17"/>
+    </sval>
+    <sval type="array" size="12">
+      <sval type="int" val="1781"/>
+      <sval type="int" val="18"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="240"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="17"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="130"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="16"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="18"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="17"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="*"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="12">
+      <sval type="int" val="1781"/>
+      <sval type="int" val="18"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="100"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="17"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="130"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="16"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="18"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="1447"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="12"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="16"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="9"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="56"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="41"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="1776"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="12"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="21"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610593533"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="12"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="17"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1265"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="27"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610592509"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="8">
+      <sval type="int" val="1230"/>
+      <sval type="int" val="22"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="17"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="12"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="80"/>
+    </sval>
+    <sval type="array" size="8">
+      <sval type="int" val="1230"/>
+      <sval type="int" val="22"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="17"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="17"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="12"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-536849913"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="22"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="22"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+  </sval>
+  <sval type="array" size="6">
+    <sval type="array" size="2">
+      <sval type="int" val="9"/>
+      <sval type="string" val="Ignore Array"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="16"/>
+      <sval type="string" val="Race"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="9"/>
+      <sval type="string" val="Class Filter"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="11"/>
+      <sval type="string" val="Title"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="63"/>
+      <sval type="string" val="Return Menu?"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="11"/>
+      <sval type="string" val="Search String"/>
+    </sval>
+  </sval>
+  <sval type="array" size="33">
+    <sval type="array" size="2">
+      <sval type="int" val="2"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="3"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="3"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="first get all sectors"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="12"/>
+      <sval type="int" val="6"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="16"/>
+      <sval type="int" val="6"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="19"/>
+      <sval type="int" val="6"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="19"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="19"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="19"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="22"/>
+      <sval type="int" val="6"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="22"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="22"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="27"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="29"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="29"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="36"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="37"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="37"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="37"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="sort the sectors"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="38"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="39"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="39"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="now display the stations, sector by sector"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="44"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="52"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="54"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="71"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="72"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="72"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="73"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="75"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="75"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="79"/>
+      <sval type="int" val="5"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="80"/>
+      <sval type="int" val="4"/>
+    </sval>
+  </sval>
+  <sval type="int" val="0"/>
+</sval>
+
+</codearray>
+<nosignature>2943</nosignature>
+</script>

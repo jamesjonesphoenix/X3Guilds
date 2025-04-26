@@ -1,0 +1,1125 @@
+<?xml version="1.0" standalone="yes" ?>
+<?xml-stylesheet href="x2script.xsl" type="text/xsl" ?>
+<script>
+<name>!ship.cmd.mineminerals.pre</name>
+<version>2</version>
+<engineversion>66</engineversion>
+<description>Command  Menu Script: COMMAND_MINING_DEBRIS</description>
+<arguments>
+<argument index="1" name="a.obj" type="Value" desc="Object" />
+<argument index="2" name="a.state" type="Var/String" desc="State" />
+<argument index="3" name="a.value" type="Value" desc="Value" />
+</arguments>
+<sourceplaintext>
+<![CDATA[
+  $CMD = COMMAND_MINING_DEBRIS
+  $Page.ID = 6020
+  
+  if $a.state == 'start'
+    $sectors.done = table alloc
+    gosub sub.GetMinerals
+    
+    $mineral = $a.obj -> get local variable: name='egosoft.mine.mineral'
+    skip if $mineral
+      $mineral = 0
+    $a.obj ->set local variable: name='egosoft.mine.mineral' value=$mineral
+    $menu = create custom menu array
+    $text = get command info: command=$CMD
+    add custom menu info line to array $menu: text=$text
+    $text = read text: page=54 id=15
+    add value selection to menu: $menu, text=$text, value array=$aMinerals, default=$mineral, return id='mineral', width=100 allowtabs=[FALSE]
+    add section to custom menu: $menu
+    
+    $sector = $a.obj -> get local variable: name='egosoft.mine.sector'
+    if $sector -> exists
+      $text = sprintf: pageid=$Page.ID textid=255, $sector, null, null, null, null
+      add custom menu item to array $menu: text=$text returnvalue=$sector
+      $sectors.done[$sector] = [TRUE]
+    end
+    
+    $current.sector = $a.obj -> get sector
+    if not $sectors.done[$current.sector]
+      $text = sprintf: pageid=$Page.ID textid=254, $current.sector, null, null, null, null
+      add custom menu item to array $menu: text=$text returnvalue=$current.sector
+      $sectors.done[$current.sector] = [TRUE]
+    end
+    $sector = [PLAYERSHIP] -> get sector
+    if not $sectors.done[$sector]
+      $text = sprintf: pageid=$Page.ID textid=210, $sector, null, null, null, null
+      add custom menu item to array $menu: text=$text returnvalue=$sector
+      $sectors.done[$sector] = [TRUE]
+    end
+    $homebase = $a.obj -> get homebase
+    if $homebase -> exists
+      $sector = $a.obj -> get sector
+      if not $sectors.done[$sector]
+        $text = sprintf: pageid=$Page.ID textid=227, $sector, null, null, null, null
+        add custom menu item to array $menu: text=$text returnvalue=$sector
+        $sectors.done[$sector] = [TRUE]
+      end
+    end
+    
+    add section to custom menu: $menu
+    $text = read text: page=$Page.ID id=212
+    add custom menu item to array $menu: text=$text nextinput='choose' value=null
+    $text = get command name: command=$CMD
+    $input = create input: id='menu' menu=$menu title=$text description=$a.obj callback=[Callback.Switch]
+    return $input
+    
+  else if $a.state == 'choose'
+    $text = read text: page=$Page.ID id=2099
+    $input = create input: id='chosen.sector', user input=Var/Sector, refobj=$a.obj, description=$text, without sector=[FALSE], filterclass=null, racemask=null, flags=null, default=null
+    return $input
+    
+  else if $a.state == 'menu'
+    $selection = $a.value[0]
+    if $selection -> is of class Sector
+      $a.obj ->set local variable: name='egosoft.mine.sector' value=$selection
+      return [TRUE]
+    end
+    
+  else if $a.state == 'switch'
+    $state = $a.value[1]
+    $menu.id = $a.value[0]
+    $selection = $a.value[2]
+    if $state == 'mineral'
+      $a.obj ->set local variable: name='egosoft.mine.mineral' value=$selection
+    end
+    
+  else if $a.state == [MEvent.Returned]
+    $state = $a.value[1]
+    $menu.id = $a.value[0]
+    $selection = $a.value[2]
+    if $selection -> get sector
+      $input = create menu return to previous menu: value=$selection
+      return $input
+    end
+    
+  else if $a.state == 'arguments'
+    gosub sub.GetMineral
+    $sector = $a.obj -> get local variable: name='egosoft.mine.sector'
+    $ret = create new array, arguments=$sector, $mineral, null, null, null
+    return $ret
+  end
+  
+  return null
+  
+  sub.GetMineral:
+  gosub sub.GetMinerals
+  $mineral = $a.obj -> get local variable: name='egosoft.mine.mineral'
+  skip if $mineral
+    $mineral = 0
+  $mineral = $aMinerals[$mineral]
+  endsub
+  
+  sub.GetMinerals:
+  $aMinerals = create new array, arguments=Ore, Silicon Ore, Ice, null, null
+  do if $a.obj -> get amount of ware Mining Command Software in cargo bay
+    append Nividium to array $aMinerals
+  endsub
+  return null
+]]>
+</sourceplaintext>
+<sourcetext>
+<line indent=""><var>$CMD&#160;=&#160;</var><var>COMMAND_MINING_DEBRIS</var></line>
+<line indent=""><var>$Page.ID&#160;=&#160;</var><var>6020</var></line>
+<line indent=""></line>
+<line indent=""><var>if&#160;</var><var>$a.state</var><text>&#160;</text><var>==</var><text>&#160;</text><var>'start'</var></line>
+<line indent="&#160;"><var>$sectors.done&#160;=&#160;</var><text>table&#160;alloc</text></line>
+<line indent="&#160;"><text>gosub&#160;</text><var>sub.GetMinerals</var></line>
+<line indent="&#160;"></line>
+<line indent="&#160;"><var>$mineral&#160;=&#160;</var><var>$a.obj&#160;-&gt;</var><text>&#160;get&#160;local&#160;variable:&#160;name=</text><var>'egosoft.mine.mineral'</var></line>
+<line indent="&#160;"><var>skip&#160;if&#160;</var><var>$mineral</var></line>
+<line indent="&#160;&#160;"><var>$mineral&#160;=&#160;</var><var>0</var></line>
+<line indent="&#160;"><var>$a.obj&#160;-&gt;</var><text>set&#160;local&#160;variable:&#160;name=</text><var>'egosoft.mine.mineral'</var><text>&#160;value=</text><var>$mineral</var></line>
+<line indent="&#160;"><var>$menu&#160;=&#160;</var><text>create&#160;custom&#160;menu&#160;array</text></line>
+<line indent="&#160;"><var>$text&#160;=&#160;</var><text>get&#160;command&#160;info:&#160;command=</text><var>$CMD</var></line>
+<line indent="&#160;"><text>add&#160;custom&#160;menu&#160;info&#160;line&#160;to&#160;array&#160;</text><var>$menu</var><text>:&#160;text=</text><var>$text</var></line>
+<line indent="&#160;"><var>$text&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>54</var><text>&#160;id=</text><var>15</var></line>
+<line indent="&#160;"><text>add&#160;value&#160;selection&#160;to&#160;menu:&#160;</text><var>$menu</var><text>,&#160;text=</text><var>$text</var><text>,&#160;value&#160;array=</text><var>$aMinerals</var><text>,&#160;default=</text><var>$mineral</var><text>,&#160;return&#160;id=</text><var>'mineral'</var><text>,&#160;width=</text><var>100</var><text>&#160;allowtabs=</text><var>[FALSE]</var></line>
+<line indent="&#160;"><text>add&#160;section&#160;to&#160;custom&#160;menu:&#160;</text><var>$menu</var></line>
+<line indent="&#160;"></line>
+<line indent="&#160;"><var>$sector&#160;=&#160;</var><var>$a.obj&#160;-&gt;</var><text>&#160;get&#160;local&#160;variable:&#160;name=</text><var>'egosoft.mine.sector'</var></line>
+<line indent="&#160;"><var>if&#160;</var><var>$sector&#160;-&gt;</var><text>&#160;exists</text></line>
+<line indent="&#160;&#160;"><var>$text&#160;=&#160;</var><text>sprintf:&#160;pageid=</text><var>$Page.ID</var><text>&#160;textid=</text><var>255</var><text>,&#160;</text><var>$sector</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var></line>
+<line indent="&#160;&#160;"><text>add&#160;custom&#160;menu&#160;item&#160;to&#160;array&#160;</text><var>$menu</var><text>:&#160;text=</text><var>$text</var><text>&#160;returnvalue=</text><var>$sector</var></line>
+<line indent="&#160;&#160;"><var>$sectors.done</var><text>[</text><var>$sector</var><text>]&#160;=&#160;</text><var>[TRUE]</var></line>
+<line indent="&#160;"><text>end</text></line>
+<line indent="&#160;"></line>
+<line indent="&#160;"><var>$current.sector&#160;=&#160;</var><var>$a.obj&#160;-&gt;</var><text>&#160;get&#160;sector</text></line>
+<line indent="&#160;"><var>if&#160;not&#160;</var><var>$sectors.done</var><text>[</text><var>$current.sector</var><text>]</text></line>
+<line indent="&#160;&#160;"><var>$text&#160;=&#160;</var><text>sprintf:&#160;pageid=</text><var>$Page.ID</var><text>&#160;textid=</text><var>254</var><text>,&#160;</text><var>$current.sector</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var></line>
+<line indent="&#160;&#160;"><text>add&#160;custom&#160;menu&#160;item&#160;to&#160;array&#160;</text><var>$menu</var><text>:&#160;text=</text><var>$text</var><text>&#160;returnvalue=</text><var>$current.sector</var></line>
+<line indent="&#160;&#160;"><var>$sectors.done</var><text>[</text><var>$current.sector</var><text>]&#160;=&#160;</text><var>[TRUE]</var></line>
+<line indent="&#160;"><text>end</text></line>
+<line indent="&#160;"><var>$sector&#160;=&#160;</var><var>[PLAYERSHIP]&#160;-&gt;</var><text>&#160;get&#160;sector</text></line>
+<line indent="&#160;"><var>if&#160;not&#160;</var><var>$sectors.done</var><text>[</text><var>$sector</var><text>]</text></line>
+<line indent="&#160;&#160;"><var>$text&#160;=&#160;</var><text>sprintf:&#160;pageid=</text><var>$Page.ID</var><text>&#160;textid=</text><var>210</var><text>,&#160;</text><var>$sector</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var></line>
+<line indent="&#160;&#160;"><text>add&#160;custom&#160;menu&#160;item&#160;to&#160;array&#160;</text><var>$menu</var><text>:&#160;text=</text><var>$text</var><text>&#160;returnvalue=</text><var>$sector</var></line>
+<line indent="&#160;&#160;"><var>$sectors.done</var><text>[</text><var>$sector</var><text>]&#160;=&#160;</text><var>[TRUE]</var></line>
+<line indent="&#160;"><text>end</text></line>
+<line indent="&#160;"><var>$homebase&#160;=&#160;</var><var>$a.obj&#160;-&gt;</var><text>&#160;get&#160;homebase</text></line>
+<line indent="&#160;"><var>if&#160;</var><var>$homebase&#160;-&gt;</var><text>&#160;exists</text></line>
+<line indent="&#160;&#160;"><var>$sector&#160;=&#160;</var><var>$a.obj&#160;-&gt;</var><text>&#160;get&#160;sector</text></line>
+<line indent="&#160;&#160;"><var>if&#160;not&#160;</var><var>$sectors.done</var><text>[</text><var>$sector</var><text>]</text></line>
+<line indent="&#160;&#160;&#160;"><var>$text&#160;=&#160;</var><text>sprintf:&#160;pageid=</text><var>$Page.ID</var><text>&#160;textid=</text><var>227</var><text>,&#160;</text><var>$sector</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var></line>
+<line indent="&#160;&#160;&#160;"><text>add&#160;custom&#160;menu&#160;item&#160;to&#160;array&#160;</text><var>$menu</var><text>:&#160;text=</text><var>$text</var><text>&#160;returnvalue=</text><var>$sector</var></line>
+<line indent="&#160;&#160;&#160;"><var>$sectors.done</var><text>[</text><var>$sector</var><text>]&#160;=&#160;</text><var>[TRUE]</var></line>
+<line indent="&#160;&#160;"><text>end</text></line>
+<line indent="&#160;"><text>end</text></line>
+<line indent="&#160;"></line>
+<line indent="&#160;"><text>add&#160;section&#160;to&#160;custom&#160;menu:&#160;</text><var>$menu</var></line>
+<line indent="&#160;"><var>$text&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$Page.ID</var><text>&#160;id=</text><var>212</var></line>
+<line indent="&#160;"><text>add&#160;custom&#160;menu&#160;item&#160;to&#160;array&#160;</text><var>$menu</var><text>:&#160;text=</text><var>$text</var><text>&#160;nextinput=</text><var>'choose'</var><text>&#160;value=</text><var>null</var></line>
+<line indent="&#160;"><var>$text&#160;=&#160;</var><text>get&#160;command&#160;name:&#160;command=</text><var>$CMD</var></line>
+<line indent="&#160;"><var>$input&#160;=&#160;</var><text>create&#160;input:&#160;id=</text><var>'menu'</var><text>&#160;menu=</text><var>$menu</var><text>&#160;title=</text><var>$text</var><text>&#160;description=</text><var>$a.obj</var><text>&#160;callback=</text><var>[Callback.Switch]</var></line>
+<line indent="&#160;"><text>return&#160;</text><var>$input</var></line>
+<line indent="&#160;"></line>
+<line indent=""><var>else&#160;if&#160;</var><var>$a.state</var><text>&#160;</text><var>==</var><text>&#160;</text><var>'choose'</var></line>
+<line indent="&#160;"><var>$text&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>$Page.ID</var><text>&#160;id=</text><var>2099</var></line>
+<line indent="&#160;"><var>$input&#160;=&#160;</var><text>create&#160;input:&#160;id=</text><var>'chosen.sector'</var><text>,&#160;user&#160;input=</text><var>Var/Sector</var><text>,&#160;refobj=</text><var>$a.obj</var><text>,&#160;description=</text><var>$text</var><text>,&#160;without&#160;sector=</text><var>[FALSE]</var><text>,&#160;filterclass=</text><var>null</var><text>,&#160;racemask=</text><var>null</var><text>,&#160;flags=</text><var>null</var><text>,&#160;default=</text><var>null</var></line>
+<line indent="&#160;"><text>return&#160;</text><var>$input</var></line>
+<line indent="&#160;"></line>
+<line indent=""><var>else&#160;if&#160;</var><var>$a.state</var><text>&#160;</text><var>==</var><text>&#160;</text><var>'menu'</var></line>
+<line indent="&#160;"><var>$selection&#160;=&#160;</var><var>$a.value</var><text>[</text><var>0</var><text>]</text></line>
+<line indent="&#160;"><var>if&#160;</var><var>$selection&#160;-&gt;</var><text>&#160;is&#160;of&#160;class&#160;</text><var>Sector</var></line>
+<line indent="&#160;&#160;"><var>$a.obj&#160;-&gt;</var><text>set&#160;local&#160;variable:&#160;name=</text><var>'egosoft.mine.sector'</var><text>&#160;value=</text><var>$selection</var></line>
+<line indent="&#160;&#160;"><text>return&#160;</text><var>[TRUE]</var></line>
+<line indent="&#160;"><text>end</text></line>
+<line indent="&#160;"></line>
+<line indent=""><var>else&#160;if&#160;</var><var>$a.state</var><text>&#160;</text><var>==</var><text>&#160;</text><var>'switch'</var></line>
+<line indent="&#160;"><var>$state&#160;=&#160;</var><var>$a.value</var><text>[</text><var>1</var><text>]</text></line>
+<line indent="&#160;"><var>$menu.id&#160;=&#160;</var><var>$a.value</var><text>[</text><var>0</var><text>]</text></line>
+<line indent="&#160;"><var>$selection&#160;=&#160;</var><var>$a.value</var><text>[</text><var>2</var><text>]</text></line>
+<line indent="&#160;"><var>if&#160;</var><var>$state</var><text>&#160;</text><var>==</var><text>&#160;</text><var>'mineral'</var></line>
+<line indent="&#160;&#160;"><var>$a.obj&#160;-&gt;</var><text>set&#160;local&#160;variable:&#160;name=</text><var>'egosoft.mine.mineral'</var><text>&#160;value=</text><var>$selection</var></line>
+<line indent="&#160;"><text>end</text></line>
+<line indent="&#160;"></line>
+<line indent=""><var>else&#160;if&#160;</var><var>$a.state</var><text>&#160;</text><var>==</var><text>&#160;</text><var>[MEvent.Returned]</var></line>
+<line indent="&#160;"><var>$state&#160;=&#160;</var><var>$a.value</var><text>[</text><var>1</var><text>]</text></line>
+<line indent="&#160;"><var>$menu.id&#160;=&#160;</var><var>$a.value</var><text>[</text><var>0</var><text>]</text></line>
+<line indent="&#160;"><var>$selection&#160;=&#160;</var><var>$a.value</var><text>[</text><var>2</var><text>]</text></line>
+<line indent="&#160;"><var>if&#160;</var><var>$selection&#160;-&gt;</var><text>&#160;get&#160;sector</text></line>
+<line indent="&#160;&#160;"><var>$input&#160;=&#160;</var><text>create&#160;menu&#160;return&#160;to&#160;previous&#160;menu:&#160;value=</text><var>$selection</var></line>
+<line indent="&#160;&#160;"><text>return&#160;</text><var>$input</var></line>
+<line indent="&#160;"><text>end</text></line>
+<line indent="&#160;"></line>
+<line indent=""><var>else&#160;if&#160;</var><var>$a.state</var><text>&#160;</text><var>==</var><text>&#160;</text><var>'arguments'</var></line>
+<line indent="&#160;"><text>gosub&#160;</text><var>sub.GetMineral</var></line>
+<line indent="&#160;"><var>$sector&#160;=&#160;</var><var>$a.obj&#160;-&gt;</var><text>&#160;get&#160;local&#160;variable:&#160;name=</text><var>'egosoft.mine.sector'</var></line>
+<line indent="&#160;"><var>$ret&#160;=&#160;</var><text>create&#160;new&#160;array,&#160;arguments=</text><var>$sector</var><text>,&#160;</text><var>$mineral</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var></line>
+<line indent="&#160;"><text>return&#160;</text><var>$ret</var></line>
+<line indent=""><text>end</text></line>
+<line indent=""></line>
+<line indent=""><text>return&#160;</text><var>null</var></line>
+<line indent=""></line>
+<line indent=""><var>sub.GetMineral</var><text>:</text></line>
+<line indent=""><text>gosub&#160;</text><var>sub.GetMinerals</var></line>
+<line indent=""><var>$mineral&#160;=&#160;</var><var>$a.obj&#160;-&gt;</var><text>&#160;get&#160;local&#160;variable:&#160;name=</text><var>'egosoft.mine.mineral'</var></line>
+<line indent=""><var>skip&#160;if&#160;</var><var>$mineral</var></line>
+<line indent="&#160;"><var>$mineral&#160;=&#160;</var><var>0</var></line>
+<line indent=""><var>$mineral&#160;=&#160;</var><var>$aMinerals</var><text>[</text><var>$mineral</var><text>]</text></line>
+<line indent=""><text>endsub</text></line>
+<line indent=""></line>
+<line indent=""><var>sub.GetMinerals</var><text>:</text></line>
+<line indent=""><var>$aMinerals&#160;=&#160;</var><text>create&#160;new&#160;array,&#160;arguments=</text><var>Ore</var><text>,&#160;</text><var>Silicon&#160;Ore</var><text>,&#160;</text><var>Ice</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var></line>
+<line indent=""><var>do&#160;if&#160;</var><var>$a.obj&#160;-&gt;</var><text>&#160;get&#160;amount&#160;of&#160;ware&#160;</text><var>Mining&#160;Command&#160;Software</var><text>&#160;in&#160;cargo&#160;bay</text></line>
+<line indent="&#160;"><text>append&#160;</text><var>Nividium</var><text>&#160;to&#160;array&#160;</text><var>$aMinerals</var></line>
+<line indent=""><text>endsub</text></line>
+<line indent=""><text>return&#160;</text><var>null</var></line>
+</sourcetext>
+<codearray>
+
+<sval type="array" size="10">
+  <sval type="string" val="!ship.cmd.mineminerals.pre"/>
+  <sval type="int" val="66"/>
+  <sval type="string" val="Command  Menu Script: COMMAND_MINING_DEBRIS"/>
+  <sval type="int" val="2"/>
+  <sval type="int" val="0"/>
+  <sval type="array" size="18">
+    <sval type="string" val="a.obj"/>
+    <sval type="string" val="a.state"/>
+    <sval type="string" val="a.value"/>
+    <sval type="string" val="CMD"/>
+    <sval type="string" val="Page.ID"/>
+    <sval type="string" val="sectors.done"/>
+    <sval type="string" val="mineral"/>
+    <sval type="string" val="menu"/>
+    <sval type="string" val="text"/>
+    <sval type="string" val="aMinerals"/>
+    <sval type="string" val="sector"/>
+    <sval type="string" val="current.sector"/>
+    <sval type="string" val="homebase"/>
+    <sval type="string" val="input"/>
+    <sval type="string" val="selection"/>
+    <sval type="string" val="state"/>
+    <sval type="string" val="menu.id"/>
+    <sval type="string" val="ret"/>
+  </sval>
+  <sval type="array" size="89">
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="18"/>
+      <sval type="int" val="41"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="6020"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610601469"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="start"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="1733"/>
+      <sval type="int" val="5"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="1167"/>
+      <sval type="int" val="83"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="156"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="egosoft.mine.mineral"/>
+      <sval type="int" val="6"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-536868857"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="155"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="egosoft.mine.mineral"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="6"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="1445"/>
+      <sval type="int" val="7"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="2410"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="1446"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="8"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="54"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="15"/>
+    </sval>
+    <sval type="array" size="15">
+      <sval type="int" val="1920"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="mineral"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="100"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="9"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="1522"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="156"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="egosoft.mine.sector"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="706"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="-1610607613"/>
+    </sval>
+    <sval type="array" size="16">
+      <sval type="int" val="150"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="255"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="1447"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="130"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="703"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="11"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="-536864508"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="11"/>
+    </sval>
+    <sval type="array" size="16">
+      <sval type="int" val="150"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="254"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="1447"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="11"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="130"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="703"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="-536863228"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="16">
+      <sval type="int" val="150"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="210"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="1447"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="130"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="704"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="12"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="706"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="12"/>
+      <sval type="int" val="-1610603261"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="703"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="-536861436"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="16">
+      <sval type="int" val="150"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="227"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="1447"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="130"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="1522"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="212"/>
+    </sval>
+    <sval type="array" size="9">
+      <sval type="int" val="1919"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="choose"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="2253"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+    </sval>
+    <sval type="array" size="12">
+      <sval type="int" val="1649"/>
+      <sval type="int" val="13"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="menu"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="582"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="13"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="75"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610600187"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="choose"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="2099"/>
+    </sval>
+    <sval type="array" size="20">
+      <sval type="int" val="1647"/>
+      <sval type="int" val="13"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="chosen.sector"/>
+      <sval type="int" val="24"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="13"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="75"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610598651"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="menu"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="705"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="-1610598909"/>
+      <sval type="int" val="12"/>
+      <sval type="int" val="2001"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="155"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="egosoft.mine.sector"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="14"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="75"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610596859"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="switch"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="16"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610597117"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="mineral"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="155"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="egosoft.mine.mineral"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="14"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="75"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610594811"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="437"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="16"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="703"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="-1610595069"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="1932"/>
+      <sval type="int" val="13"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="14"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="13"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="75"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610593531"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="arguments"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="1167"/>
+      <sval type="int" val="76"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="156"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="egosoft.mine.sector"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="12">
+      <sval type="int" val="1415"/>
+      <sval type="int" val="17"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="17"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="101"/>
+      <sval type="string" val="sub.GetMineral"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="1167"/>
+      <sval type="int" val="83"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="156"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="egosoft.mine.mineral"/>
+      <sval type="int" val="6"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-536850169"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="6"/>
+    </sval>
+    <sval type="array" size="1">
+      <sval type="int" val="1168"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="101"/>
+      <sval type="string" val="sub.GetMinerals"/>
+    </sval>
+    <sval type="array" size="12">
+      <sval type="int" val="1415"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="983045"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="983049"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="983043"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="618"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-1610590456"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1048705"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="135"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="983042"/>
+    </sval>
+    <sval type="array" size="1">
+      <sval type="int" val="1168"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+  </sval>
+  <sval type="array" size="3">
+    <sval type="array" size="2">
+      <sval type="int" val="9"/>
+      <sval type="string" val="Object"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="11"/>
+      <sval type="string" val="State"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="9"/>
+      <sval type="string" val="Value"/>
+    </sval>
+  </sval>
+  <sval type="array" size="22">
+    <sval type="array" size="2">
+      <sval type="int" val="2"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="5"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="15"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="20"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="20"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="25"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="30"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="37"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="37"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="37"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="43"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="48"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="54"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="54"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="61"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="61"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="69"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="69"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="75"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="75"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="76"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="83"/>
+      <sval type="int" val="2"/>
+    </sval>
+  </sval>
+  <sval type="int" val="0"/>
+</sval>
+
+</codearray>
+<nosignature>3561</nosignature>
+</script>

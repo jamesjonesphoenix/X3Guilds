@@ -1,0 +1,678 @@
+<?xml version="1.0" standalone="yes" ?>
+<?xml-stylesheet href="x2script.xsl" type="text/xsl" ?>
+<script>
+<name>!ship.signal.attacked.bigship</name>
+<version>4</version>
+<engineversion>72</engineversion>
+<description>Asynchron signal. attacked</description>
+<arguments>
+<argument index="1" name="attacker" type="Var/Ship/Station" desc="the attacker" />
+<argument index="2" name="action" type="Var/Number" desc="action" />
+</arguments>
+<sourceplaintext>
+<![CDATA[
+@ skip if [THIS] -> call script !lib.canattack :  Target=$attacker
+    return null
+  
+  * ST/UT use their own signals:
+  do if [THIS] -> is script lib.ship.signal.attacked.trader on stack of task=0
+    return null
+  
+  * check if already a attack is executed
+  do if is script with prio 99 on stack
+    return [TRUE]
+  
+  skip if $attacker -> exists
+    return null
+  
+  skip if $action != [ACTION_ENTER_GATE]
+    return null
+  
+  if [THIS] -> is of class Carrier
+    $managed.ships = [THIS] ->get managed ships: role=Defender
+    if $managed.ships
+      if size of array $managed.ships
+        [THIS] ->set local variable: name='carrier.threat' value=$attacker
+      end
+    end
+  end
+  
+  if [THIS] ->is from mission
+@   $ret = [THIS] -> call script !ship.signal.attacked :  the attacker=$attacker  action=$action  Is From follower=[FALSE]
+    return $ret
+  end
+  
+  * already attacking the attacker...
+  $attacktarget = [THIS] -> get attack target
+  skip if $attacker != $attacktarget
+    return null
+  skip if [THIS] != [PLAYERSHIP]
+    return null
+  
+  if [OWNER] != Player
+  * call for backup from race response
+    $hull = [THIS] -> get hull percent
+    if $hull < 80
+      $hull = [THIS] -> get shield percent
+      if $hull < 20
+        $sev = [THIS] ->get threat severity
+        $ret = register threat: race=[OWNER], sector=[SECTOR], object=$attacker, type=[Threat.CallForHelp], expire=120s, severity=$sev
+      end
+    end
+  end
+  
+  if [OWNER] == Player
+@   $ret = [THIS] -> call script !ship.signal.attacked :  the attacker=$attacker  action=$action
+    return $ret
+  else
+    if [THIS] -> get maximum laser strength
+      if not $attacker -> is of class Big Ship
+        skip if random value from 0 to 5 - 1
+          return null
+      end
+      
+      $followmode = [THIS] -> get follow mode
+      [THIS] ->set follow mode [FALSE]
+      
+      set script priority to 99
+@     = [THIS] -> call script !fight.attack.object :  the victim=$attacker  follow in new sector=null
+      
+      [THIS] ->set follow mode $followmode
+      return [TRUE]
+    end
+  end
+  return null
+]]>
+</sourceplaintext>
+<sourcetext>
+<line interruptable="@" indent=""><var>skip&#160;if&#160;</var><var>[THIS]&#160;-&gt;</var><text>&#160;call&#160;script&#160;</text><call>!lib.canattack</call><text>&#160;:&#160;</text><text>&#160;Target=</text><var>$attacker</var></line>
+<line indent="&#160;"><text>return&#160;</text><var>null</var></line>
+<line indent=""></line>
+<line indent=""><comment><text>*&#160;</text><var>ST/UT&#160;use&#160;their&#160;own&#160;signals:</var></comment></line>
+<line indent=""><var>do&#160;if&#160;</var><var>[THIS]&#160;-&gt;</var><text>&#160;is&#160;script&#160;</text><call>lib.ship.signal.attacked.trader</call><text>&#160;on&#160;stack&#160;of&#160;task=</text><var>0</var></line>
+<line indent="&#160;"><text>return&#160;</text><var>null</var></line>
+<line indent=""></line>
+<line indent=""><comment><text>*&#160;</text><var>check&#160;if&#160;already&#160;a&#160;attack&#160;is&#160;executed</var></comment></line>
+<line indent=""><var>do&#160;if&#160;</var><text>is&#160;script&#160;with&#160;prio&#160;</text><var>99</var><text>&#160;on&#160;stack</text></line>
+<line indent="&#160;"><text>return&#160;</text><var>[TRUE]</var></line>
+<line indent=""></line>
+<line indent=""><var>skip&#160;if&#160;</var><var>$attacker&#160;-&gt;</var><text>&#160;exists</text></line>
+<line indent="&#160;"><text>return&#160;</text><var>null</var></line>
+<line indent=""></line>
+<line indent=""><var>skip&#160;if&#160;</var><var>$action</var><text>&#160;</text><var>!=</var><text>&#160;</text><var>[ACTION_ENTER_GATE]</var></line>
+<line indent="&#160;"><text>return&#160;</text><var>null</var></line>
+<line indent=""></line>
+<line indent=""><var>if&#160;</var><var>[THIS]&#160;-&gt;</var><text>&#160;is&#160;of&#160;class&#160;</text><var>Carrier</var></line>
+<line indent="&#160;"><var>$managed.ships&#160;=&#160;</var><var>[THIS]&#160;-&gt;</var><text>get&#160;managed&#160;ships:&#160;role=</text><var>Defender</var></line>
+<line indent="&#160;"><var>if&#160;</var><var>$managed.ships</var></line>
+<line indent="&#160;&#160;"><var>if&#160;</var><text>size&#160;of&#160;array&#160;</text><var>$managed.ships</var></line>
+<line indent="&#160;&#160;&#160;"><var>[THIS]&#160;-&gt;</var><text>set&#160;local&#160;variable:&#160;name=</text><var>'carrier.threat'</var><text>&#160;value=</text><var>$attacker</var></line>
+<line indent="&#160;&#160;"><text>end</text></line>
+<line indent="&#160;"><text>end</text></line>
+<line indent=""><text>end</text></line>
+<line indent=""></line>
+<line indent=""><var>if&#160;</var><var>[THIS]&#160;-&gt;</var><text>is&#160;from&#160;mission</text></line>
+<line interruptable="@" indent="&#160;"><var>$ret&#160;=&#160;</var><var>[THIS]&#160;-&gt;</var><text>&#160;call&#160;script&#160;</text><call>!ship.signal.attacked</call><text>&#160;:&#160;</text><text>&#160;the&#160;attacker=</text><var>$attacker</var><text>&#160;</text><text>&#160;action=</text><var>$action</var><text>&#160;</text><text>&#160;Is&#160;From&#160;follower=</text><var>[FALSE]</var></line>
+<line indent="&#160;"><text>return&#160;</text><var>$ret</var></line>
+<line indent=""><text>end</text></line>
+<line indent=""></line>
+<line indent=""><comment><text>*&#160;</text><var>already&#160;attacking&#160;the&#160;attacker...</var></comment></line>
+<line indent=""><var>$attacktarget&#160;=&#160;</var><var>[THIS]&#160;-&gt;</var><text>&#160;get&#160;attack&#160;target</text></line>
+<line indent=""><var>skip&#160;if&#160;</var><var>$attacker</var><text>&#160;</text><var>!=</var><text>&#160;</text><var>$attacktarget</var></line>
+<line indent="&#160;"><text>return&#160;</text><var>null</var></line>
+<line indent=""><var>skip&#160;if&#160;</var><var>[THIS]</var><text>&#160;</text><var>!=</var><text>&#160;</text><var>[PLAYERSHIP]</var></line>
+<line indent="&#160;"><text>return&#160;</text><var>null</var></line>
+<line indent=""></line>
+<line indent=""><var>if&#160;</var><var>[OWNER]</var><text>&#160;</text><var>!=</var><text>&#160;</text><var>Player</var></line>
+<line indent=""><comment><text>*&#160;</text><var>call&#160;for&#160;backup&#160;from&#160;race&#160;response</var></comment></line>
+<line indent="&#160;"><var>$hull&#160;=&#160;</var><var>[THIS]&#160;-&gt;</var><text>&#160;get&#160;hull&#160;percent</text></line>
+<line indent="&#160;"><var>if&#160;</var><var>$hull</var><text>&#160;</text><var>&lt;</var><text>&#160;</text><var>80</var></line>
+<line indent="&#160;&#160;"><var>$hull&#160;=&#160;</var><var>[THIS]&#160;-&gt;</var><text>&#160;get&#160;shield&#160;percent</text></line>
+<line indent="&#160;&#160;"><var>if&#160;</var><var>$hull</var><text>&#160;</text><var>&lt;</var><text>&#160;</text><var>20</var></line>
+<line indent="&#160;&#160;&#160;"><var>$sev&#160;=&#160;</var><var>[THIS]&#160;-&gt;</var><text>get&#160;threat&#160;severity</text></line>
+<line indent="&#160;&#160;&#160;"><var>$ret&#160;=&#160;</var><text>register&#160;threat:&#160;race=</text><var>[OWNER]</var><text>,&#160;sector=</text><var>[SECTOR]</var><text>,&#160;object=</text><var>$attacker</var><text>,&#160;type=</text><var>[Threat.CallForHelp]</var><text>,&#160;expire=</text><var>120</var><text>s,&#160;severity=</text><var>$sev</var></line>
+<line indent="&#160;&#160;"><text>end</text></line>
+<line indent="&#160;"><text>end</text></line>
+<line indent=""><text>end</text></line>
+<line indent=""></line>
+<line indent=""><var>if&#160;</var><var>[OWNER]</var><text>&#160;</text><var>==</var><text>&#160;</text><var>Player</var></line>
+<line interruptable="@" indent="&#160;"><var>$ret&#160;=&#160;</var><var>[THIS]&#160;-&gt;</var><text>&#160;call&#160;script&#160;</text><call>!ship.signal.attacked</call><text>&#160;:&#160;</text><text>&#160;the&#160;attacker=</text><var>$attacker</var><text>&#160;</text><text>&#160;action=</text><var>$action</var></line>
+<line indent="&#160;"><text>return&#160;</text><var>$ret</var></line>
+<line indent=""><text>else</text></line>
+<line indent="&#160;"><var>if&#160;</var><var>[THIS]&#160;-&gt;</var><text>&#160;get&#160;maximum&#160;laser&#160;strength</text></line>
+<line indent="&#160;&#160;"><var>if&#160;not&#160;</var><var>$attacker&#160;-&gt;</var><text>&#160;is&#160;of&#160;class&#160;</text><var>Big&#160;Ship</var></line>
+<line indent="&#160;&#160;&#160;"><var>skip&#160;if&#160;</var><text>random&#160;value&#160;from&#160;0&#160;to&#160;</text><var>5</var><text>&#160;-&#160;1</text></line>
+<line indent="&#160;&#160;&#160;&#160;"><text>return&#160;</text><var>null</var></line>
+<line indent="&#160;&#160;"><text>end</text></line>
+<line indent="&#160;&#160;"></line>
+<line indent="&#160;&#160;"><var>$followmode&#160;=&#160;</var><var>[THIS]&#160;-&gt;</var><text>&#160;get&#160;follow&#160;mode</text></line>
+<line indent="&#160;&#160;"><var>[THIS]&#160;-&gt;</var><text>set&#160;follow&#160;mode&#160;</text><var>[FALSE]</var></line>
+<line indent="&#160;&#160;"></line>
+<line indent="&#160;&#160;"><text>set&#160;script&#160;priority&#160;to&#160;</text><var>99</var></line>
+<line interruptable="@" indent="&#160;&#160;"><var>=&#160;</var><var>[THIS]&#160;-&gt;</var><text>&#160;call&#160;script&#160;</text><call>!fight.attack.object</call><text>&#160;:&#160;</text><text>&#160;the&#160;victim=</text><var>$attacker</var><text>&#160;</text><text>&#160;follow&#160;in&#160;new&#160;sector=</text><var>null</var></line>
+<line indent="&#160;&#160;"></line>
+<line indent="&#160;&#160;"><var>[THIS]&#160;-&gt;</var><text>set&#160;follow&#160;mode&#160;</text><var>$followmode</var></line>
+<line indent="&#160;&#160;"><text>return&#160;</text><var>[TRUE]</var></line>
+<line indent="&#160;"><text>end</text></line>
+<line indent=""><text>end</text></line>
+<line indent=""><text>return&#160;</text><var>null</var></line>
+</sourcetext>
+<codearray>
+
+<sval type="array" size="10">
+  <sval type="string" val="!ship.signal.attacked.bigship"/>
+  <sval type="int" val="72"/>
+  <sval type="string" val="Asynchron signal. attacked"/>
+  <sval type="int" val="4"/>
+  <sval type="int" val="0"/>
+  <sval type="array" size="8">
+    <sval type="string" val="attacker"/>
+    <sval type="string" val="action"/>
+    <sval type="string" val="managed.ships"/>
+    <sval type="string" val="ret"/>
+    <sval type="string" val="attacktarget"/>
+    <sval type="string" val="hull"/>
+    <sval type="string" val="sev"/>
+    <sval type="string" val="followmode"/>
+  </sval>
+  <sval type="array" size="45">
+    <sval type="array" size="8">
+      <sval type="int" val="102"/>
+      <sval type="string" val="!lib.canattack"/>
+      <sval type="int" val="-536870393"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="1072"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1610611704"/>
+      <sval type="string" val="lib.ship.signal.attacked.trader"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="146"/>
+      <sval type="int" val="-1610611192"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="99"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="706"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-536868857"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-536868345"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="403"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="705"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1610608893"/>
+      <sval type="int" val="12"/>
+      <sval type="int" val="2033"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="1841"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="33"/>
+      <sval type="string" val="defender"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610608893"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="131"/>
+      <sval type="int" val="-1610608893"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="155"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="carrier.threat"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="1643"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1610608125"/>
+    </sval>
+    <sval type="array" size="12">
+      <sval type="int" val="102"/>
+      <sval type="string" val="!ship.signal.attacked"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="9"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="522"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-536865529"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-536865017"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610605053"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="900"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="5"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610605053"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="80"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="901"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="5"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610605053"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="20"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="2982"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="6"/>
+    </sval>
+    <sval type="array" size="14">
+      <sval type="int" val="2049"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="735"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="120"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="6"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610604029"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="10">
+      <sval type="int" val="102"/>
+      <sval type="string" val="!ship.signal.attacked"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="1"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="44"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="717"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1610601469"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="705"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-536861180"/>
+      <sval type="int" val="12"/>
+      <sval type="int" val="2073"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="106"/>
+      <sval type="int" val="-536861177"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="5"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="518"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="7"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="517"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="9"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="109"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="99"/>
+    </sval>
+    <sval type="array" size="10">
+      <sval type="int" val="102"/>
+      <sval type="string" val="!fight.attack.object"/>
+      <sval type="int" val="-2147483647"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="517"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+  </sval>
+  <sval type="array" size="2">
+    <sval type="array" size="2">
+      <sval type="int" val="22"/>
+      <sval type="string" val="the attacker"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="10"/>
+      <sval type="string" val="action"/>
+    </sval>
+  </sval>
+  <sval type="array" size="27">
+    <sval type="array" size="2">
+      <sval type="int" val="2"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="2"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="ST/UT use their own signals:"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="4"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="4"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="check if already a attack is executed"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="6"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="8"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="10"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="15"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="15"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="15"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="15"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="18"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="18"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="18"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="already attacking the attacker..."/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="23"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="24"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="call for backup from race response"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="30"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="30"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="30"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="30"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="34"/>
+      <sval type="int" val="5"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="38"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="38"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="40"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="42"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="44"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="44"/>
+      <sval type="int" val="4"/>
+    </sval>
+  </sval>
+  <sval type="int" val="0"/>
+</sval>
+
+</codearray>
+<nosignature>1117</nosignature>
+</script>
