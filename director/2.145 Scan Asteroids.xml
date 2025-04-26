@@ -1,0 +1,393 @@
+<?xml version="1.0" encoding="iso-8859-1" ?>
+<?xml-stylesheet href="director.xsl" type="text/xsl" ?>
+<director name="Scan Asteroids" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="director.xsd">
+  <documentation>
+    <author name="Chris" alias="XGamer" contact="EMail, Skype, ForumPM" />
+    <content reference="Station Offered Mission" name="Scan Asteroids" description="N/A" />
+    <version number="1.0" date="16/09/2008" status="development" />
+  </documentation>
+  <cues>
+    <cue name="L2M145" library="1" check="cancel" comment="Root Cue for this Mission / Holds all variables" >
+      <documentation>
+        <content name="Scan Asteroids" reference="L2M145" type="L2"/>
+        <version number="1.0" date="16/09/2008" status="release"/>
+        <history>
+          <change date="23/02/2010" author="Owen Lake" description="Fixed timeout issue. Moved mission completed statistic."/>
+          <change date="16/09/2008" author="Owen Lake" description="Started work for 1.2 release"/>
+          <change date="23/05/2008" author="XGamer" description="Fixed Reward Bug"/>
+          <change date="21/05/2008" author="XGamer" description="More Bugfixes"/>
+          <change date="20/05/2008" author="XGamer" description="Added some Improvements"/>
+          <change date="16/05/2008" author="XGamer" description="Fixed various Bugs"/>
+          <change date="15/05/2008" author="XGamer" description="Initial Beta Version"/>
+        </history>
+      </documentation>
+      <condition>
+        <check_all>
+          <check_value value="{player.sector.warobjectid}" exact="0"/>
+          <count_stations class="station" dockingallowed="1" race="default|terrangroup|pirategroup|corporations|goner|other1|yaki" min="1">
+            <sector sector="{player.sector}"/>
+          </count_stations>
+          <count_asteroids min="2">
+            <sector sector="{player.sector}"/>
+          </count_asteroids>
+        </check_all>
+      </condition>
+      <action>
+        <do_all>
+          <find_station class="station" dockingallowed="1" race="default|terrangroup|pirategroup|corporations|goner|other1|yaki" name="this.OfferStation">
+            <sector sector="{player.sector}"/>
+          </find_station>
+          <do_choose>
+            <do_when value="{object.exists@this.OfferStation}" exact="1">
+              <find_asteroid group="this.Unfiltered Roids" multiple="1" max="10">
+                <position x="0" y="0" z="0"/>
+                <sector sector="{object.sector@this.OfferStation}" comment="Set Start Sector so it may not jump around too much (dunno if it ever did but well cant hurt)"/>
+                <jumps min="0" max="3"/>
+                <distance max="80km"/>
+              </find_asteroid>
+              <do_choose>
+                <do_when value="{group.object.count@this.Unfiltered Roids}" min="2">
+                  <do_all exact="{group.object.count@this.Unfiltered Roids}" counter="count" comment="HACK scanned=0">
+                    <do_if value="{group.object.{counter@count}.scanned@this.Unfiltered Roids}" exact="0">
+                      <set_object group="this.Roids" name="this.Roids {group.object.{counter@count}@this.Unfiltered Roids}" value="{group.object.{counter@count}@this.Unfiltered Roids}"/>
+                    </do_if>
+                  </do_all>
+                  <remove_group group="this.Unfiltered Roids"/>
+                  <do_choose>
+                    <do_when value="{group.object.count@this.Roids}" min="5">
+                      <do_all exact="{group.object.count@this.Roids}" counter="count" comment="Count how many Different Sectors we have and how many Roids in each">
+                        <set_value name="this.Sectorcount {group.object.{counter@count}.sector@this.Roids}" operation="add"/>
+                        <do_if value="{value@this.Sectorcount {group.object.{counter@count}.sector@this.Roids}}" max="1">
+                          <set_value name="this.SectorDiff" operation="add"/>
+                        </do_if>
+                      </do_all>
+                      <!-- Set Some Variables -->
+                      <do_choose>
+                        <do_when value="{value@this.SectorDiff}" max="2">
+                          <set_value name="this.Difficulty" exact="{lookup.level@veryeasy}"/>
+                        </do_when>
+                        <do_when value="{value@this.SectorDiff}" exact="3">
+                          <set_value name="this.Difficulty" exact="{lookup.level@easy}"/>
+                        </do_when>
+                        <do_when value="{value@this.SectorDiff}" exact="4">
+                          <set_value name="this.Difficulty" exact="{lookup.level@average}"/>
+                        </do_when>
+                        <do_otherwise>
+                          <set_value name="this.Difficulty" exact="{lookup.level@average}"/>
+                        </do_otherwise>
+                      </do_choose>
+                      <set_value name="this.Step" exact="1"/>
+                      <!-- Create Actor -->
+                      <do_any>
+                        <set_value name="this.OfferRace" exact="{object.race@this.OfferStation}" chance="2"/>
+  					    <set_value name="this.OfferRace" exact="{random.race@default}" chance="8"/>
+						  <set_value name="this.OfferRace" exact="{random.race@goner}" chance="1"/>
+						  <set_value name="this.OfferRace" exact="{random.race@corporations}" chance="3"/>
+					  </do_any>
+                      <set_value name="this.RaceCheck" exact="{lookup.race.mask@default}+{lookup.race.mask@terran}+{lookup.race.mask@pirategroup}+{lookup.race.mask@goner}+{lookup.race.mask@corporations}"/>
+                      <do_if value="{lookup.race.mask.{value@this.RaceCheck}@{value@this.OfferRace}}" exact="0">
+                        <set_value name="this.OfferRace" exact="{random.race@default}"/>
+                      </do_if>
+						<do_choose>
+							<do_when value="{value@this.OfferRace}" exact="{lookup.race@goner}">
+								<create_actor race="{lookup.race@argon}" object="this.OfferStation" voiceflags="32" name="this.Offerguy" location="crew"/>
+							</do_when>
+							<do_otherwise>
+								<create_actor race="{value@this.OfferRace}" object="this.OfferStation" voiceflags="32" name="this.Offerguy" location="crew"/>
+							</do_otherwise>
+						</do_choose>
+						<create_offer actor="this.Offerguy" conversation="L2GenericOffer" cue="L2M145" discipline="XXXT"/>
+                      <set_value name="L2M145.Variation" list="1"/>
+                      <do_if value="{param@Debug}" exact="1">
+                        <incoming_message text="The Mission Is Offered on the station {object.name@this.OfferStation} by {actor.name@this.Offerguy}"/>
+                      </do_if>
+                    </do_when>
+                    <do_otherwise>
+                      <cancel_cue cue="L2M145"/>
+                    </do_otherwise>
+                  </do_choose>
+                </do_when>
+                <do_otherwise>
+                  <cancel_cue cue="L2M145"/>
+                </do_otherwise>
+              </do_choose>
+            </do_when>
+            <do_otherwise>
+              <cancel_cue cue="L2M145"/>
+            </do_otherwise>
+          </do_choose>
+        </do_all>
+      </action>
+      <cues>
+        <cue name="L2M145 Cleanup" delay="1s">
+          <condition>
+            <check_value value="{value@L2M145.Cleanup}" exact="1"/>
+          </condition>
+          <action>
+            <do_all>
+              <remove_offer actor="L2M145.Offerguy" conversation="L2GenericOffer" discipline="XXXT"/>
+              <destroy_actor actor="L2M145.Offerguy"/>
+              <remove_group group="L2M145.Roids"/>
+              <cancel_cue cue="L2M145"/>
+            </do_all>
+          </action>
+        </cue>
+        <!-- ALL MISSION CUES HERE -->
+        <cue name="L2M145 Remove Mission">
+          <timing>
+            <time min="700s" max="800s"/>
+          </timing>
+          <cues>
+            <cue name="L2M145 Ref Cleanup">
+              <condition>
+                <cue_completed cue="L2M145 Remove Mission"/>
+              </condition>
+              <action>
+                <set_value name="L2M145.Cleanup" exact="1"/>
+              </action>
+            </cue>
+          </cues>
+        </cue>
+        <cue name="L2M145 Offer">
+          <condition>
+            <cue_completed cue="L2M145"/>
+          </condition>
+          <action>
+            <set_value name="L2M145.TotalRoids" exact="{group.object.count@L2M145.Roids}"/>
+          </action>
+          <cues>
+            <cue name="L2M145 Briefing">
+              <condition>
+                <conversation_completed actor="L2M145.Offerguy" conversation="L2GenericOffer" answer="briefing"/>
+              </condition>
+              <action>
+                <do_all>
+                  <set_value name="L2M145.Step" exact="1"/>
+                  <set_value name="L2M145.RewardCr" min="{reward.money.{value@L2M145.OfferRace}@{value@L2M145.Difficulty}.XXXT}/2" max="{reward.money.{value@L2M145.OfferRace}@{value@L2M145.Difficulty}.XXXT}/3"/>
+                </do_all>
+              </action>
+              <cues>
+                <cue ref="L0M45 B">
+                  <params>
+                    <param name="Cue" value="L2M145" comment="Where the briefing is set"/>
+                    <param name="Step" value="L2M145.Step" comment="The Start Step"/>
+                    <param name="PageID" value="3345" comment="The PageID of the text"/>
+                    <param name="TextID Title" value="1001" comment="The briefing title ID"/>
+                    <param name="TextID Text Single Object" value="1004" comment="The briefing text ID for a single object"/>
+                    <param name="TextID Text Multi Sectors" value="1002" comment="The briefing text ID for multi objects in multi sectors"/>
+                    <param name="TextID Text Multi Objects" value="1003" comment="The briefing text ID for multi objects in a single sector"/>
+                    <param name="Scan Multi B Text" value="1005" comment="The multiple object objective text ID for the briefing"/>
+                    <param name="Scan Single B Text" value="1006" comment="The single object objective text ID for the briefing"/>
+                    <param name="OfferRace" value="{value@L2M145.OfferRace}" comment="Offer Race ID"/>
+                    <param name="Difficulty" value="{value@L2M145.Difficulty}" comment="The value address for the difficulty"/>
+                    <param name="Preview" value="1" comment="Is the briefing a preview"/>
+                    <param name="Complete Briefing" value="1" comment="Run the briefing completion library"/>
+                    <param name="Duration" value="L2M145.Duration" comment="Mission Time"/>
+                    <!--Mission Params-->
+                    <param name="GroupName" value="L2M145.Roids" comment="Asteroid Group"/>
+                    <param name="ScannedCounter" value="L2M145.ScannedCounter" comment="Address to save the scanned count too"/>
+                    <!--reward parameters (in priority order)-->
+                    <param name="RoundReward" value="1" comment="Round the reward to a reasonable value? Factor to round by - 1, 2, 4 or 5 are sensible."/>
+                    <param name="RewardFree" value="{35,2169} {17,3721}"/>
+                    <param name="RewardCr" value="L2M145.RewardCr" comment="Reward - credits"/>
+                  </params>
+                </cue>
+              </cues>
+            </cue>
+            <cue name="L2M145 Accept" version="2">
+              <condition>
+                <conversation_completed actor="L2M145.Offerguy" conversation="L2GenericOffer" answer="accept"/>
+              </condition>
+              <action>
+                <do_all>
+                  <cancel_cue cue="L2M145 Remove Mission"/>
+                  <remove_offer actor="L2M145.Offerguy" conversation="L2GenericOffer" discipline="XXXT"/>
+                  <set_value name="L2M145.StartTime" exact="{player.age}"/>
+                  <set_value name="L2M145.EndTime" exact="{value@L2M145.Duration}+{player.age}"/>
+                  <increment_statistic statistic="5160"/>
+                </do_all>
+              </action>
+              <cues>
+                <!-- This Checks for the Objectives Completed -->
+                <cue ref="L0M45" comment="This checks for the objects been scanned.">
+                  <params>
+                    <param name="Cue" value="L2M145" comment="Where the briefing is set"/>
+                    <param name="Step" value="L2M145.Step" comment="The Start Step"/>
+                    <!-- Params passed for the Finish Briefing -->
+                    <param name="PageID" value="3345" comment="The PageID of the text"/>
+                    <param name="TextID Title" value="1007" comment="The briefing title ID"/>
+                    <param name="TextID Text Single Object" value="1010" comment="The briefing text ID for a single object"/>
+                    <param name="TextID Text Multi Sectors" value="1008" comment="The briefing text ID for multi objects in multi sectors"/>
+                    <param name="TextID Text Multi Objects" value="1009" comment="The briefing text ID for multi objects in a single sector"/>
+                    <param name="Scan Multi B Text" value="1011" comment="The multiple object objective text ID for the briefing"/>
+                    <param name="Scan Single B Text" value="1012" comment="The single object objective text ID for the briefing"/>
+                    <param name="Scan Multi Text" value="1013" comment="The multiple object objective text ID"/>
+                    <param name="Scan Single Text" value="1014" comment="The single object objective text ID"/>
+                    <param name="OfferRace" value="{value@L2M145.OfferRace}" comment="Offer Race ID"/>
+                    <param name="Difficulty" value="{value@L2M145.Difficulty}" comment="The value address for the difficulty"/>
+                    <param name="Complete Briefing" value="1" comment="Run the briefing completion library"/>
+                    <param name="EndTime" value="L2M145.EndTime" comment="Mission Time"/>
+                    <!--Mission Params-->
+                    <param name="GroupName" value="L2M145.Roids" comment="Asteroid Group"/>
+                    <param name="ScannedCounter" value="L2M145.ScannedCount"/>
+                    <param name="ScannedGroup" value="L2M145.ScannedGroup"/>
+                    <param name="CurrentScanned" value="L2M145.CurrentScanned"/>
+                    <param name="FeedbackName" value="L2M145.L0M45FeedbackValue"/>
+                    <!--reward parameters (in priority order)-->
+                    <param name="RoundReward" value="1" comment="Round the reward to a reasonable value? Factor to round by - 1, 2, 4 or 5 are sensible."/>
+                    <param name="RewardCr" value="L2M145.RewardCr" comment="Reward - credits"/>
+                    <param name="RewardFree" value="{35,2169} {17,3721}"/>
+                  </params>
+                </cue>
+                <cue name="L2M145 Record Asteroid Data" delay="1s">
+                  <condition>
+                    <object_exists object="L2M145.CurrentScanned"/>
+                  </condition>
+                  <action>
+                    <do_all>
+                      <do_if value="{object.isclass.asteroid@L2M145.CurrentScanned}" exact="1">
+                        <set_value name="L2M145.Resource Count {object.resource@L2M145.CurrentScanned}" operation="add"/>
+                        <set_value name="L2M145.Resource Yield {object.resource@L2M145.CurrentScanned}" operation="add" exact="{object.yield@L2M145.CurrentScanned}"/>
+                        <do_if value="{object.yield@L2M145.CurrentScanned}" min="50">
+                          <set_value name="L2M145.HighYield" exact="1"/>
+                        </do_if>
+                        <do_if value="{object.resource@L2M145.CurrentScanned}" exact="{lookup.type@SS_WARE_NIVIDIUM2}">
+                          <set_value name="L2M145.NividiumFound" exact="1"/>
+                        </do_if>
+                        <do_if value="{value@L2M145.Resource Count {object.resource@L2M145.CurrentScanned}}" exact="1">
+                          <set_value name="L2M145.Resource Count" operation="add"/>
+                          <set_value name="L2M145.Resource {value@L2M145.Resource Count}" exact="{object.resource@L2M145.CurrentScanned}"/>
+                        </do_if>
+                        <remove_object object="L2M145.CurrentScanned"/>
+                      </do_if>
+                      <reset_cue cue="L2M145 Record Asteroid Data"/>
+                    </do_all>
+                  </action>
+                </cue>
+                <cue name="L2M145 Offerer Killed" delay="500" version="2">
+                  <condition>
+                    <check_value value="{actor.exists@L2M145.Offerguy}" exact="0"/>
+                  </condition>
+                  <action>
+                    <do_all>
+                      <remove_objective cue="L2M145" status="aborted"/>
+                      <remove_briefing cue="L2M145"/>
+                      <incoming_message author="{3300,10}" text="{3300,56}"/>
+                      <set_value name="L2M145.Cleanup" exact="1"/>
+                    </do_all>
+                  </action>
+                </cue>
+                <cue name="L2M145 All Scanned" delay="1s" version="3">
+                  <condition>
+                    <check_value value="{value@L2M145.L0M45FeedbackValue}" exact="0" negate="1"/>
+                  </condition>
+                  <action>
+                    <do_all>
+                      <do_choose>
+                        <do_when value="{value@L2M145.L0M45FeedbackValue}" list="1|2">
+                          <set_value name="L2M145.Step" operation="add"/>
+                          <set_value name="L2M145.ReturnDuration" exact="{player.age}+1200"/>
+                          <create_briefing cue="L2M145" title="{3345,1007}" text="{3345,1100}">							  
+                            <timer end="{value@L2M145.ReturnDuration}"/>
+							  <requirements>
+								  <requirement value="SS_WARE_TECH275" type="equipment"/>
+							  </requirements>
+							  <objectives>
+                              <objective step="{value@L2M145.Step}-1">
+                                <custom action="{35,2026}" text="{35,2139}"/>
+                              </objective>
+                              <objective step="{value@L2M145.Step}">
+                                <talkto actor="L2M145.Offerguy"/>
+                              </objective>
+                            </objectives>
+                          </create_briefing>
+                          <set_objective cue="L2M145">
+                            <briefing cue="L2M145" step="{value@L2M145.Step}"/>
+                            <timer end="{value@L2M145.ReturnDuration}"/>
+                            <talkto actor="L2M145.Offerguy"/>
+                          </set_objective>
+                          <create_offer actor="L2M145.Offerguy" conversation="L2M145 Completed" cue="L2M145 Mission Reward" discipline="XXXT"/>
+                        </do_when>
+                        <do_when value="{value@L2M145.L0M45FeedbackValue}" exact="99">
+                          <remove_objective cue="L2M145" status="aborted"/>
+                          <remove_briefing cue="L2M145"/>
+                          <set_value name="L2M145.Cleanup" exact="1"/>
+                        </do_when>
+                        <do_otherwise>
+                          <remove_objective cue="L2M145" status="failed"/>
+                          <remove_briefing cue="L2M145"/>
+                          <set_value name="L2M145.Cleanup" exact="1"/>
+                        </do_otherwise>
+                      </do_choose>
+                    </do_all>
+                  </action>
+                  <cues>
+                    <cue name="L2M145 Return Time Expired" delay="1s" version="2">
+                      <condition>
+                        <check_age min="{value@L2M145.ReturnDuration}"/>
+                      </condition>
+                      <action>
+                        <do_all>
+                          <incoming_message author="{actor.name@L2M145.Offerguy}" text="{3345,{value@L2M145.Variation}05}"/>
+                          <remove_offer actor="L2M145.Offerguy" conversation="L2M145 Completed" discipline="XXXT"/>
+                          <remove_objective cue="L2M145" status="failed"/>
+                          <remove_briefing cue="L2M145"/>
+                          <set_value name="L2M145.Cleanup" exact="1"/>
+                        </do_all>
+                      </action>
+                    </cue>
+                    <cue name="L2M145 End Mission" version="4">
+                      <condition>
+                        <conversation_completed actor="L2M145.Offerguy" conversation="L2M145 Completed" answer="finish"/>
+                      </condition>
+                      <action>
+                        <do_all>
+                          <set_value name="L2M145.Bonus" exact="({value@L2M145.RewardCr}*3)/2"/>
+                          <set_value name="L2M145.RewardCr" operation="multiply" exact="{value@L2M145.TotalRoids}"/>
+                          <do_choose>
+                            <do_when value="{value@L2M145.ScannedCount}" min="1">
+                              <set_value name="L2M145.Message TextID" exact="{value@L2M145.Variation}04"/>
+                              <do_if value="{value@L2M145.TotalRoids}" exact="{value@L2M145.ScannedCount}">
+                                <set_value name="L2M145.RewardCr" operation="add" exact="{value@L2M145.Bonus}"/>
+                                <set_value name="L2M145.Message TextID" exact="{value@L2M145.Variation}01"/>
+                              </do_if>
+                              <do_if value="{value@L2M145.HighYield}" exact="1">
+                                <set_value name="L2M145.RewardCr" operation="add" exact="{value@L2M145.Bonus}"/>
+                                <set_value name="L2M145.Message TextID" exact="{value@L2M145.Variation}02"/>
+                              </do_if>
+                              <do_if value="{value@L2M145.NividiumFound}" exact="1">
+                                <set_value name="L2M145.RewardCr" operation="add" exact="{value@L2M145.Bonus}"/>
+                                <set_value name="L2M145.Message TextID" exact="{value@L2M145.Variation}03"/>
+                              </do_if>
+                              <incoming_message author="{actor.name@L2M145.Offerguy}" text="{3345,{value@L2M145.Message TextID}}"/>
+                              <remove_offer actor="L2M145.Offerguy" conversation="L2M145 Completed" discipline="XXXT"/>
+                              <reward_player>
+                                <money exact="{value@L2M145.RewardCr}"/>
+                                <notoriety>
+                                  <relation race="{actor.race@L2M145.Offerguy}" exact="{reward.notoriety.{actor.race@L2M145.Offerguy}@{value@L2M145.Difficulty}}"/>
+                                </notoriety>
+                              </reward_player>
+                              <increment_statistic statistic="5170"/>
+                              <remove_objective cue="L2M145" status="complete"/>
+                            </do_when>
+                            <do_otherwise>
+                              <remove_objective cue="L2M145" status="failed"/>
+                              <incoming_message author="{actor.name@L2M145.Offerguy}" text="{3345,{value@L2M145.Variation}06}"/>
+                            </do_otherwise>
+                          </do_choose>
+                          <remove_briefing cue="L2M145"/>
+                          <set_value name="L2M145.Cleanup" exact="1"/>
+                        </do_all>
+                      </action>
+                    </cue>
+                  </cues>
+                </cue>
+              </cues>
+            </cue>
+          </cues>
+        </cue>
+      </cues>
+    </cue>
+  </cues>
+  <signature>rxjxFmvoXbMqG8GrQr/f9IsBYoGUxcVBb67MDVgm7UEuVL/iyJxrZuutMEl79iqGTMto/rIUIuDrhvS5WGw16QUMKNpOBAKOJAF6koi/a1PdvcoTu9aXgIYNdGAGc9qacDE72iuLBDpX86OIGgTjoZU00U1klCxVdn/N/iSd7rlx4O700T3eAbjKoe934JBKn6Vz0/RFFYaTp6Z32YdfUoi3hYKiHegZCGd07n26A8XHmGficnregp3lLUuaRgdiz0JHSWa+ZRYdkzC7LtVZ3G7Okk55EUJBemVyfiWU066fe5SpcT50lEJYj58hgM4/q/7JxUf3s7itoap/4WV3Aw==</signature>
+</director>

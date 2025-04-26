@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<?xml-stylesheet href="director.xsl" type="text/xsl" ?>
+<director name="guilds_mechanic" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="director.xsd">
+  <documentation>
+    <author name="Cycrow" />
+    <content reference="guilds_mechanic" name="guilds_mechanic" description="Guilds, Dodgy Mechanic script"/>
+    <version number="0.1" date="21/09/2024" />
+  </documentation>
+    <cues>
+	    <cue name="Guilds_Mechanic" delay="1s">
+			<cues>
+				<cue name="Guilds_Mechanic_Overtune" delay="1s">
+					<condition>
+						<object_changed_sector/>
+					</condition>
+					<action>
+						<do_all>
+							<find_station dockingallowed="1" name="Guilds_Mechanic_Overtune.Station" category="dock" silent="1">
+								<sector sector="{player.sector}"/>
+								<jumps exact="0"/>
+							</find_station>
+							<set_value name="this.random" min="0" max="100"/>
+							<do_choose>
+								<do_when value="{object.exists@Guilds_Mechanic_Overtune.Station}" exact="0">
+									<set_value name="Guilds_Mechanic_Overtune.Start" exact="0" />
+									<reset_cue cue="Guilds_Mechanic_Overtune"/>
+								</do_when>
+								<do_when value="{value@this.random}" max="15">
+									<set_value name="Guilds_Mechanic_Overtune.Start" exact="1" />
+								</do_when>
+								<do_otherwise>
+									<set_value name="Guilds_Mechanic_Overtune.Start" exact="0" />
+									<reset_cue cue="Guilds_Mechanic_Overtune"/>
+								</do_otherwise>
+							</do_choose>
+						</do_all>						
+					</action>
+					<cues>
+						<cue name="Guilds_Mechanic_Overtune Start" delay="1s">
+							<condition>
+								<check_value value="{value@Guilds_Mechanic_Overtune.Start}" exact="1"/>
+							</condition>
+							<action>
+								<do_all>
+									<set_value name="Guilds_Mechanic_Overtune.Timeout" min="1600" max="2000"/>
+									<set_value name="Guilds_Mechanic_Overtune.Timeout" exact="60"/>
+									<set_value name="Guilds_Mechanic_Overtune.Title" min="4041" max="(4041+({9620,4040} - 1))"/>
+									<set_value name="Guilds_Mechanic_Overtune.Text" min="4061" max="(4061+({9620,4060} - 1))"/>
+									<set_value name="Guilds_Mechanic_Overtune.Cost" min="15000" max="20000"/>
+									<set_value name="Guilds_Mechanic_Overtune.Cost" operation="multiply" exact="1000" />
+									<set_value name="Guilds_Mechanic_Overtune.Ware" min="1" max="100"/>
+									<create_actor character="{random.pilot} {9620,4033}" name="Guilds_Mechanic_Overtune.Actor" race="{object.race@Guilds_Mechanic_Overtune.Station}" object="Guilds_Mechanic_Overtune.Station" location="crew" voiceflags="32"/>
+									<create_offer actor="Guilds_Mechanic_Overtune.Actor" cue="Guilds_Mechanic_Overtune" discipline="XXXT" conversation="L2OfferNormal"/>
+								</do_all>
+							</action>
+							<cues>
+								<cue name="Guilds_Mechanic_Overtune Timeout" delay="1s">
+									<condition>
+										<check_all>
+											<check_value value="{value@Guilds_Mechanic_Overtune.Start}" exact="1"/>
+											<check_value value="{player.menu.dialog}" exact="0"/>
+										</check_all>
+									</condition>
+									<timing>
+										<time exact="{value@Guilds_Mechanic_Overtune.Timeout}s"/>
+									</timing>
+									<action>
+										<do_if value="{value@Guilds_Mechanic_Overtune.Start}" exact="1">
+											<remove_offer actor="Guilds_Mechanic_Overtune.Actor" conversation="L2OfferNormal" discipline="XXXT"/>
+											<destroy_actor actor="Guilds_Mechanic_Overtune.Actor"/>
+										</do_if>
+									</action>
+								</cue>
+								<cue name="Guilds_Mechanic_Overtune Aborted" delay="1s">
+									<condition>
+										<objective_cancelled cue="Guilds_Mechanic_Overtune"/>
+									</condition>
+									<action>
+										<do_all>
+											<set_value name="Guilds_Mechanic_Overtune.Start" exact="4" />
+											<remove_offer actor="Guilds_Mechanic_Overtune.Actor" conversation="DodgyMechanic_1" discipline="XXXT"/>
+											<destroy_actor actor="Guilds_Mechanic_Overtune.Actor"/>
+										</do_all>
+									</action>
+								</cue>
+
+								<cue name="Guilds_Mechanic_Overtune ActorDies" delay="1s">
+									<condition>
+										<check_value value="{actor.exists@Guilds_Mechanic_Overtune.Actor}" exact="0"/>
+									</condition>
+									<timing>
+										<time exact="1s"/>
+									</timing>
+									<action>
+										<do_all>
+											<do_if value="{value@Guilds_Mechanic_Overtune.Start}" exact="2">
+												<remove_objective cue="Guilds_Mechanic_Overtune" status="aborted"/>
+												<remove_briefing cue="Guilds_Mechanic_Overtune" />
+											</do_if>
+										</do_all>
+									</action>
+									<cues>
+										<cue name="Guilds_Mechanic_Overtune Restart" delay="2s">
+											<condition>
+												<cue_is_complete cue="Guilds_Mechanic_Overtune ActorDies"/>
+											</condition>
+											<timing>
+												<time min="30m" max="60m"/>
+											</timing>
+											<action>
+												<do_all>
+													<set_value name="Guilds_Mechanic_Overtune.Start" exact="0" />
+													<reset_cue cue="Guilds_Mechanic_Overtune"/>
+												</do_all>
+											</action>
+										</cue>
+									</cues>
+								</cue>
+								<cue name="Guilds_Mechanic_Overtune NoCredits" delay="1s">
+									<condition>
+										<check_value value="{value@Guilds_Mechanic_Overtune.Start}" exact="10"/>
+									</condition>
+									<action>
+										<do_all>
+											<set_value name="Guilds_Mechanic_Overtune.Start" exact="1" />
+											<play_text pageid="13" textid="1254" priority="90"/>
+										</do_all>
+									</action>
+								</cue>
+								<cue name="Guilds_Mechanic_Overtune Briefing">
+									<condition>
+										<conversation_completed actor="Guilds_Mechanic_Overtune.Actor" answer="briefing" conversation="L2OfferNormal"/>
+									</condition>
+									<action>
+										<do_all>
+											<create_briefing cue="Guilds_Mechanic_Overtune" title="{9620,{value@Guilds_Mechanic_Overtune.Title}}" text="{9620,{value@Guilds_Mechanic_Overtune.Text}}">
+												<requirements name="{35,4247}">
+													<requirement value="{lookup.type@SS_WARE_OVERTUNE}" type="ware" />
+												</requirements>
+												<objectives>
+													<objective step="1">
+														<custom icon="buy" action="Pay" text="{value.formatted@Guilds_Mechanic_Overtune.Cost} {35,707}"/>
+													</objective>
+													<objective step="2">
+														<dockat object="Guilds_Mechanic_Overtune.Station"/>
+													</objective>
+													<objective step="3">
+														<talkto actor="Guilds_Mechanic_Overtune.Actor"/>
+													</objective>
+												</objectives>
+											</create_briefing>
+										</do_all>
+									</action>
+									<cues>
+										<cue name="Guilds_Mechanic_Overtune UpdateBriefing">
+											<condition>
+												<cue_is_complete cue="Guilds_Mechanic_Overtune Briefing"/>
+											</condition>
+											<cues>
+												<cue ref="LUM04">
+													<params>
+														<param name="Cue" value="Guilds_Mechanic_Overtune"/>
+														<param name="Discipline" value="XXXT" comment="The mission discipline"/>
+													</params>
+												</cue>
+											</cues>
+										</cue>
+										<cue name="Guilds_Mechanic_Overtune Accept">
+											<condition>
+												<conversation_completed actor="Guilds_Mechanic_Overtune.Actor" answer="accept" conversation="L2OfferNormal"/>
+											</condition>
+											<action>
+												<do_all>
+													<do_choose>
+														<do_when value="{player.money}" min="{value@Guilds_Mechanic_Overtune.Cost}">
+															<cancel_cue cue="Guilds_Mechanic_Overtune Timeout"/>
+															<remove_offer actor="Guilds_Mechanic_Overtune.Actor" conversation="L2OfferNormal" discipline="XXXT"/>
+															<reward_player>
+																<money transactionpage="9620" transactionid="4034" exact="-({value@Guilds_Mechanic_Overtune.Cost})"/>
+															</reward_player>
+															<set_value name="Guilds_Mechanic_Overtune.Start" exact="2" />
+															<set_objective cue="Guilds_Mechanic_Overtune" title="{9620,{value@Guilds_Mechanic_Overtune.Title}}" text="{9620,{value@Guilds_Mechanic_Overtune.Text}}">
+																<briefing cue="Guilds_Mechanic_Overtune" step="2"/>
+																<mission discipline="XXXT"/>
+																<dockat object="Guilds_Mechanic_Overtune.Station"/>
+															</set_objective>
+														</do_when>
+														<do_otherwise>
+															<reset_cue cue="Guilds_Mechanic_Overtune NoCredits"/>
+															<set_value name="Guilds_Mechanic_Overtune.Start" exact="10" />
+															<reset_cue cue="Guilds_Mechanic_Overtune Briefing"/>
+														</do_otherwise>
+													</do_choose>
+												</do_all>
+											</action>
+											<cues>
+												<cue name="Guilds_Mechanic_Overtune DockAt" delay="2s">
+													<condition>
+														<check_all>
+															<check_value value="{value@Guilds_Mechanic_Overtune.Start}" exact="2"/>
+															<object_is_docked dockobject="Guilds_Mechanic_Overtune.Station"/>
+														</check_all>
+													</condition>
+													<action>
+														<do_all>
+															<set_objective cue="Guilds_Mechanic_Overtune" title="{9620,{value@Guilds_Mechanic_Overtune.Title}}" text="{9620,{value@Guilds_Mechanic_Overtune.Text}}">
+																<briefing cue="Guilds_Mechanic_Overtune" step="3"/>
+																<mission discipline="XXXT"/>
+																<talkto actor="Guilds_Mechanic_Overtune.Actor"/>
+															</set_objective>
+															<create_offer actor="Guilds_Mechanic_Overtune.Actor" cue="Guilds_Mechanic_Overtune" discipline="XXXT" conversation="DodgyMechanic_1"/>
+														</do_all>
+													</action>
+													<cues>
+														<cue name="Guilds_Mechanic_Overtune Undock">
+															<condition>
+																<object_is_docked dockobject="Guilds_Mechanic_Overtune.Station" negate="1"/>
+															</condition>
+															<action>
+																<do_all>
+																	<remove_offer actor="Guilds_Mechanic_Overtune.Actor" conversation="DodgyMechanic_1" discipline="XXXT"/>
+																	<set_objective cue="Guilds_Mechanic_Overtune" title="{9620,{value@Guilds_Mechanic_Overtune.Title}}" text="{9620,{value@Guilds_Mechanic_Overtune.Text}}">
+																		<briefing cue="Guilds_Mechanic_Overtune" step="2"/>
+																		<mission discipline="XXXT"/>
+																		<dockat object="Guilds_Mechanic_Overtune.Station"/>
+																	</set_objective>
+																	<reset_cue cue="Guilds_Mechanic_Overtune DockAt"/>
+																</do_all>
+															</action>
+														</cue>
+														<cue name="Guilds_Mechanic_Overtune Complete">
+															<condition>
+																<conversation_completed actor="Guilds_Mechanic_Overtune.Actor" answer="accept" conversation="DodgyMechanic_1"/>
+															</condition>
+															<action>
+																<do_all>
+																	<cancel_cue cue="Guilds_Mechanic_Overtune Undock"/>
+																	<set_value name="Guilds_Mechanic_Overtune.Start" exact="3" />
+																	<remove_briefing cue="Guilds_Mechanic_Overtune"/>
+																	<remove_objective cue="Guilds_Mechanic_Overtune" status="complete"/>
+																	<remove_offer actor="Guilds_Mechanic_Overtune.Actor" conversation="DodgyMechanic_1" discipline="XXXT"/>
+																	<destroy_actor actor="Guilds_Mechanic_Overtune.Actor"/>
+																	<do_choose>
+																		<do_when value="{value@Guilds_Mechanic_Overtune.Ware}" max="90">
+																			<reward_player>
+																				<equipment>
+																					<ware typename="SS_WARE_OVERTUNE_IA" exact="1"/>
+																				</equipment>
+																			</reward_player>
+																		</do_when>
+																		<do_otherwise>
+																			<reward_player>
+																				<equipment>
+																					<ware typename="SS_WARE_OVERTUNE_POOR" exact="1"/>
+																				</equipment>
+																			</reward_player>
+																		</do_otherwise>
+																	</do_choose>
+																	<play_text pageid="13" textid="1274" priority="90"/>
+																</do_all>
+															</action>
+														</cue>
+													</cues>
+												</cue>
+											</cues>
+										</cue>										
+									</cues>
+								</cue>								
+							</cues>
+						</cue>
+					</cues>
+				</cue>
+			</cues>
+		</cue>
+    </cues>
+</director>

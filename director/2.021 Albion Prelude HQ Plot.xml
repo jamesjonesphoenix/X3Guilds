@@ -1,0 +1,781 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<?xml-stylesheet href="director.xsl" type="text/xsl" ?>
+<director name="template" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="director.xsd">
+  <documentation>
+    <author name="Owen Lake" alias="Xenon_Slayer" contact="E-Mail: Owen@egosoft.com Skype: Owen Lake" />
+    <content reference="L2M021" name="AP HQ Plot" description="A set of missions offered by the the Teladi NMMC leading to the HQ"/>
+    <version number="0.1" date="25/01/2012" status="testing"/>
+  </documentation>
+  <cues>
+    <cue name="L2M021" library="1">
+      <documentation>
+        <history>
+          <change author="Owen Lake" date="25/01/2012" description="Initial version"/>
+        </history>
+      </documentation>
+      <condition>
+        <check_all>
+			<check_value value="{player.notoriety.teladi.rank}" min="5"/>
+			<check_value value="{player.notoriety.nmmc.rank}" min="5"/>
+			<check_any>
+            <check_value value="{player.statistic.5070}" min="1"/>
+            <check_value value="{player.ownedstations.count}" min="1"/>
+          </check_any>
+          <count_stations typename="SS_DOCK_CORP_4" race="argon" min="1" comment="PMC HQ">
+            <sector x="18" y="11"/>
+            <jumps max="0"/>
+          </count_stations>
+          <count_stations typename="SS_DOCK_CORP_5" race="nmmc" min="1" known="1" comment="NMMC HQ">
+            <sector x="12" y="6"/>
+            <jumps max="0"/>
+          </count_stations>
+        </check_all>
+      </condition>
+      <action>
+        <do_all>
+          <find_sector name="L2M021.PTNI" x="12" y="6" exact="0"/>
+          <find_sector name="L2M021.Scale_Plate_Green" x="11" y="7" exact="0"/>
+          <find_sector name="L2M021.GrandExchange" x="20" y="9" exact="0"/>
+          <find_sector name="L2M021.AlbionAlpha" x="17" y="10" exact="0"/>
+          <find_sector name="L2M021.AlbionBeta" x="17" y="11" exact="0"/>
+          <find_sector name="L2M021.AlbionGamma" x="18" y="10" exact="0"/>
+          <find_sector name="L2M021.AlbionDelta" x="18" y="11" exact="0"/>
+          <find_sector name="L2M021.Wastelands" x="16" y="9" exact="0"/>
+
+          <find_station name="L2M021.NMMCHQ" typename="SS_DOCK_CORP_5" race="nmmc">
+            <sector sector="L2M021.PTNI"/>
+          </find_station>
+          <do_if value="{object.exists@L2M021.NMMCHQ}" exact="0">
+            <create_station name="L2M021.NMMCHQ" safety="0" race="nmmc" typename="SS_DOCK_CORP_5">
+              <position max="50km"/>
+              <sector sector="L2M021.PTNI"/>
+              <equipment loadout="default"/>
+            </create_station>
+          </do_if>
+          <set_invincible object="L2M021.NMMCHQ" invincible="1"/>
+
+          <find_station name="L2M021.PMCHQ" typename="SS_DOCK_CORP_4" race="argon">
+            <sector sector="L2M021.AlbionDelta"/>
+          </find_station>
+          <do_if value="{object.exists@L2M021.PMCHQ}" exact="0">
+            <create_station name="L2M021.PMCHQ" safety="0" race="argon" typename="SS_DOCK_CORP_4">
+              <position max="50km"/>
+              <sector sector="L2M021.AlbionDelta"/>
+              <equipment loadout="default"/>
+            </create_station>
+          </do_if>
+          <set_invincible object="L2M021.PMCHQ" invincible="1"/>
+
+          <create_actor name="L2M021.Talos" character="{3895,107}" face="502" race="nmmc" voice="511" invincible="1" object="L2M021.NMMCHQ" location="crew"/>
+          <create_offer actor="L2M021.Talos" conversation="L2M021_Talos_1" cue="L2M021" discipline="XXXXP"/>
+
+          <incoming_message author="{13,9053}" text="{3218,100}"/>
+          <create_briefing cue="L2M021" story="{3200,17}" title="{3218,1}" text="{3218,2}" background="sector_teladi_ptni_headquarters.tga">
+            <mission discipline="XXXT" level="average"/>
+            <objectives>
+              <objective step="1">
+                <custom action="{3218,102}" text="{3218,103}"/>
+              </objective>
+              <objective step="2">
+                <custom action="{3218,104}" text="{3218,105}"/>
+              </objective>
+              <objective step="3">
+                <custom action="{3218,106}" text="{3218,107}"/>
+              </objective>
+            </objectives>
+          </create_briefing>
+        </do_all>
+      </action>
+      <cues>
+        <cue name="L2M021_NMMC_Accept">
+          <condition>
+            <conversation_completed actor="L2M021.Talos" conversation="L2M021_Talos_1" answer="accept"/>
+          </condition>
+          <action>
+            <do_all>
+              <remove_offer actor="L2M021.Talos" conversation="L2M021_Talos_1" discipline="XXXXP"/>
+              <remove_briefing cue="L2M021"/>
+            </do_all>
+          </action>
+          <cues>
+            <cue name="L2M021_Build_Station_Briefing" delay="1s">
+              <condition>
+                <check_value value="{player.menu.speech}" exact="0"/>
+              </condition>
+              <action>
+                <do_all>
+                  <set_value name="L2M021.StationToBuild" exact="{lookup.type@SS_FAC_R255}"/>
+                  <set_value name="L2M021.StationPrice" exact="{lookup.type.price@SS_FAC_R255}"/>
+
+                  <create_briefing cue="L2M021" story="{3200,17}" title="{3218,3}" text="{3218,4}" background="sector_teladi_ptni_headquarters.tga">
+                    <mission discipline="XXBX" level="average"/>
+                    <objectives>
+                      <objective step="1">
+                        <build>
+                          <ware typename="{value@L2M021.StationToBuild}"/>
+                        </build>
+                      </objective>
+                    </objectives>
+                  </create_briefing>
+                  <set_objective cue="L2M021" story="{3200,16}" title="{3218,3}" text="{3218,4}" noabort="1" silent="1">
+                    <briefing cue="L2M021" step="1"/>
+                    <mission discipline="XXBX" level="average"/>
+                    <build>
+                      <ware typename="{value@L2M021.StationToBuild}"/>
+                    </build>
+                  </set_objective>
+                </do_all>
+              </action>
+              <cues>
+                <cue ref="L0M22 B">
+                  <params>
+                    <param name="Cue" value="L2M021"/>
+                    <param name="ID" value="1"/>
+                    <param name="Step" value="1"/>
+                    <param name="EnemyRace" value="{lookup.race@yaki}"/>
+                    <param name="OfferRace" value="{lookup.race@nmmc}"/>
+                    <param name="Lv1Guide" value="L2M021.Talos"/>
+                    <param name="Difficulty" value="{lookup.level@average}"/>
+                    <param name="RewardCr" value="L2M021.Build_Station_Reward"/>
+                    <param name="RoundReward" value="1"/>
+                    <param name="LeaveTitle" value="1" comment="Do not generate a title"/>
+                    <param name="StationX" value="1000"/>
+                    <param name="StationY" value="1250"/>
+                    <param name="StationZ" value="10000"/>
+                    <param name="StationSector" value="L2M021.GrandExchange"/>
+                    <param name="StationType" value="{lookup.type@{value@L2M021.StationToBuild}}"/>
+                    <param name="StationCost" value="{value@L2M021.StationPrice}"/>
+                    <param name="IsPlot" value="1"/>
+                  </params>
+                </cue>
+                <cue name="L2M021_Build_Station_Briefing_Wait">
+                  <condition>
+                    <cue_is_complete cue="L0M22 B"/>
+                  </condition>
+                  <cues>
+                    <cue ref="L0M22">
+                      <params>
+                        <param name="Cue" value="L2M021"/>
+                        <param name="ID" value="1"/>
+                        <param name="Step" value="1"/>
+                        <param name="EnemyRace" value="{lookup.race@yaki}"/>
+                        <param name="OfferRace" value="{lookup.race@nmmc}"/>
+                        <param name="Lv1Guide" value="L2M021.Talos"/>
+                        <param name="Difficulty" value="{lookup.level@average}"/>
+                        <param name="RewardCr" value="L2M021.Build_Station_Reward"/>
+                        <param name="IsPlot" value="1"/>
+                        <param name="StationName" value="L2M021.BuiltStation" comment="Sets the built station to this value if provided"/>
+                      </params>
+                    </cue>
+
+                    <cue name="L2M021_StationBuilt" delay="1s">
+                      <condition>
+                        <check_value value="{value@L2M021.1 L0M22 Progress}" min="1"/>
+                      </condition>
+                      <action>
+                        <do_all>
+                          <reward_player>
+                            <money exact="{value@L2M021.Build_Station_Reward}"/>
+                          </reward_player>
+                        </do_all>
+                      </action>
+                      <cues>
+                        <cue name="L2M021_Fly_To_PMCHQ">
+                          <condition>
+                            <cue_completed cue="L2M021_StationBuilt"/>
+                          </condition>
+                          <timing>
+                            <time min="2s" max="5s"/>
+                          </timing>
+                          <action>
+                            <do_all>
+                              <ask_question name="L2M021_Fly_To_PMCHQ" author="{actor.name@L2M021.Talos}" text="{3895,107001}"/>
+                            </do_all>
+                          </action>
+                          <cues>
+                            <cue name="L2M021_Fly_To_PMCHQ_Answered">
+                              <condition>
+                                <question_answered question="L2M021_Fly_To_PMCHQ" answer="next"/>
+                              </condition>
+                              <action>
+                                <do_all>
+                                  <set_value name="L2M021.PMCWormReward" exact="50000"/>
+                                  <create_briefing cue="L2M021" story="{3200,17}" title="{3218,5}" text="{3218,6}" background="sector_teladi_ptni_headquarters.tga">
+                                    <mission discipline="XXXT" level="easy"/>
+                                    <reward money="{value@L2M021.PMCWormReward}"/>
+                                    <objectives>
+                                      <objective step="2">
+                                        <dockat object="L2M021.PMCHQ"/>
+                                      </objective>
+                                    </objectives>
+                                  </create_briefing>
+                                  <set_objective cue="L2M021" story="{3200,16}" title="{3218,5}" text="{3218,6}" noabort="1">
+                                    <briefing cue="L2M021" step="2"/>
+                                    <mission discipline="XXXT" level="easy"/>
+                                    <reward money="{value@L2M021.PMCWormReward}"/>
+                                    <dockat object="L2M021.PMCHQ"/>
+                                  </set_objective>
+                                </do_all>
+                              </action>
+                              <cues>
+                                <cue name="L2M021_At_PMCHQ_Answered" delay="2s">
+                                  <condition>
+                                    <check_all>
+                                      <object_is_docked object="{player.ship}" dockobject="L2M021.PMCHQ"/>
+                                      <check_value value="{player.menu.speech}" exact="0"/>
+                                    </check_all>
+                                  </condition>
+                                  <action>
+                                    <do_all>
+                                      <ask_question name="L2M021_At_PMCHQ_Answered" author="{actor.name@L2M021.Talos}" text="{3895,107002}"/>
+                                    </do_all>
+                                  </action>
+                                  <cues>
+                                    <cue name="L2M021_Return_To_NMMCHQ">
+                                      <condition>
+                                        <question_answered question="L2M021_At_PMCHQ_Answered" answer="next"/>
+                                      </condition>
+                                      <action>
+                                        <do_all>
+                                          <set_value name="L2M021.MaxPirateWaveCount" min="7" max="10"/>
+                                          <create_briefing cue="L2M021" story="{3200,17}" title="{3218,5}" text="{3218,6}" background="sector_teladi_ptni_headquarters.tga">
+                                            <mission discipline="XXXT" level="easy"/>
+                                            <objectives>
+                                              <objective step="3">
+                                                <dockat object="L2M021.NMMCHQ"/>
+                                              </objective>
+                                            </objectives>
+                                          </create_briefing>
+                                          <set_objective cue="L2M021" story="{3200,16}" title="{3218,5}" text="{3218,6}" noabort="1">
+                                            <briefing cue="L2M021" step="3"/>
+                                            <mission discipline="XXXT" level="easy"/>
+                                            <dockat object="L2M021.NMMCHQ"/>
+                                          </set_objective>
+                                        </do_all>
+                                      </action>
+                                      <cues>
+                                        <cue name="L2M021_Spawn_Pirates" delay="30s">
+                                          <condition>
+                                            <check_all>
+                                              <check_value value="{value@L2M021.MaxPirateWaveCount}" min="1"/>
+                                              <!--Check that the player is in a sector pirates may usually show up in-->
+                                              <count_stations race="default|pirategroup" min="1">
+                                                <sector sector="{player.sector}"/>
+                                              </count_stations>
+                                              <count_gates typename="SS_WG_EAST|SS_WG_NORTH|SS_WG_SOUTH|SS_WG_WEST" min="1">
+                                                <sector sector="{player.sector}"/>
+                                              </count_gates>
+                                            </check_all>
+                                          </condition>
+                                          <action>
+                                            <do_all>
+                                              <create_ship name="L2M021.Pirate_Leader" typename="{random.type@SS_SH_A_M3_P_1|SS_SH_A_M3_P_2|SS_SH_A_M3_P_2|SS_SH_T_M3_P}" race="pirate" racelogic="0" covered="0">
+                                                <position max="30km"/>
+                                                <equipment loadout="maximum"/>
+                                                <command command="attack" commandobject="{player.ship}"/>
+                                              </create_ship>
+                                              <do_all exact="5">
+                                                <create_ship typename="{random.type@SS_SH_A_M3_P_1|SS_SH_A_M3_P_2|SS_SH_A_M3_P_2|SS_SH_T_M3_P}" race="pirate" racelogic="0" covered="0">
+                                                  <position object="L2M021.Pirate_Leader"/>
+                                                  <equipment loadout="maximum"/>
+                                                  <command command="attack" commandobject="{player.ship}"/>
+                                                </create_ship>
+                                              </do_all>
+                                              <set_value name="L2M021.MaxPirateWaveCount" operation="subtract"/>
+                                            </do_all>
+                                          </action>
+                                          <cues>
+                                            <cue name="L2M021_Spawn_Pirates_Reset">
+                                              <timing>
+                                                <time min="5m" max="7m"/>
+                                              </timing>
+                                              <action>
+                                                <do_all>
+                                                  <reset_cue cue="L2M021_Spawn_Pirates"/>
+                                                </do_all>
+                                              </action>
+                                            </cue>
+                                          </cues>
+                                        </cue>
+                                        <cue name="L2M021_Deliver_PMC_Data" delay="2s">
+                                          <condition>
+                                            <check_all>
+                                              <object_is_docked object="{player.ship}" dockobject="L2M021.NMMCHQ"/>
+                                              <check_value value="{player.menu.speech}" exact="0"/>
+                                            </check_all>
+                                          </condition>
+                                          <timing>
+                                            <time exact="1s"/>
+                                          </timing>
+                                          <action>
+                                            <do_all>
+                                              <cancel_cue cue="L2M021_Spawn_Pirates"/>
+                                              <reward_player>
+                                                <money exact="{value@L2M021.PMCWormReward}"/>
+                                              </reward_player>
+                                              <play_text actor="L2M021.Talos" textid="10003"/>
+                                              <remove_briefing cue="L2M021"/>
+                                              <remove_objective cue="L2M021" status="complete"/>
+                                            </do_all>
+                                          </action>
+                                          <cues>
+                                            <cue name="L2M021_Return_Nividium_Briefing">
+                                              <condition>
+                                                <check_all>
+                                                  <cue_is_complete cue="L2M021_Deliver_PMC_Data"/>
+                                                  <check_value value="{player.menu.speech}" exact="0"/>
+                                                </check_all>
+                                              </condition>
+                                              <action>
+                                                <do_all>
+                                                  <ask_question name="L2M021_Return_Nividium_Briefing" author="{actor.name@L2M021.Talos}" text="{3895,107003}"/>
+                                                </do_all>
+                                              </action>
+                                              <cues>
+                                                <cue name="L2M021_Return_Nividium">
+                                                  <condition>
+                                                    <question_answered question="L2M021_Return_Nividium_Briefing" answer="next"/>
+                                                  </condition>
+                                                  <action>
+                                                    <do_all>
+                                                      <add_cargo>
+                                                        <ware typename="SS_WARE_UNFOCUS_JUMP" exact="1"/>
+                                                      </add_cargo>
+                                                      <set_value name="L2M021.NividiumAmount" exact="75"/>
+                                                      <create_briefing cue="L2M021" story="{3200,17}" title="{3218,7}" text="{3218,8}" background="sector_teladi_ptni_headquarters.tga">
+                                                        <mission discipline="XXXT" level="hard"/>
+                                                        <objectives>
+                                                          <objective step="1">
+                                                            <deliver object="L2M021.NMMCHQ">
+                                                              <ware typename="SS_WARE_NIVIDIUM2" exact="{value@L2M021.NividiumAmount}"/>
+                                                            </deliver>
+                                                          </objective>
+                                                        </objectives>
+                                                      </create_briefing>
+                                                      <set_objective cue="L2M021" story="{3200,17}" title="{3218,7}" text="{3218,8}" noabort="1" silent="1">
+                                                        <briefing cue="L2M021" step="1"/>
+                                                        <mission discipline="XXXT" level="hard"/>
+                                                        <deliver object="L2M021.NMMCHQ">
+                                                          <ware typename="SS_WARE_NIVIDIUM2" exact="{value@L2M021.NividiumAmount}"/>
+                                                        </deliver>
+                                                      </set_objective>
+                                                      <set_value name="L2M021.Deliver_Nividium_Reward" exact="({lookup.type.maxprice@SS_WARE_NIVIDIUM2} * {value@L2M021.NividiumAmount}) + 50000"/>
+                                                    </do_all>
+                                                  </action>
+                                                  <cues>
+                                                    <cue ref="L0M04 B">
+                                                      <params>
+                                                        <param name="Cue" value="L2M021"/>
+                                                        <param name="ID" value="2"/>
+                                                        <param name="OfferRace" value="{lookup.race@nmmc}"/>
+                                                        <param name="Lv1Guide" value="{actor@L2M021.Talos}"/>
+                                                        <param name="Difficulty" value="{lookup.level@hard}"/>
+                                                        <param name="RewardCr" value="L2M021.Deliver_Nividium_Reward"/>
+                                                        <param name="Buyer" value="L2M021.Talos"/>
+                                                        <param name="Ware1" value="{lookup.type@SS_WARE_NIVIDIUM2}" comment="Nividium"/>
+                                                        <param name="Ware1Amt" value="{value@L2M021.NividiumAmount}"/>
+                                                        <param name="RoundReward" value="1"/>
+                                                        <param name="LeaveTitle" value="1"/>
+                                                        <param name="IsPlot" value="1"/>
+                                                        <param name="Step" value="1"/>
+                                                      </params>
+                                                    </cue>
+                                                    <cue name="L2M021_Return_Nividium_Wait">
+                                                      <condition>
+                                                        <cue_is_complete cue="L0M04 B"/>
+                                                      </condition>
+                                                      <cues>
+                                                        <cue ref="L0M04">
+                                                          <params>
+                                                            <param name="Cue" value="L2M021"/>
+                                                            <param name="ID" value="2"/>
+                                                            <param name="OfferRace" value="{lookup.race@nmmc}"/>
+                                                            <param name="Lv1Guide" value="{actor@L2M021.Talos}"/>
+                                                            <param name="AddText" value="0"/>
+                                                            <param name="NoMessage" value="1"/>
+                                                            <param name="Difficulty" value="{lookup.level@hard}"/>
+                                                            <param name="RewardCr" value="L2M021.Deliver_Nividium_Reward"/>
+                                                            <param name="AddToStation" value="0"/>
+                                                            <param name="LeaveTitle" value="1"/>
+                                                            <param name="IsPlot" value="1"/>
+                                                            <param name="Step" value="1"/>
+                                                          </params>
+                                                        </cue>
+                                                        <cue name="L2M021_Return_Nividium_Finished" delay="2s">
+                                                          <condition>
+                                                            <check_all>
+                                                              <check_value value="{value@L2M021.2 L0M04 Progress}" min="1"/>
+                                                              <check_value value="{player.menu.speech}" exact="0"/>
+                                                            </check_all>
+                                                          </condition>
+                                                          <action>
+                                                            <do_all>
+                                                              <ask_question name="L2M021_Return_Nividium_Finished" author="{actor.name@L2M021.Talos}" text="{3895,107004}"/>
+
+                                                              <reward_player>
+                                                                <money exact="{value@L2M021.Deliver_Nividium_Reward}"/>
+                                                              </reward_player>
+
+                                                              <create_station name="L2M021.SPG_Station" race="nmmc" typename="SS_FAC_P_ORE">
+                                                                <position x="30km" y="5km" z="20km"/>
+                                                                <sector sector="L2M021.Scale_Plate_Green"/>
+                                                                <equipment loadout="default"/>
+                                                                <resources>
+                                                                  <ware typename="SS_WARE_ENERGY"/>
+                                                                </resources>
+                                                                <products>
+                                                                  <ware typename="SS_WARE_ORE"/>
+                                                                </products>
+                                                              </create_station>
+                                                              <create_actor name="L2M021.SPG_Station_NPC" race="nmmc" voice="510" object="L2M021.SPG_Station" location="crew"/>
+
+                                                              <do_all exact="5">
+                                                                <create_ship typename="{random.type@SS_SH_T_M3|SS_SH_T_M3_1|SS_SH_T_M4_3|SS_SH_T_M3_PROTO}" race="nmmc" racelogic="0">
+                                                                  <position object="L2M021.SPG_Station" max="5km"/>
+                                                                  <sector sector="L2M021.Scale_Plate_Green"/>
+                                                                  <equipment loadout="maximum"/>
+                                                                  <command command="protect" commandobject="L2M021.SPG_Station"/>
+                                                                </create_ship>
+                                                              </do_all>
+
+                                                            </do_all>
+                                                          </action>
+                                                          <cues>
+                                                            <cue name="L2M021_Return_Nividium_Finished_Wait">
+                                                              <condition>
+                                                                <question_answered question="L2M021_Return_Nividium_Finished" answer="next"/>
+                                                              </condition>
+                                                              <action>
+                                                                <do_all>
+                                                                  <set_value name="L2M021.DefendStationReward" exact="50000"/>
+                                                                  <create_briefing cue="L2M021" story="{3200,17}" title="{3218,9}" text="{3218,10}" background="sector_teladi_ptni_headquarters.tga">
+                                                                    <mission discipline="XFXX" level="hard"/>
+                                                                    <reward money="{value@L2M021.DefendStationReward}"/>
+                                                                    <objectives>
+                                                                      <objective step="2">
+                                                                        <protect object="L2M021.SPG_Station"/>
+                                                                      </objective>
+                                                                    </objectives>
+                                                                  </create_briefing>
+                                                                  <set_objective cue="L2M021" story="{3200,17}" title="{3218,9}" text="{3218,10}" noabort="1">
+                                                                    <briefing cue="L2M021" step="2"/>
+                                                                    <mission discipline="XFXX" level="hard"/>
+                                                                    <reward money="{value@L2M021.DefendStationReward}"/>
+                                                                    <protect object="L2M021.SPG_Station"/>
+                                                                  </set_objective>
+                                                                </do_all>
+                                                              </action>
+                                                              <cues>
+                                                                <cue name="L2M021_Defend_Station" delay="2s">
+                                                                  <condition>
+                                                                    <check_value value="{player.sector}" exact="{sector@L2M021.Scale_Plate_Green}"/>
+                                                                  </condition>
+                                                                  <cues>
+                                                                    <cue ref="L0M35 B">
+                                                                      <params>
+                                                                        <param name="Cue" value="L2M021"/>
+                                                                        <param name="ID" value="1"/>
+                                                                        <param name="Step" value="2"/>
+                                                                        <param name="OfferRace" value="{lookup.race@nmmc}"/>
+                                                                        <param name="EnemyRace" value="{lookup.race@pirate}"/>
+                                                                        <param name="Lv1Guide" value="L2M021.SPG_Station_NPC"/>
+                                                                        <param name="Object" value="L2M021.SPG_Station"/>
+                                                                        <param name="LeaveTitle" value="1" comment="Do not generate a title"/>
+                                                                        <param name="Difficulty" value="{lookup.level@hard}"/>
+                                                                        <param name="RewardCr" value="L2M021.DefendStationReward"/>
+                                                                        <param name="Bonus" value="L2M021.DefendStationBonus"/>
+                                                                        <param name="RoundReward" value="1"/>
+                                                                      </params>
+                                                                    </cue>
+                                                                    <cue name="L2M021_Defend_Station_Wait">
+                                                                      <condition>
+                                                                        <cue_completed cue="L0M35 B"/>
+                                                                      </condition>
+                                                                      <cues>
+                                                                        <cue ref="L0M35">
+                                                                          <params>
+                                                                            <param name="Cue" value="L2M021"/>
+                                                                            <param name="ID" value="1"/>
+                                                                            <param name="OfferRace" value="{lookup.race@nmmc}"/>
+                                                                            <param name="EnemyRace" value="{lookup.race@yaki}"/>
+                                                                            <param name="Lv1Guide" value="L2M021.SPG_Station_NPC"/>
+                                                                            <param name="Difficulty" value="{lookup.level@hard}"/>
+                                                                            <param name="RewardCr" value="L2M021.DefendStationReward"/>
+                                                                            <param name="Bonus" value="L2M021.DefendStationBonus"/>
+                                                                            <param name="RoundReward" value="1"/>
+                                                                            <param name="OBS PointsMin" value="{value@Constant {lookup.class@m8} Points}+20"/>
+                                                                            <param name="OBS PointsMax" value="{value@Constant {lookup.class@m7} Points}+20"/>
+                                                                          </params>
+                                                                        </cue>
+                                                                        <cue name="L2M021_Defend_Station_Finished" delay="2s">
+                                                                          <condition>
+                                                                            <check_all>
+                                                                              <check_value value="{value@L2M021.1 L0M35 Progress}" min="1"/>
+                                                                              <check_value value="{player.menu.speech}" exact="0"/>
+                                                                            </check_all>
+                                                                          </condition>
+                                                                          <action>
+                                                                            <do_all>
+
+                                                                              <create_station name="L2M021.PirateBase" invincible="1" typename="SS_DOCK_PIRATES" race="pirate">
+                                                                                <position x="35km" y="-5km" z="20km" min="0" max="5km"/>
+                                                                                <sector sector="L2M021.Wastelands"/>
+                                                                                <equipment loadout="default"/>
+                                                                                <products>
+                                                                                  <ware typename="SS_WARE_R256" min="1" max="45"/>
+                                                                                  <ware typename="SS_WARE_TECH239" min="1" max="45"/>
+                                                                                  <ware typename="SS_WARE_SLAVE" min="1" max="45"/>
+                                                                                  <ware typename="SS_WARE_MINE_1" min="1" max="45"/>
+                                                                                  <ware typename="SS_WARE_ORBITALLASER" min="1" max="4"/>
+                                                                                  <ware typename="SS_WARE_LIFESUPPORT" min="1" max="99"/>
+                                                                                </products>
+                                                                                <relations>
+                                                                                  <relation object="{player.ship}" relation="enemy"/>
+                                                                                </relations>
+                                                                              </create_station>
+
+                                                                              <do_choose>
+                                                                                <do_when value="{value@L2M021.1 L0M35 Progress}" exact="1">
+                                                                                  <reward_player>
+                                                                                    <money exact="{value@L2M021.DefendStationReward}+{value@L2M021.DefendStationBonus}"/>
+                                                                                  </reward_player>
+                                                                                  <ask_question name="L2M021_Defend_Station_Finished" author="{actor.name@L2M021.Talos}" text="{3895,107005}"/>
+                                                                                </do_when>
+                                                                                <do_otherwise>
+                                                                                  <ask_question name="L2M021_Defend_Station_Finished" author="{actor.name@L2M021.Talos}" text="{3895,107006}"/>
+                                                                                </do_otherwise>
+                                                                              </do_choose>
+                                                                            </do_all>
+                                                                          </action>
+                                                                          <cues>
+                                                                            <cue name="L2M021_Destroy_Pirate_Base">
+                                                                              <condition>
+                                                                                <question_answered question="L2M021_Defend_Station_Finished" answer="next"/>
+                                                                              </condition>
+                                                                              <action>
+                                                                                <do_all>
+                                                                                  <create_briefing cue="L2M021" story="{3200,17}" title="{3218,11}" text="{3218,12}" background="sector_teladi_ptni_headquarters.tga">
+                                                                                    <mission discipline="XFXX" level="hard"/>
+                                                                                    <reward/>
+                                                                                    <objectives>
+                                                                                      <objective step="3">
+                                                                                        <custom action="{35,2004}" text="{object.name@L2M021.PirateBase}" guidance="L2M021.PirateBase"/>
+                                                                                      </objective>
+                                                                                    </objectives>
+                                                                                  </create_briefing>
+                                                                                  <set_objective cue="L2M021" story="{3200,17}" title="{3218,11}" text="{3218,12}" noabort="1">
+                                                                                    <briefing cue="L2M021" step="3"/>
+                                                                                    <mission discipline="XFXX" level="hard"/>
+                                                                                    <reward/>
+                                                                                    <custom action="{35,2004}" text="{object.name@L2M021.PirateBase}" guidance="L2M021.PirateBase"/>
+                                                                                  </set_objective>
+                                                                                </do_all>
+                                                                              </action>
+                                                                              <cues>
+                                                                                <cue name="L2M021_Set_Pirate_Base_Vunerable">
+                                                                                  <condition>
+                                                                                    <check_value value="{player.sector}" exact="{sector@L2M021.Wastelands}"/>
+                                                                                  </condition>
+                                                                                  <action>
+                                                                                    <do_all>
+                                                                                      <set_invincible object="L2M021.PirateBase" invincible="0"/>
+                                                                                      <create_ship name="L2M021.Pirate_Leader" typename="SS_SH_PI_M7_P" race="pirate" racelogic="0" covered="0">
+                                                                                        <position object="L2M021.PirateBase" max="2km"/>
+                                                                                        <sector sector="L2M021.Wastelands"/>
+                                                                                        <equipment loadout="maximum"/>
+                                                                                        <command command="killenemiesrange" distance="10km">
+                                                                                          <position object="L2M021.PirateBase"/>
+                                                                                          <sector sector="L2M021.Wastelands"/>
+                                                                                        </command>
+                                                                                      </create_ship>
+                                                                                      <do_all exact="15">
+                                                                                        <create_ship typename="{random.type@SS_SH_A_M3_P_1|SS_SH_A_M3_P_2|SS_SH_A_M3_P_2|SS_SH_T_M3_P}" race="pirate" racelogic="0" covered="0">
+                                                                                          <position object="L2M021.Pirate_Leader"/>
+                                                                                          <sector sector="L2M021.Wastelands"/>
+                                                                                          <equipment loadout="maximum"/>
+                                                                                          <command command="killenemiesrange" distance="10km">
+                                                                                            <position object="L2M021.PirateBase"/>
+                                                                                            <sector sector="L2M021.Wastelands"/>
+                                                                                          </command>
+                                                                                        </create_ship>
+                                                                                      </do_all>
+                                                                                    </do_all>
+                                                                                  </action>
+                                                                                </cue>
+
+                                                                                <cue name="L2M021_Pirate_Base_Destroyed" delay="2s">
+                                                                                  <condition>
+                                                                                    <object_exists object="L2M021.PirateBase" negate="1"/>
+                                                                                  </condition>
+                                                                                  <timing>
+                                                                                    <time min="2s" max="5s"/>
+                                                                                  </timing>
+                                                                                  <action>
+                                                                                    <do_all>
+                                                                                      <ask_question name="L2M021_Defend_Station_Finished" author="{actor.name@L2M021.Talos}" text="{3895,107008}"/>
+                                                                                    </do_all>
+                                                                                  </action>
+                                                                                  <cues>
+                                                                                    <cue name="L2M021_Pirate_Base_Destroyed_Wait" version="2">
+                                                                                      <condition>
+                                                                                        <question_answered question="L2M021_Defend_Station_Finished" answer="next"/>
+                                                                                      </condition>
+                                                                                      <action>
+                                                                                        <do_all>
+                                                                                          <set_value name="L2M021.HQ_Price" exact="{lookup.type.price@SS_SH_T_TL} + 25000000" comment="TL Price + 25 million"/>
+                                                                                          <create_briefing cue="L2M021" story="{3200,17}" title="{3218,13}" text="{3218,14}" background="sector_teladi_ptni_headquarters.tga">
+                                                                                            <mission discipline="XXXT" level="easy"/>
+                                                                                            <objectives>
+                                                                                              <objective step="4">
+                                                                                                <talkto actor="L2M021.Talos"/>
+                                                                                              </objective>
+                                                                                            </objectives>
+                                                                                          </create_briefing>
+                                                                                          <set_objective cue="L2M021" story="{3200,17}" title="{3218,13}" text="{3218,14}" noabort="1">
+                                                                                            <briefing cue="L2M021" step="4"/>
+                                                                                            <mission discipline="XXXT" level="easy"/>
+                                                                                            <talkto actor="L2M021.Talos"/>
+                                                                                          </set_objective>
+                                                                                          <create_offer actor="L2M021.Talos" conversation="L2M021_Talos_2" cue="L2M021" discipline="XXXXP">
+                                                                                            <params>
+                                                                                              <param name="Option1" value="{3899,995601}"/>
+                                                                                              <param name="Price1" value="{value.formatted@L2M021.HQ_Price} {35,707}"/>
+                                                                                            </params>
+                                                                                          </create_offer>
+                                                                                        </do_all>
+                                                                                      </action>
+                                                                                      <patch>
+                                                                                        <reset_cue cue="L2M021_Pirate_Base_Destroyed_Wait"/>
+                                                                                      </patch>
+                                                                                      <cues>
+                                                                                        <cue name="L2M021_CantBuy_HQ" instantiate="static">
+                                                                                          <condition>
+                                                                                            <check_all>
+                                                                                              <conversation_completed actor="L2M021.Talos" conversation="L2M021_Talos_2" answer="accept"/>
+                                                                                              <check_value value="{player.money}" max="{value@L2M021.HQ_Price} - 1"/>
+                                                                                            </check_all>
+                                                                                          </condition>
+                                                                                          <action>
+                                                                                            <do_all>
+                                                                                              <play_text pageid="13" textid="1254" comment="Insufficient Credits"/>
+                                                                                            </do_all>
+                                                                                          </action>
+                                                                                        </cue>
+
+                                                                                        <cue name="L2M021_Buy_HQ">
+                                                                                          <condition>
+                                                                                            <check_all>
+                                                                                              <conversation_completed actor="L2M021.Talos" conversation="L2M021_Talos_2" answer="accept"/>
+                                                                                              <check_value value="{player.money}" min="{value@L2M021.HQ_Price}"/>
+                                                                                            </check_all>
+                                                                                          </condition>
+                                                                                          <action>
+                                                                                            <do_all>
+                                                                                              <reward_player>
+                                                                                                <money exact="-{value@L2M021.HQ_Price}"/>
+                                                                                              </reward_player>
+                                                                                              <remove_offer actor="L2M021.Talos" conversation="L2M021_Talos_2" discipline="XXXXP"/>
+                                                                                              <find_gate name="L2M021.PTNI_West_Gate" gate="west">
+                                                                                                <sector sector="L2M021.PTNI"/>
+                                                                                              </find_gate>
+
+                                                                                              <create_ship name="L2M021.Albatross" race="player" typename="SS_SH_T_TL" warp="1">
+                                                                                                <position object="L2M021.PTNI_West_Gate" exact="2km"/>
+                                                                                                <sector sector="L2M021.PTNI"/>
+                                                                                                <equipment loadout="default"/>
+                                                                                                <cargo>
+                                                                                                  <ware typename="SS_DOCK_P_HQ_39" exact="1" critical="1"/>
+                                                                                                </cargo>
+                                                                                              </create_ship>
+                                                                                              <remove_briefing cue="L2M021"/>
+                                                                                              <remove_objective cue="L2M021" status="complete"/>
+                                                                                              <unlock_achievement name="HQ_PLOT"/>
+                                                                                            </do_all>
+                                                                                          </action>
+                                                                                          <cues>
+                                                                                            <cue name="L2M021_Buy_HQ_Wait" delay="2s">
+                                                                                              <condition>
+                                                                                                <check_value value="{player.sector}" exact="{sector@L2M021.PTNI}" negate="1"/>
+                                                                                              </condition>
+                                                                                              <timing>
+                                                                                                <time exact="3s"/>
+                                                                                              </timing>
+                                                                                              <action>
+                                                                                                <do_all>
+                                                                                                  <set_invincible object="L2M021.NMMCHQ" invincible="0"/>
+                                                                                                  <set_invincible object="L2M021.PMCHQ" invincible="0"/>
+                                                                                                  <destroy_actor actor="L2M021.Talos"/>
+                                                                                                </do_all>
+                                                                                              </action>
+                                                                                            </cue>
+																							  <cue name="L2M021.HQBuilt">
+																								  <condition>
+																									  <player_built_station/>
+																								  </condition>
+																								  <action>
+																									  <do_all>
+																										  <do_choose>
+																											  <do_when value="{object.type@{event.object}}" list="{lookup.type@SS_DOCK_P_HQ_39}">
+																												  <start_script script="!station.event.hq">
+																													  <scriptargs>
+																														  <scriptvalue datatype="station" datavalue="{event.object}"/>
+																														  <scriptvalue datatype="integer" datavalue="16384"/>
+																														  <scriptvalue datatype="ship" datavalue="{player.ship}"/>
+																													  </scriptargs>
+																												  </start_script>
+																												  <cancel_cue cue="L2M021"/>
+																											  </do_when>
+																											  <do_otherwise>
+																												  <reset_cue cue="L2M021.HQBuilt"/>
+																											  </do_otherwise>
+																										  </do_choose>
+																									  </do_all>
+																								  </action>
+																							  </cue>
+																						  </cues>
+                                                                                        </cue>
+                                                                                      </cues>
+                                                                                    </cue>
+                                                                                  </cues>
+                                                                                </cue>
+                                                                              </cues>
+                                                                            </cue>
+                                                                          </cues>
+                                                                        </cue>
+                                                                      </cues>
+                                                                    </cue>
+                                                                  </cues>
+                                                                </cue>
+                                                              </cues>
+                                                            </cue>
+                                                          </cues>
+                                                        </cue>
+                                                      </cues>
+                                                    </cue>
+                                                  </cues>
+                                                </cue>
+                                              </cues>
+                                            </cue>
+                                          </cues>
+                                        </cue>
+                                      </cues>
+                                    </cue>
+                                  </cues>
+                                </cue>
+                              </cues>
+                            </cue>
+                          </cues>
+                        </cue>
+                      </cues>
+                    </cue>
+                  </cues>
+                </cue>
+              </cues>
+            </cue>
+          </cues>
+        </cue>
+      </cues>
+    </cue>
+  </cues>
+  <signature>dG5ZyonNDr4ll4hOuUY5z5nTNi3aMvzI/sqV8HBXDbg1N3ZFuN/r5STJaeOe8wxV62qCrB360I6nM/qOFYWe6nJcenoawRf5/KUvH8nSCi7/GZcgMoFPlG74cVXwmEnOEZW3FGi/u70x/Huze5mPXy8aJ3C6EwkoJopDx11OoWFBjj2TZA5SVHnLWs6wmVUKtvVd1VFBwYE0T9J4cJU0xOpwhJfLGk/GB/5Priom5AKqBSWmzr99LuDaeslGNr6tMd+z+XRuMeDXkAZodkwmZtx4hltR7ZTKQh7CxOf1D41y+tOIZB6Lm1mnVLFifoLoPd8LDFK1Z7eMAZvNl5BuEw==</signature>
+</director>

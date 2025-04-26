@@ -1,0 +1,465 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<?xml-stylesheet href="director.xsl" type="text/xsl" ?>
+<director name="test" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="director.xsd">
+  <documentation>
+    <author name="Al" alias="al_main" contact="e-mail: al_main@hotmail.com"/>
+    <content reference="L2M122" name="Transport 1" description="Mission to transport a passenger"/>
+    <version number="0.3" date="25/08/08" status="release"/>
+  </documentation>
+  <cues>
+    <cue name="L2M122" library="1" check="cancel" version="4">
+      <documentation>
+        <content reference="L2M122" name="Build Station" type="L2"/>
+        <version number="0.3" date="25/08/08" status="release"/>
+        <params>
+          <param name="WarMission" type="boolean" description="Is this a war mission?"/>
+          <param name="WarRace" type="number" description="Race ID of the War Faction you are working for"/>
+        </params>
+        <history>
+          <change date="10/10/2008" author="Owen Lake" description="Added Teladi Complex kit to restricted stations"/>
+          <change date="25/08/2008" author="Owen Lake" description="Added Statistics. Set to Release."/>
+          <change date="10/08/2008" author="al_main" description="Inserted conversation variation"/>
+          <change date="04/08/2008" author="al_main" description="Adjusted jumps to find more SYs, added code for SPP and mine"/>
+          <change date="14/07/2008" author="al_main" description="Added factory variations per race"/>
+          <change date="10/07/2008" author="al_main" description="Code setting this.OfferRace tidied up using {random.race@default}"/>
+          <change date="09/07/2008" author="al_main" description="RC1 Version"/>
+          <change date="02/07/2008" author="al_main" description="count_stations added to main cue to reduce debug spam"/>
+          <change date="25/06/2008" author="al_main" description="Fixed extra 'actor@' in Lv1Guide param"/>
+          <change date="05/06/2008" author="al_main" description="Fixed Unknown Object Offerer bug"/>
+          <change date="22/05/2008" author="al_main" description="Fixed time out during briefing bug and cue_activated in sector out"/>
+          <change date="19/05/2008" author="al_main" description="Initial version"/>
+        </history>
+        <todo>
+          <item priority="high" description="Check offerer race is friendly to player? else station is created as 'red', else this should be in 0.22?"/>
+        </todo>
+      </documentation>
+      <condition>
+        <check_all>
+          <check_any>
+            <check_all>
+              <check_value value="{param.exists@WarMission}" exact="1"/>
+              <check_value value="{param@WarMission}" exact="1"/>
+            </check_all>
+            <check_value value="{player.sector.warobjectid}" exact="0"/>
+          </check_any>
+          <count_stations min="1" dockingallowed="1" class="station" race="default|pirategroup|goner|terrangroup|corporations|other1">
+            <sector sector="{player.sector}"/>
+          </count_stations>
+        </check_all>
+      </condition>
+      <action>
+        <do_all>
+          <do_if value="{param.exists@WarMission}" exact="1">
+            <do_if value="{param@WarMission}" exact="1">
+              <set_value name="L2M122.WarMission" exact="1"/>
+              <set_value name="L2M122.WarRace" exact="{param@WarRace}"/>
+            </do_if>
+          </do_if>
+          <!--find station-->
+          <do_choose>
+            <do_when value="{value@L2M122.WarRace}" exact="0" negate="1">
+              <find_station name="this.station" dockingallowed="1" class="station" race="{value@L2M122.WarRace}">
+                <sector sector="{player.sector}"/>
+              </find_station>
+            </do_when>
+            <do_otherwise>
+              <find_station name="this.station" dockingallowed="1" class="station" race="default|pirategroup|goner|terrangroup|corporations|other1">
+                <sector sector="{player.sector}"/>
+              </find_station>
+            </do_otherwise>
+          </do_choose>
+          <do_choose>
+            <do_when value="{object.exists@this.station}" exact="0">
+              <cancel_cue cue="L2M122"/>
+            </do_when>
+            <do_otherwise>
+
+              <!--select races-->
+              <do_choose>
+				  <do_when value="{lookup.race.mask.atf@{object.race@this.station}}" exact="1">
+					  <set_value name="this.OfferRace" exact="{lookup.race@terran}"/>
+					  <set_value name="L2M122.ShipyardRace" exact="{lookup.race@terran}"/>
+				  </do_when>
+				  <do_when value="{lookup.race.mask.terran@{object.race@this.station}}" exact="1">
+					  <set_value name="this.OfferRace" exact="{lookup.race@terran}"/>
+					  <set_value name="L2M122.ShipyardRace" exact="{lookup.race@terran}"/>
+				  </do_when>
+				  <do_when value="{lookup.race.mask.darkspace@{object.race@this.station}}" exact="1">
+					  <set_value name="this.OfferRace" exact="{lookup.race@darkspace}"/>
+					  <set_value name="L2M122.ShipyardRace" exact="{lookup.race@terran}"/>
+				  </do_when>
+				  <do_when value="{lookup.race.mask.goner@{object.race@this.station}}" exact="1">
+					  <set_value name="this.OfferRace" exact="{lookup.race@goner}"/>
+					  <set_value name="L2M122.ShipyardRace" exact="{lookup.race@argon}"/>
+				  </do_when>
+				  <do_otherwise>
+                  <do_any>
+                    <set_value name="this.OfferRace" exact="{player.sector.race}" chance="55"/>
+                    <set_value name="this.OfferRace" exact="{object.race@this.station}" chance="35"/>
+                    <set_value name="this.OfferRace" exact="{random.race@default}" chance="10"/>
+                  </do_any>
+                  <set_value name="L2M122.ShipyardRace" exact="{lookup.race.mask@default}"/>
+                </do_otherwise>
+              </do_choose>
+              <do_if value="{value@this.OfferRace}" list="{lookup.race@xenon}|{lookup.race@khaak}|{lookup.race@player}|{lookup.race@enemy}|{lookup.race@neutral}|{lookup.race@friend}|{lookup.race@abandoned}|{lookup.race@other1}|{lookup.race@other2}">
+                <set_value name="this.OfferRace" exact="{object.race@this.station}"/>
+              </do_if>
+              <do_if value="{value@this.OfferRace}" exact="0">
+                <set_value name="this.OfferRace" exact="{object.race@this.station}"/>
+              </do_if>
+              <do_if value="{value@L2M122.WarRace}" exact="0" negate="1">
+                <set_value name="this.OfferRace" exact="{value@L2M122.WarRace}"/>
+              </do_if>
+
+              <!--select difficulty-->
+              <set_value name="L2M122.Difficulty" min="{lookup.level@easy}" max="{lookup.level@veryhard}" profile="bell"/>
+              <set_value name="this.Jumps" min="1" max="4*({value@L2M122.Difficulty}-1)+1" profile="increasing"/>
+              <find_station class="shipyard" name="this.Shipyard" dockingallowed="1" race="{value@L2M122.ShipyardRace}">
+                <sector sector="{player.sector}"/>
+                <jumps max="{value@this.Jumps}"/>
+              </find_station>
+              <do_choose>
+                <do_when value="{object.exists@this.Shipyard}" exact="1">
+                  <do_all exact="{object.products.count@this.Shipyard}" counter="count">
+                    <do_if value="{object.products.{counter@count}.category@this.Shipyard}" exact="{lookup.category@factory}">
+                      <do_choose>
+                        <do_when value="{object.products.{counter@count}.subtype@this.Shipyard}" list="{lookup.subtype@SG_FAC_CCKIT}|{lookup.subtype@SG_FAC_STORAGE}|{lookup.subtype@SG_FAC_MINE}">
+                          <set_value name="this.temp" exact="1"/>
+                        </do_when>
+                        <do_otherwise>
+                          <set_value name="this.StationCount" operation="add"/>
+                          <set_value name="this.StationType {value@this.StationCount}" exact="{object.products.{counter@count}@this.Shipyard}"/>
+                        </do_otherwise>
+                      </do_choose>
+                    </do_if>
+                  </do_all>
+                  <do_choose>
+                    <do_when value="{value@this.StationCount}" exact="0">
+                      <cancel_cue cue="L2M122"/>
+                    </do_when>
+                    <do_otherwise>
+                      <set_value name="L2M122.ShipyardJumps" exact="{object.jumps@this.Shipyard}"/>
+                      <set_value name="this.StationChoice" min="1" max="{value@this.StationCount}"/>
+                      <set_value name="this.StationType" exact="{value@this.StationType {value@this.StationChoice}}"/>
+
+                      <!--do we need enemy race?-->
+                      <set_value name="this.EnemyRace" exact="{lookup.race@pirate}"/>
+                      <!--select offer length-->
+                      <set_value name="this.TimeOut" min="{player.age}+800" max="{player.age}+1200"/>
+                      <!--set notoriety gain-->
+                      <set_value name="this.Notoriety" exact="{reward.notoriety.{value@this.OfferRace}@{value@L2M122.Difficulty}}"/>
+                      <!--Pick location for station-->
+                      <do_any>
+                        <find_sector name="this.Sector" min="1" max="2" race="{value@this.OfferRace}" chance="66"/>
+                        <set_sector name="this.Sector" value="{player.sector}" chance="33"/>
+                      </do_any>
+                      <do_if value="{sector.exists@this.Sector}" exact="0">
+                        <find_sector name="this.Sector" min="1" max="2" race="{object.race@this.station}"/>
+                      </do_if>
+                      <do_if value="{sector.exists@this.Sector}" exact="0">
+                        <find_sector name="this.Sector" min="1" max="2" race="{player.sector.race}"/>
+                      </do_if>
+                      <do_if value="{sector.exists@this.Sector}" exact="0">
+                        <set_sector name="this.Sector" value="{player.sector}"/>
+                      </do_if>
+
+                      <create_object name="this.TempBeacon" typename="SS_SH_BEACON">
+                        <position max="30km" height="10km"/>
+                        <sector sector="this.Sector"/>
+                      </create_object>
+                      <set_value name="this.xpos" exact="{object.position.x.m@this.TempBeacon}"/>
+                      <set_value name="this.ypos" exact="{object.position.y.m@this.TempBeacon}"/>
+                      <set_value name="this.zpos" exact="{object.position.z.m@this.TempBeacon}"/>
+                      <destroy_object object="this.TempBeacon"/>
+                    </do_otherwise>
+                  </do_choose>
+                </do_when>
+                <do_otherwise>
+                  <cancel_cue cue="L2M122"/>
+                </do_otherwise>
+              </do_choose>
+            </do_otherwise>
+          </do_choose>
+        </do_all>
+      </action>
+      <cues>
+        <cue name="L2M122 Offer">
+          <condition>
+            <cue_completed cue="L2M122"/>
+          </condition>
+          <action>
+            <do_all>
+              <set_value name="L2M122 Offer.SectorChanges" exact="0"/>
+				<do_choose>
+					<do_when value="{value@L2M122.OfferRace}" exact="{lookup.race@goner}">
+						<create_actor name="L2M122 Offer.Guide" race="{value@L2M122.OfferRace}" object="L2M122.station" location="crew"/>
+					</do_when>
+					<do_otherwise>
+						<create_actor name="L2M122 Offer.Guide" race="{value@L2M122.OfferRace}" voiceflags="32" object="L2M122.station" location="crew"/>
+					</do_otherwise>
+				</do_choose>
+				<do_choose comment="Create conversation offer">
+                <do_when value="{value@L2M122.Difficulty}" max="{lookup.level@veryeasy}">
+                  <create_offer actor="L2M122 Offer.Guide" conversation="L2OfferBuildEasy" discipline="XXBX" cue="L2M122 Offer"/>
+                  <set_value name="L2M122.Conversation" exact="2"/>
+                </do_when>
+                <do_when value="{value@L2M122.Difficulty}" exact="{lookup.level@easy}">
+                  <do_any>
+                    <do_all chance="65">
+                      <create_offer actor="L2M122 Offer.Guide" conversation="L2OfferBuildEasy" discipline="XXBX" cue="L2M122 Offer"/>
+                      <set_value name="L2M122.Conversation" exact="2"/>
+                    </do_all>
+                    <do_all chance="35">
+                      <create_offer actor="L2M122 Offer.Guide" conversation="L2OfferBuild" discipline="XXBX" cue="L2M122 Offer"/>
+                      <set_value name="L2M122.Conversation" exact="1"/>
+                    </do_all>
+                  </do_any>
+                </do_when>
+                <do_when value="{value@L2M122.Difficulty}" exact="{lookup.level@hard}">
+                  <do_any>
+                    <do_all chance="65">
+                      <create_offer actor="L2M122 Offer.Guide" conversation="L2OfferBuildHard" discipline="XXBX" cue="L2M122 Offer"/>
+                      <set_value name="L2M122.Conversation" exact="3"/>
+                    </do_all>
+                    <do_all chance="35">
+                      <create_offer actor="L2M122 Offer.Guide" conversation="L2OfferBuild" discipline="XXBX" cue="L2M122 Offer"/>
+                      <set_value name="L2M122.Conversation" exact="1"/>
+                    </do_all>
+                  </do_any>
+                </do_when>
+                <do_when value="{value@L2M122.Difficulty}" min="{lookup.level@veryhard}">
+                  <create_offer actor="L2M122 Offer.Guide" conversation="L2OfferBuildHard" discipline="XXBX" cue="L2M122 Offer"/>
+                  <set_value name="L2M122.Conversation" exact="3"/>
+                </do_when>
+                <do_otherwise>
+                  <create_offer actor="L2M122 Offer.Guide" conversation="L2OfferBuild" discipline="XXBX" cue="L2M122 Offer"/>
+                  <set_value name="L2M122.Conversation" exact="1"/>
+                </do_otherwise>
+              </do_choose>
+              <!--SET MISSION TYPE-->
+              <set_value name="L2M122.MisType" min="1" max="{3322,100}"/>
+              <set_value name="L2M122.TextID" exact="100+{value@L2M122.MisType}"/>
+              <set_value name="L2M122.StationCost" exact="{lookup.type.price@{value@L2M122.StationType}}"/>
+            </do_all>
+          </action>
+          <cues>
+            <cue name="L2M122 Briefing">
+              <condition>
+                <check_any>
+                  <conversation_completed answer="briefing" conversation="L2OfferBuild" actor="L2M122 Offer.Guide"/>
+                  <conversation_completed answer="briefing" conversation="L2OfferBuildEasy" actor="L2M122 Offer.Guide"/>
+                  <conversation_completed answer="briefing" conversation="L2OfferBuildHard" actor="L2M122 Offer.Guide"/>
+                </check_any>
+              </condition>
+              <cues>
+                <cue ref="L0M22 B">
+                  <params>
+                    <param name="Cue" value="L2M122 Offer"/>
+                    <param name="ID" value="1"/>
+                    <param name="EnemyRace" value="{value@L2M122.EnemyRace}"/>
+                    <param name="OfferRace" value="{value@L2M122.OfferRace}"/>
+                    <param name="Lv1Guide" value="L2M122 Offer.Guide"/>
+                    <param name="PageID" value="3322"/>
+                    <param name="TextID" value="{value@L2M122.TextID}"/>
+                    <param name="AddText" value="1"/>
+                    <param name="Difficulty" value="{value@L2M122.Difficulty}"/>
+                    <param name="RewardCr" value="L2M122 Offer.RewardCr"/>
+                    <param name="RoundReward" value="1"/>
+                    <param name="StationX" value="{value@L2M122.xpos}"/>
+                    <param name="StationY" value="{value@L2M122.ypos}"/>
+                    <param name="StationZ" value="{value@L2M122.zpos}"/>
+                    <param name="StationSector" value="L2M122.Sector"/>
+                    <param name="StationType" value="{value@L2M122.StationType}" comment="The type of station to build, overrides ware and race"/>
+                    <param name="StationCost" value="{lookup.type.price@{value@L2M122.StationType}}"/>
+                    <param name="StationName" value="{lookup.type.name.textid@{value@L2M122.StationType}}"/>
+                    <param name="StationRace" value="{value@L2M122.OfferRace}"/>
+                    <param name="ShipyardJumps" value="{value@L2M122.ShipyardJumps}"/>
+                  </params>
+                </cue>
+              </cues>
+            </cue>
+            <cue name="L2M122 Accepted">
+              <condition>
+                <check_any>
+                  <conversation_completed answer="accept" conversation="L2OfferBuild" actor="L2M122 Offer.Guide"/>
+                  <conversation_completed answer="accept" conversation="L2OfferBuildEasy" actor="L2M122 Offer.Guide"/>
+                  <conversation_completed answer="accept" conversation="L2OfferBuildHard" actor="L2M122 Offer.Guide"/>
+                </check_any>
+              </condition>
+              <action>
+                <do_all>
+                  <do_choose>
+                    <do_when value="{value@L2M122.Conversation}" exact="1">
+                      <remove_offer actor="L2M122 Offer.Guide" conversation="L2OfferBuild" discipline="XXBX"/>
+                    </do_when>
+                    <do_when value="{value@L2M122.Conversation}" exact="2">
+                      <remove_offer actor="L2M122 Offer.Guide" conversation="L2OfferBuildEasy" discipline="XXBX"/>
+                    </do_when>
+                    <do_when value="{value@L2M122.Conversation}" exact="3">
+                      <remove_offer actor="L2M122 Offer.Guide" conversation="L2OfferBuildHard" discipline="XXBX"/>
+                    </do_when>
+                  </do_choose>
+                  <do_choose>
+                    <do_when value="{value@L2M122.WarMission}" exact="1">
+                      <increment_statistic statistic="5350"/>
+                    </do_when>
+                    <do_otherwise>
+                      <increment_statistic statistic="5160"/>
+                    </do_otherwise>
+                  </do_choose>
+                  <cancel_cue cue="L2M122 Check Offer"/>
+                </do_all>
+              </action>
+              <cues>
+                <cue ref="L0M22">
+                  <params>
+                    <param name="Cue" value="L2M122 Offer"/>
+                    <param name="ID" value="1"/>
+                    <param name="Step" value="1"/>
+                    <param name="EnemyRace" value="{value@L2M122.EnemyRace}"/>
+                    <param name="OfferRace" value="{value@L2M122.OfferRace}"/>
+                    <param name="Lv1Guide" value="L2M122 Offer.Guide"/>
+                    <param name="PageID" value="3322"/>
+                    <param name="TextID" value="{value@L2M122.TextID}"/>
+                    <param name="AddText" value="1"/>
+                    <param name="Difficulty" value="{value@L2M122.Difficulty}"/>
+                    <param name="RewardCr" value="L2M122 Offer.RewardCr"/>
+                  </params>
+                </cue>
+                <cue name="L2M122 End" delay="1s" version="2">
+                  <condition>
+                    <check_value value="{value@L2M122 Offer.1 L0M22 Progress}" min="1"/>
+                  </condition>
+                  <action>
+                    <do_all>
+                      <remove_briefing cue="L2M122 Offer"/>
+                      <do_choose>
+                        <do_when value="{value@L2M122 Offer.1 L0M22 Progress}" exact="1">
+                          <remove_objective cue="L2M122 Offer" status="complete"/>
+                          <reward_player>
+                            <money exact="{value@L2M122 Offer.RewardCr}"/>
+                            <notoriety>
+                              <relation race="{value@L2M122.OfferRace}" exact="{value@L2M122.Notoriety}"/>
+                            </notoriety>
+                          </reward_player>
+                          <set_value name="L2M122.WarPoints" min="1400" max="1500"/>
+                          <set_value name="this.tid" min="1" max="{3322,200}"/>
+                          <set_value name="this.text" exact="200+{value@this.tid}"/>
+                          <incoming_message author="{actor.name@L2M122 Offer.Guide}" text="{3322,{value@this.text}} {{actor.voice@L2M122 Offer.Guide},841}"/>
+                        </do_when>
+                        <do_when value="{value@L2M122 Offer.1 L0M22 Progress}" exact="2" comment="Time Out">
+                          <!--has voice at L0-->
+                          <remove_objective cue="L2M122 Offer" status="failed"/>
+                        </do_when>
+                        <do_otherwise comment="Must be 99, Aborted?">
+                          <remove_objective cue="L2M122 Offer" status="aborted"/>
+                        </do_otherwise>
+                      </do_choose>
+                      <do_if value="{value@L2M122.WarPoints}" min="1">
+                        <do_choose>
+                          <do_when value="{value@L2M122.WarMission}" exact="1">
+                            <increment_statistic statistic="5360"/>
+                            <reward_player>
+                              <war>
+                                <score race="{value@L2M122.WarRace}" exact="{value@L2M122.WarPoints}"/>
+                              </war>
+                            </reward_player>
+                          </do_when>
+                          <do_otherwise>
+                            <increment_statistic statistic="5170"/>
+                          </do_otherwise>
+                        </do_choose>
+                      </do_if>
+                      <destroy_actor actor="L2M122 Offer.Guide"/>
+                      <cancel_cue cue="L2M122 Briefing"/>
+                      <cancel_cue cue="L2M122 End"/>
+                    </do_all>
+                  </action>
+                  <patch>
+                    <cancel_cue cue="L2M122 Briefing"/>
+                  </patch>
+                </cue>
+              </cues>
+            </cue>
+            <cue name="L2M122 Check Offer">
+              <condition>
+                <cue_completed cue="L2M122 Offer"/>
+              </condition>
+              <cues>
+                <cue name="L2M122 Time Out" delay="30s">
+                  <condition>
+                    <check_any>
+                      <check_age value="{player.age}" min="{value@L2M122.TimeOut}"/>
+                      <object_relation object="L2M122.station">
+                        <relation relation="enemy"/>
+                      </object_relation>
+                    </check_any>
+                  </condition>
+                  <cues>
+                    <cue name="L2M122 Check Comms" delay="500">
+                      <condition>
+                        <check_all>
+                          <check_value value="{player.menu.dialog}" exact="0"/>
+                          <check_value value="{player.menu.briefing}" exact="0"/>
+                          <cue_is_active cue="L2M122 Accepted" negate="1"/>
+                        </check_all>
+                      </condition>
+                      <action>
+                        <do_all>
+                          <do_choose>
+                            <do_when value="{value@L2M122.Conversation}" exact="1">
+                              <remove_offer actor="L2M122 Offer.Guide" conversation="L2OfferBuild" discipline="XXBX"/>
+                            </do_when>
+                            <do_when value="{value@L2M122.Conversation}" exact="2">
+                              <remove_offer actor="L2M122 Offer.Guide" conversation="L2OfferBuildEasy" discipline="XXBX"/>
+                            </do_when>
+                            <do_when value="{value@L2M122.Conversation}" exact="3">
+                              <remove_offer actor="L2M122 Offer.Guide" conversation="L2OfferBuildHard" discipline="XXBX"/>
+                            </do_when>
+                          </do_choose>
+                          <remove_briefing cue="L2M122 Offer"/>
+                          <destroy_actor actor="L2M122 Offer.Guide"/>
+                          <cancel_cue cue="L2M122"/>
+                        </do_all>
+                      </action>
+                    </cue>
+                  </cues>
+                </cue>
+                <cue name="L2M122 Sector Out" instantiate="static">
+                  <condition>
+                    <check_all>
+                      <object_changed_sector/>
+                      <cue_is_active cue="L2M122 Accepted" negate="1"/>
+                    </check_all>
+                  </condition>
+                  <action>
+                    <do_if value="{player.sector}" exact="{actor.sector@L2M122 Offer.Guide}" negate="1">
+                      <set_value name="L2M122 Offer.SectorChanges" exact="{value@L2M122 Offer.SectorChanges}+1"/>
+                      <do_if value="{value@L2M122 Offer.SectorChanges}" min="4">
+                        <do_choose>
+                          <do_when value="{value@L2M122.Conversation}" exact="1">
+                            <remove_offer actor="L2M122 Offer.Guide" conversation="L2OfferBuild" discipline="XXBX"/>
+                          </do_when>
+                          <do_when value="{value@L2M122.Conversation}" exact="2">
+                            <remove_offer actor="L2M122 Offer.Guide" conversation="L2OfferBuildEasy" discipline="XXBX"/>
+                          </do_when>
+                          <do_when value="{value@L2M122.Conversation}" exact="3">
+                            <remove_offer actor="L2M122 Offer.Guide" conversation="L2OfferBuildHard" discipline="XXBX"/>
+                          </do_when>
+                        </do_choose>
+                        <remove_briefing cue="L2M122 Offer"/>
+                        <destroy_actor actor="L2M122 Offer.Guide"/>
+                        <cancel_cue cue="L2M122"/>
+                      </do_if>
+                    </do_if>
+                  </action>
+                </cue>
+              </cues>
+            </cue>
+          </cues>
+        </cue>
+      </cues>
+    </cue>
+  </cues>
+  <signature>uoghwWcB7sFyPqJCHc9AolcGSO3epAeT7pA3jBzgnWfQV3KIZIEQnFdPE8WneXRIIIfJOi1M/qGuUfXK1FRHaTNktRqIka35Pv196mKA5t/zCXvzcaedfqHuREdRBRhxr5XTPuVibZO80ouCKpPoXWDbU3tA7qxvcigOglZzcqJYM3KeELCfnABNPQaXHwaGP0dCzC2RhUf088EzFMWdXvKyYLbH0LtaxIVDQdflaKAs0LQXHLqCnGEJyRXNyEZLEReLxpHXnY+XTbxpj3rUbeUOZnyD09JjiONuiFdQAKtyIvwG1LiHQ+/FZTq/OzWGUTQ/iD5cjqrEhry8MQOUtg==</signature>
+</director>

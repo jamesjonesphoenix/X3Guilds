@@ -1,0 +1,719 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<?xml-stylesheet href="director.xsl" type="text/xsl" ?>
+<director name="test" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="director.xsd">
+  <documentation>
+    <author name="Al" alias="al_main" contact="e-mail: al_main@hotmail.com"/>
+    <content reference="Level 0 Mission 22" name="Build Stations" description="Mission to build stations" />
+    <version number="1.3" date="29/04/10" status="release"/>
+  </documentation>
+  <cues>
+    <cue name="L0M22 B" library="1" version="5">
+      <documentation>
+        <content name="L0M22 Build Stations" reference="XXBX" type="briefing"/>
+        <version number="0.2" date="03/06/08" status="release"/>
+        <params>
+          <param name="Cue" type="cuename" compulsory="1" description="The cue where the briefing and objectives are stored"/>
+          <param name="ID" type="number" compulsory="1" description="The mission Id for dealing with mission chains"/>
+          <param name="OfferRace" compulsory="1" description="Race offering the mission"/>
+          <param name="EnemyRace" compulsory="1" description="Race of the enemy"/>
+          <param name="PageID" compulsory="1" description="Page ID of mission description"/>
+          <param name="TextID" compulsory="1" description="Text ID of mission description"/>
+          <param name="RewardCr" compulsory="0" description="Reward type" default="Standard credit reward"/>
+          <param name="StoryID" compulsory="0" description="Text ID of the Story title" default="No title"/>
+          <param name="ChapterID" compulsory="0" description="Text ID of the chapter title" default="No title"/>
+          <param name="Difficulty" compulsory="1" description="The difficulty of the mission" default="trivial"/>
+          <param name="LeaveTitle" compulsory="0" description="Do not generate a title"/>
+          <param name="IsPlot" compulsory="0" description="If the mission is a plot mission or not" default="non-plot"/>
+          <param name="Step" compulsory="0" description="Step to begin the briefing on" default="Step 1"/>
+          <param name="Summary" type="boolean" compulsory="0" description="Used to specify summary objectives in a chain of missions"/>
+          <!--M22 params, roids/locations-->
+          <param name="StationX" type="number" compulsory="1" description="The X coord to build the station at (metres)"/>
+          <param name="StationY" type="number" compulsory="1" description="The Y coord to build the station at (metres)"/>
+          <param name="StationZ" type="number" compulsory="1" description="The Z coord to build the station at (metres)"/>
+          <param name="StationSector" type="sectorid" compulsory="1" description="The sector to build the station in"/>
+          <param name="StationWare" type="text" compulsory="0" description="The Ware station must produce"/>
+          <param name="StationName" type="number" compulsory="0" description="Used with StationWare above, the station's textid in page 17"/>
+          <!--<param name="StationRace" type="text" compulsory="0" description="The Race station is owned by"/>-->
+          <param name="StationType" type="text" compulsory="0" description="The type of station to build, overrides ware and race"/>
+          <param name="StationCost" type="number" compulsory="1" description="The station cost to be added to the mission reward"/>
+          <param name="ShipyardJumps" type="number" compulsory="0" description="Predefined amount of jumps to the shipyard"/>
+        </params>
+        <returns>
+          <return name="{param@Cue}.{param@ID} L0M22 Progress" description="1 - Mission complete"/>
+          <return name="{param@Cue}.{param@ID} L0M22 Progress" description="2 - Out of time"/>
+          <return name="{param@Cue}.{param@ID} L0M22 Progress" description="99 - Aborted"/>
+        </returns>
+        <history>
+          <change date="29/01/2013" author="Owen Lake" description="Moved beacon location check to its own cue 'L0M22 Update Beacon Position' which constatly checks."/>
+          <change date="09/10/2012" author="Dillpickle" description="Added check for beacon being moved due to collision avoidance."/>
+          <change date="20/05/2010" author="enenra" description="More proposed fixes by Jens introduced."/>
+          <change date="09/04/2010" author="enenra" description="Small fix by Ketraar put into the Hurry-up cue to remove it from appearing when IsPlot is set to 1."/>
+          <change date="12/03/2010" author="enenra" description="Quick fix of a wrong parameter in the parameter list - doesn't affect any missions using the library."/>
+          <change date="10/10/2008" author="Owen Lake" description="Made beacon invincible. Changed guidance attribute to object"/>
+          <change date="07/08/2008" author="Owen Lake" description="Added extra station sanity checks such as complex class, exists and race.
+                  Also changed products.random to products.type.exists."/>
+          <change date="25/06/2008" author="al_main" description="Fixed time and difficulty reward settings"/>
+          <change date="03/06/2008" author="al_main" description="Added support for more station types"/>
+        </history>
+      </documentation>
+      <action>
+        <do_all>
+          <do_if value="{value@{param@Cue}.{param@ID} L0StationClass}" exact="0">
+            <do_choose>
+              <do_when value="{param.exists@StationType}" exact="1">
+                <set_value name="{param@Cue}.{param@ID} L0StationClass" exact="-1"/>
+                <set_value name="{param@Cue}.{param@ID} L0StationType" exact="{param@StationType}"/>
+              </do_when>
+              <do_when value="{param@StationWare}" exact="{lookup.type@SS_WARE_ENERGY}">
+                <set_value name="{param@Cue}.{param@ID} L0StationClass" exact="2135"/>
+              </do_when>
+              <do_when value="{param@StationWare}" exact="{lookup.type@SS_WARE_ORE}">
+                <set_value name="{param@Cue}.{param@ID} L0StationClass" exact="2136"/>
+              </do_when>
+              <do_when value="{param@StationWare}" exact="{lookup.type@SS_WARE_SILICON}">
+                <set_value name="{param@Cue}.{param@ID} L0StationClass" exact="2137"/>
+              </do_when>
+              <do_when value="{param.exists@StationName}" exact="1">
+                <set_value name="{param@Cue}.{param@ID} L0StationName" exact="{param@StationName}"/>
+                <set_value name="{param@Cue}.{param@ID} L0StationWare" exact="{param@StationWare}"/>
+              </do_when>
+            </do_choose>
+          </do_if>
+          <do_choose>
+            <do_when value="{param@Summary}" exact="1">
+              <do_choose>
+                <do_when value="{value@{param@Cue}.{param@ID} L0StationClass}" exact="-1">
+                  <create_briefing cue="{param@Cue}">
+                    <objectives>
+                      <objective step="{param@Step}">
+                        <custom action="{35,2001}" text="{lookup.type.maker.name@{param@StationType}} {lookup.type.name@{param@StationType}}"/>
+                      </objective>
+                    </objectives>
+                  </create_briefing>
+                </do_when>
+                <do_when value="{value@{param@Cue}.{param@ID} L0StationClass}" min="1">
+                  <create_briefing cue="{param@Cue}">
+					  <objectives>
+                      <objective step="{param@Step}">
+                        <custom action="{35,2001}" text="{35,{value@{param@Cue}.{param@ID} L0StationClass}}"/>
+                      </objective>
+                    </objectives>
+                  </create_briefing>
+                </do_when>
+                <do_otherwise>
+                  <create_briefing cue="{param@Cue}">
+					  <objectives>
+                          <objective step="{param@Step}">
+                            <custom action="{35,2001}" text="{17,{value@{param@Cue}.{param@ID} L0StationName}}"/>
+                          </objective>
+                    </objectives>
+                  </create_briefing>
+                </do_otherwise>
+              </do_choose>
+				<do_choose>
+					<do_when value="{param.exists@StationType}" exact="1">
+						<create_briefing cue="{param@Cue}">
+							<requirements name="{1904,60301}">
+								<requirement value="{lookup.type@{param@StationType}}" type="warelink"/>
+							</requirements>
+						</create_briefing>
+					</do_when>
+					<do_when value="{param.exists@StationWare}" exact="1">
+						<create_briefing cue="{param@Cue}">
+							<requirements name="{1904,60301}">
+								<requirement value="{lookup.type@{param@StationWare}}" type="warelink"/>
+							</requirements>
+						</create_briefing>
+					</do_when>
+				</do_choose>
+			</do_when>
+            <do_otherwise>
+              <do_choose>
+                <do_when value="{param.exists@LeaveTitle}" exact="0">
+                  <set_value name="{param@Cue}.{param@ID} L0Title" min="1001" max="{3622,1000}" profile="decreasing"/>
+                </do_when>
+                <do_otherwise>
+                  <do_if value="{param@LeaveTitle}" exact="0">
+                    <set_value name="{param@Cue}.{param@ID} L0Title" min="1001" max="{3622,1000}" profile="decreasing"/>
+                  </do_if>
+                </do_otherwise>
+              </do_choose>
+              <do_if value="{param.exists@Step}" exact="1">
+                <set_value name="this.Step" exact="{param@Step}"/>
+              </do_if>
+              <do_if value="{value@this.Step}" min="1" negate="1">
+                <set_value name="this.Step" exact="1"/>
+              </do_if>
+              <!--set time limit-->
+              <!--Try to find nearest one on sale-->
+              <do_choose>
+                <do_when value="{param.exists@ShipyardJumps}" exact="0">
+                  <do_if value="{param.exists@StationType}" exact="1">
+                    <find_station name="this.sy" class="shipyard" nearest="1" race="default">
+                      <jumps max="10"/>
+                    </find_station>
+                  </do_if>
+                  <do_if value="{value@{param@Cue}.{param@ID} L0StationClass}" list="2135|2136|2137">
+                    <do_if value="{object.exists@this.sy}" exact="0">
+                      <find_station name="this.sy" class="shipyard" nearest="1" race="default">
+                        <jumps max="10"/>
+                      </find_station>
+                    </do_if>
+                  </do_if>
+                  <do_if value="{value@{param@Cue}.{param@ID} L0StationWare}" exact="0" negate="1">
+                    <do_if value="{object.exists@this.sy}" exact="0">
+                      <find_station name="this.fac" class="factory" race="default">
+                        <jumps max="10"/>
+                        <ware typename="{value@{param@Cue}.{param@ID} L0StationWare}" min="1"/>
+                      </find_station>
+                      <find_station name="this.sy" class="shipyard" nearest="1" race="default">
+                        <jumps max="10"/>
+                        <ware typename="{object.type@this.fac}"/>
+                      </find_station>
+                    </do_if>
+                  </do_if>
+                  <!--get sectors needed to cross-->
+                  <do_if value="{object.exists@this.sy}" exact="1">
+                    <set_value name="this.jumps" exact="{object.jumps@this.sy}"/>
+                  </do_if>
+                  <do_if value="{value@this.jumps}" exact="0">
+                    <set_value name="this.jumps" min="2" max="4"/>
+                  </do_if>
+                </do_when>
+                <do_otherwise>
+                  <set_value name="this.jumps" exact="{param@ShipyardJumps}"/>
+                </do_otherwise>
+              </do_choose>
+              <!--set time-->
+              <do_if value="{param@IsPlot}" exact="1" negate="1">
+                <set_value name="L0M22 B.StartTime" exact="{player.age}+7200"/>
+                <do_choose>
+                  <do_when value="{param@Difficulty}" exact="{lookup.level@trivial}">
+                    <set_value name="{param@Cue}.{param@ID} L0Time" exact="{value@this.jumps}*1500"/>
+                  </do_when>
+                  <do_when value="{param@Difficulty}" exact="{lookup.level@veryeasy}">
+                    <set_value name="{param@Cue}.{param@ID} L0Time" exact="{value@this.jumps}*900"/>
+                  </do_when>
+                  <do_when value="{param@Difficulty}" exact="{lookup.level@easy}">
+                    <set_value name="{param@Cue}.{param@ID} L0Time" exact="{value@this.jumps}*800"/>
+                  </do_when>
+                  <do_when value="{param@Difficulty}" exact="{lookup.level@average}">
+                    <set_value name="{param@Cue}.{param@ID} L0Time" exact="{value@this.jumps}*700"/>
+                  </do_when>
+                  <do_when value="{param@Difficulty}" exact="{lookup.level@hard}">
+                    <set_value name="{param@Cue}.{param@ID} L0Time" exact="{value@this.jumps}*600"/>
+                  </do_when>
+                  <do_when value="{param@Difficulty}" exact="{lookup.level@veryhard}">
+                    <set_value name="{param@Cue}.{param@ID} L0Time" exact="{value@this.jumps}*500"/>
+                  </do_when>
+                  <do_when value="{param@Difficulty}" exact="{lookup.level@impossible}">
+                    <set_value name="{param@Cue}.{param@ID} L0Time" exact="{value@this.jumps}*400"/>
+                  </do_when>
+                </do_choose>
+                <set_value name="this.jumps" operation="add"/>
+                <set_value name="{param@Cue}.{param@ID} L0Time" min="(10000/{param@Difficulty}*2)+({value@this.jumps}*550)" max="(10050/{param@Difficulty}*2)+({value@this.jumps}*550)"/>
+              </do_if>
+              <!--set reward-->
+              <do_if value="{param.exists@RewardCr}" exact="1">
+                <set_value name="this.rewardBonus" exact="{reward.money@{param@Difficulty}.TXXX}"/>
+                <set_value name="this.rewardSectors" exact="{value@this.jumps}*7000"/>
+                <do_if value="{param.exists@StationCost}" exact="1">
+                  <set_value name="this.rewardCost" exact="{param@StationCost}"/>
+                </do_if>
+                <set_value name="{param@RewardCr}" exact="{value@this.rewardBonus}+{value@this.rewardSectors}+{value@this.rewardCost}"/>
+              </do_if>
+              <!--set position-->
+              <set_value name="{param@Cue}.{param@ID} L0Loc1x" min="-10000" max="10000" profile="inversebell"/>
+              <set_value name="{param@Cue}.{param@ID} L0Loc1y" min="-3000" max="3000" profile="bell"/>
+              <set_value name="{param@Cue}.{param@ID} L0Loc1z" min="-10000" max="10000" profile="inversebell"/>
+              <set_sector name="{param@Cue}.{param@ID} L0Loc1sec" value="{sector@{param@StationSector}}"/>
+              <do_if value="{param.exists@StationX}" exact="1">
+                <set_value name="{param@Cue}.{param@ID} L0Loc1x" exact="{param@StationX}"/>
+              </do_if>
+              <do_if value="{param.exists@StationY}" exact="1">
+                <set_value name="{param@Cue}.{param@ID} L0Loc1y" exact="{param@StationY}"/>
+              </do_if>
+              <do_if value="{param.exists@StationZ}" exact="1">
+                <set_value name="{param@Cue}.{param@ID} L0Loc1z" exact="{param@StationZ}"/>
+              </do_if>
+              
+              <do_if value="{value@{param@Cue}.{param@ID} L0Title}" exact="0" negate="1">
+                <create_briefing cue="{param@Cue}" title="{3622,{value@{param@Cue}.{param@ID} L0Title}}"/>
+              </do_if>
+              <do_if value="{param.exists@PageID}" exact="1">
+                <do_if value="{text.exists@{param@PageID},{param@TextID}}" exact="1">
+                  <create_briefing cue="{param@Cue}" text="{{param@PageID},{param@TextID}}"/>
+                </do_if>
+              </do_if>
+              <do_choose>
+                <do_when value="{value@{param@Cue}.{param@ID} L0StationClass}" exact="-1">
+                  <create_briefing cue="{param@Cue}">
+					  <objectives>
+                      <objective step="{value@this.Step}">
+                        <custom action="{35,2001}" text="{lookup.type.maker.name@{param@StationType}} {lookup.type.name@{param@StationType}}"/>
+                      </objective>
+                    </objectives>
+                  </create_briefing>
+                </do_when>
+                <do_when value="{value@{param@Cue}.{param@ID} L0StationClass}" min="1">
+                  <create_briefing cue="{param@Cue}">
+					  <objectives>
+                      <objective step="{value@this.Step}">
+                        <custom action="{35,2001}" text="{35,{value@{param@Cue}.{param@ID} L0StationClass}}"/>
+                      </objective>
+                    </objectives>
+                  </create_briefing>
+                </do_when>
+                <do_otherwise>
+                  <create_briefing cue="{param@Cue}">
+					  <objectives>
+                      <objective step="{value@this.Step}">
+                        <custom action="{35,2001}" text="{17,{value@{param@Cue}.{param@ID} L0StationName}}"/>
+                      </objective>
+                    </objectives>
+                  </create_briefing>
+                </do_otherwise>
+              </do_choose>
+				<do_choose>
+					<do_when value="{param.exists@StationType}" exact="1">
+						<create_briefing cue="{param@Cue}">
+							<requirements name="{1904,60301}">
+								<requirement value="{lookup.type@{param@StationType}}" type="warelink"/>
+							</requirements>
+						</create_briefing>
+					</do_when>
+					<do_when value="{param.exists@StationWare}" exact="1">
+						<create_briefing cue="{param@Cue}">
+							<requirements name="{1904,60301}">
+								<requirement value="{lookup.type@{param@StationWare}}" type="warelink"/>
+							</requirements>
+						</create_briefing>
+					</do_when>
+				</do_choose>
+
+			</do_otherwise>
+          </do_choose>
+        </do_all>
+      </action>
+      <cues>
+        <cue ref="LUM04">
+          <params>
+            <param name="Discipline" value="XXBX"/>
+            <param name="StartTime" value="L0M22 B.StartTime"/>
+            <param name="Duration" value="{param@Cue}.{param@ID} L0Time"/>
+          </params>
+        </cue>
+      </cues>
+    </cue>
+
+    <cue name="L0M22" library="1" version="2">
+      <documentation>
+        <content name="L0M22 Build Stations" reference="XXBX" type="L0" />
+        <version number="0.3" date="07/07/08" status="development"/>
+        <params>
+          <param name="Cue" type="cuename" compulsory="1" description="The cue where the briefing and objectives are stored"/>
+          <param name="ID" type="number" compulsory="1" description="The mission Id for dealing with mission chains"/>
+          <param name="OfferRace" compulsory="1" description="Race offering the mission"/>
+          <param name="EnemyRace" compulsory="1" description="Race of the enemy"/>
+          <param name="PageID" compulsory="1" description="Page ID of mission description"/>
+          <param name="TextID" compulsory="1" description="Text ID of mission description"/>
+          <param name="RewardCr" compulsory="0" description="Reward type" default="Standard credit reward"/>
+          <param name="StoryID" compulsory="0" description="Text ID of the Story title" default="No title"/>
+          <param name="ChapterID" compulsory="0" description="Text ID of the chapter title" default="No title"/>
+          <param name="Difficulty" compulsory="1" description="The difficulty of the mission" default="trivial"/>
+          <param name="IsPlot" compulsory="0" description="If the mission is a plot mission or not" default="non-plot"/>
+          <param name="Step" compulsory="0" description="Step to begin the briefing on" default="Step 1"/>
+          <param name="StationName" compulsory="0" description="Sets the built station to this name if provided"/>
+        </params>
+        <returns>
+          <return name="{param@Cue}.{param@ID} L0M22 Progress" description="1 - Mission complete"/>
+          <return name="{param@Cue}.{param@ID} L0M22 Progress" description="2 - out of time"/>
+          <return name="{param@Cue}.{param@ID} L0M22 BuiltStation" description="The station that's been built"/>
+        </returns>
+        <history>
+          <change date="19/05/10" author="Owen Lake" description="Added missing L0M05 library. Should fix missing reward, story and chapters"/>
+          <change date="07/07/08" author="al_main" description="Fixed red station bug"/>
+          <change date="25/06/08" author="al_main" description="Fixed plot mission timing out"/>
+          <change date="09/06/08" author="al_main" description="Fixed cleanup, ends mission when passed / failed"/>
+          <change date="03/06/08" author="al_main" description="Added support for more station types"/>
+          <change date="19/05/08" author="al_main" description="Initial L0/L0 B version"/>
+        </history>
+      </documentation>
+      <action>
+        <do_all>
+          <set_value name="L0M22.Hurry" min="{value@{param@Cue}.{param@ID} L0Time}-280" max="{value@{param@Cue}.{param@ID} L0Time}-220"/>
+          <do_if value="{param.exists@IsPlot}" exact="1">
+            <set_value name="L0M22.IsPlot" exact="{param@IsPlot}"/>
+          </do_if>
+        </do_all>
+      </action>
+      <patch>
+        <reset_cue cue="L0M22 Cleanup"/>
+      </patch>
+      <cues>
+        <cue name="L0M22 Mission" version="2">
+          <action>
+            <do_all>
+				<incoming_message text="Class = {value@{param@Cue}.{param@ID} L0StationClass}"/>
+              <create_briefing cue="{param@Cue}">
+                <timer start="{player.age}" duration="{value@{param@Cue}.{param@ID} L0Time}"/>
+              </create_briefing>
+              <do_if value="{value@{param@Cue}.{param@ID} L0Title}" exact="0" negate="1">
+                <set_objective cue="{param@Cue}" title="{3622,{value@{param@Cue}.{param@ID} L0Title}}" silent="1"/>
+              </do_if>
+              <do_choose>
+                <do_when value="{value@{param@Cue}.{param@ID} L0StationClass}" exact="-1">
+                  <create_stationary typename="SS_SH_BEACON" class="beacon" name="{param@Cue}.{param@ID} Beacon" invincible="1">
+                    <position x="{value@{param@Cue}.{param@ID} L0Loc1x}m" y="{value@{param@Cue}.{param@ID} L0Loc1y}m" z="{value@{param@Cue}.{param@ID} L0Loc1z}m"/>
+                    <sector sector="{param@Cue}.{param@ID} L0Loc1sec"/>
+                  </create_stationary>
+					<incoming_message text="Objective 1"/>
+                  <set_objective cue="{param@Cue}">
+                    <briefing cue="{param@Cue}" step="{param@Step}"/>
+                    <custom action="{35,2001}" text="{lookup.type.maker.name@{value@{param@Cue}.{param@ID} L0StationType}} {lookup.type.name@{value@{param@Cue}.{param@ID} L0StationType}}" object="{param@Cue}.{param@ID} Beacon"/>
+                  </set_objective>
+                </do_when>
+                <do_when value="{value@{param@Cue}.{param@ID} L0StationClass}" exact="2135">
+                  <create_stationary typename="SS_SH_BEACON" class="beacon" name="{param@Cue}.{param@ID} Beacon" invincible="1">
+                    <position x="{value@{param@Cue}.{param@ID} L0Loc1x}m" y="{value@{param@Cue}.{param@ID} L0Loc1y}m" z="{value@{param@Cue}.{param@ID} L0Loc1z}m"/>
+                    <sector sector="{param@Cue}.{param@ID} L0Loc1sec"/>
+                  </create_stationary>
+					<incoming_message text="Objective 2"/>
+					<set_objective cue="{param@Cue}">
+                    <briefing cue="{param@Cue}" step="{param@Step}"/>
+                    <custom action="{35,2001}" text="{35,2135}" object="{param@Cue}.{param@ID} Beacon"/>
+                  </set_objective>
+                </do_when>
+                <do_when value="{value@{param@Cue}.{param@ID} L0StationClass}" exact="2136">
+                  <find_asteroid name="{param@Cue}.{param@ID} Beacon">
+                    <position x="{value@{param@Cue}.{param@ID} L0Loc1x}m" y="{value@{param@Cue}.{param@ID} L0Loc1y}m" z="{value@{param@Cue}.{param@ID} L0Loc1z}m"/>
+                    <sector sector="{param@Cue}.{param@ID} L0Loc1sec"/>
+                  </find_asteroid>
+					<incoming_message text="Objective 3"/>
+					<set_objective cue="{param@Cue}">
+                    <briefing cue="{param@Cue}" step="{param@Step}"/>
+                    <custom action="{35,2001}" text="{35,2136}" object="{param@Cue}.{param@ID} Beacon"/>
+                  </set_objective>
+                </do_when>
+                <do_when value="{value@{param@Cue}.{param@ID} L0StationClass}" exact="2137">
+                  <find_asteroid name="{param@Cue}.{param@ID} Beacon">
+                    <position x="{value@{param@Cue}.{param@ID} L0Loc1x}m" y="{value@{param@Cue}.{param@ID} L0Loc1y}m" z="{value@{param@Cue}.{param@ID} L0Loc1z}m"/>
+                    <sector sector="{param@Cue}.{param@ID} L0Loc1sec"/>
+                  </find_asteroid>
+					<incoming_message text="Objective 4"/>
+					<set_objective cue="{param@Cue}">
+                    <briefing cue="{param@Cue}" step="{param@Step}"/>
+                    <custom action="{35,2001}" text="{35,2137}" object="{param@Cue}.{param@ID} Beacon"/>
+                  </set_objective>
+                </do_when>
+                <do_otherwise>
+                  <create_stationary typename="SS_SH_BEACON" class="beacon" name="{param@Cue}.{param@ID} Beacon" invincible="1">
+                    <position x="{value@{param@Cue}.{param@ID} L0Loc1x}m" y="{value@{param@Cue}.{param@ID} L0Loc1y}m" z="{value@{param@Cue}.{param@ID} L0Loc1z}m"/>
+                    <sector sector="{param@Cue}.{param@ID} L0Loc1sec"/>
+                  </create_stationary>
+					<incoming_message text="Objective 5 - {param@StationName} - {value@{param@Cue}.{param@ID} L0StationName}"/>
+					<set_objective cue="{param@Cue}">
+                    <briefing cue="{param@Cue}" step="{param@Step}"/>
+                    <custom action="{35,2001}" text="{17,{value@{param@Cue}.{param@ID} L0StationName}}" object="{param@Cue}.{param@ID} Beacon"/>
+                  </set_objective>
+                </do_otherwise>
+              </do_choose>
+            </do_all>
+          </action>
+          <cues>
+            <cue ref="LUM05">
+              <params>
+                <param name="Discipline" value="XXBX"/>
+                <param name="StartTime" value="{player.age}"/>
+                <param name="Duration" value="{param@Cue}.{param@ID} L0Time"/>
+              </params>
+            </cue>
+            <cue name="L0M22 L1Guide Lost" delay="2s">
+              <condition>
+                <check_value value="{actor.exists@{param@Lv1Guide}}" exact="0"/>
+              </condition>
+              <action>
+                <do_all>
+                  <set_value name="{param@Cue}.{param@ID} L0M22 Progress" exact="99"/>
+                  <cancel_cue cue="L0M22 Mission"/>
+                </do_all>
+              </action>
+            </cue>
+
+            <cue name="L0M22 Player Gametip" delay="33s" instantiate="static">
+              <condition>
+                <check_all>
+                  <check_value value="{value@L0M22.Gametip Shown}" exact="0"/>
+                  <object_exists object="{param@Cue}.{param@ID} Beacon"/>
+                  <count_ships class="tl" min="1" findobject="{param@Cue}.{param@ID} Beacon" race="player">
+                    <sector sector="{object.sector@{param@Cue}.{param@ID} Beacon}"/>
+                  </count_ships>
+                </check_all>
+              </condition>
+              <action>
+                <do_all>
+                  <find_ship group="this.Player TLs" findobject="{param@Cue}.{param@ID} Beacon" class="tl" race="player">
+                    <sector sector="{object.sector@{param@Cue}.{param@ID} Beacon}"/>
+                  </find_ship>
+                  <do_all exact="{group.object.count@this.Player TLs}" counter="Count">
+                    <do_if value="{group.object.{counter@Count}.cargo.{value@{param@Cue}.{param@ID} L0StationType}.exists@this.Player TLs}" exact="1">
+                      <set_value name="L0M22.Show Gametip" exact="1"/>
+                    </do_if>
+                  </do_all>
+                  <do_if value="{value@L0M22.Show Gametip}" exact="1">
+                    <set_value name="L0M22.Gametip Shown" exact="1"/>
+                    <do_if value="{text.exists@3622,2002}">
+                      <show_help text="{3622,2002}"/>
+                    </do_if>
+                  </do_if>
+                </do_all>
+              </action>
+            </cue>
+
+            <cue name="L0M22 NPC Gametip" delay="36s" instantiate="static">
+              <condition>
+                <check_all>
+                  <check_value value="{value@L0M22.Gametip Shown}" exact="0"/>
+                  <object_exists object="{param@Cue}.{param@ID} Beacon"/>
+                  <count_ships class="tl" min="1" findobject="{param@Cue}.{param@ID} Beacon" race="default">
+                    <sector sector="{object.sector@{param@Cue}.{param@ID} Beacon}"/>
+                  </count_ships>
+                </check_all>
+              </condition>
+              <action>
+                <do_all>
+                  <find_ship group="this.NPC TLs" findobject="{param@Cue}.{param@ID} Beacon" class="tl" race="default">
+                    <sector sector="{object.sector@{param@Cue}.{param@ID} Beacon}"/>
+                  </find_ship>
+                  <do_all exact="{group.object.count@this.NPC TLs}" counter="Count">
+                    <do_if value="{group.object.{counter@Count}.hired@this.NPC TLs}" exact="1">
+                      <do_if value="{group.object.{counter@Count}.cargo.{value@{param@Cue}.{param@ID} L0StationType}.exists@this.NPC TLs}" exact="1">
+                        <set_value name="L0M22.Show Gametip" exact="1"/>
+                      </do_if>
+                    </do_if>
+                  </do_all>
+                  <do_if value="{value@L0M22.Show Gametip}" exact="1">
+                    <set_value name="L0M22.Gametip Shown" exact="1"/>
+                    <do_if value="{text.exists@3622,2002}">
+                      <show_help text="{3622,2002}"/>
+                    </do_if>
+                  </do_if>
+                </do_all>
+              </action>
+            </cue>
+
+            <cue name="L0M22 Update Beacon Position" delay="1s" instantiate="static">
+              <condition>
+                <object_position object="{param@Cue}.{param@ID} Beacon" min="1km">
+                  <position x="{value@{param@Cue}.{param@ID} L0Loc1x}m" y="{value@{param@Cue}.{param@ID} L0Loc1y}m" z="{value@{param@Cue}.{param@ID} L0Loc1z}m"/>
+                </object_position>
+              </condition>
+              <action>
+                <do_all>
+                  <set_value name="{param@Cue}.{param@ID} L0Loc1x" exact="{object.position.x.m@{param@Cue}.{param@ID} Beacon}"/>
+                  <set_value name="{param@Cue}.{param@ID} L0Loc1y" exact="{object.position.y.m@{param@Cue}.{param@ID} Beacon}"/>
+                  <set_value name="{param@Cue}.{param@ID} L0Loc1z" exact="{object.position.z.m@{param@Cue}.{param@ID} Beacon}"/>
+                </do_all>
+              </action>
+            </cue>
+
+            <cue name="L0M22 Check" instantiate="static" version="2">
+              <condition>
+                <player_built_station/>
+              </condition>
+              <action>
+                <do_choose>
+                  <do_when value="{object.isclass.complex@{event.object}}" exact="1" comment="If the station built is a complex, stop the check.">
+                    <cancel_cue cue="L0M22 Check"/>
+                  </do_when>
+                  <do_otherwise>
+                    <do_choose>
+                      <do_when value="{object.sector@{event.object}}" exact="{sector@{param@Cue}.{param@ID} L0Loc1sec}">
+                        <!--Set Station Details-->
+                        <set_object name="L0M22 Check.Station" value="{event.object}"/>
+                        <!--TESTING CODE-->
+                        <set_value name="this.x" exact="{value@{param@Cue}.{param@ID} L0Loc1x}"/>
+                        <set_value name="this.y" exact="{value@{param@Cue}.{param@ID} L0Loc1y}"/>
+                        <set_value name="this.z" exact="{value@{param@Cue}.{param@ID} L0Loc1z}"/>
+                        <set_value name="this.stx" exact="{object.position.x.m@L0M22 Check.Station}"/>
+                        <set_value name="this.sty" exact="{object.position.y.m@L0M22 Check.Station}"/>
+                        <set_value name="this.stz" exact="{object.position.z.m@L0M22 Check.Station}"/>
+                        <find_station maker="terran|atf" name="L0M22 Check.Terran Station">
+                          <sector sector="{param@Cue}.{param@ID} L0Loc1sec"/>
+                        </find_station>
+                        <do_if value="{object.exists@L0M22 Check.Terran Station}" exact="1">
+                          <set_value name="L0M22 Check.Terran Exists" exact="1"/>
+                        </do_if>
+                      </do_when>
+                      <do_otherwise>
+                        <cancel_cue cue="L0M22 Check"/>
+                      </do_otherwise>
+                    </do_choose>
+                  </do_otherwise>
+                </do_choose>
+              </action>
+              <cues>
+                <cue name="L0M22 Stop Checking Station" delay="1s">
+                  <condition>
+                    <check_any>
+                      <object_exists object="L0M22 Check.Station" negate="1"/>
+                      <match_object object="L0M22 Check.Station" class="complex"/>
+                      <match_object object="L0M22 Check.Station" race="player" negate="1"/>
+                    </check_any>
+                  </condition>
+                  <action>
+                    <cancel_cue cue="L0M22 Check"/>
+                  </action>
+                </cue>
+                <cue name="L0M22 Built" delay="2s" version="4">
+                  <condition>
+                    <check_any>
+                      <object_position object="L0M22 Check.Station" max="6000m">
+                        <position x="{value@{param@Cue}.{param@ID} L0Loc1x}m" y="{value@{param@Cue}.{param@ID} L0Loc1y}m" z="{value@{param@Cue}.{param@ID} L0Loc1z}m" max="6000m"/>
+                        <sector sector="{param@Cue}.{param@ID} L0Loc1sec"/>
+                      </object_position>
+                      <check_all>
+                        <check_value value="{value@L0M22 Check.Terran Exists}" exact="1"/>
+                        <object_position object="L0M22 Check.Station" max="40000m">
+                          <position x="{value@{param@Cue}.{param@ID} L0Loc1x}m" y="{value@{param@Cue}.{param@ID} L0Loc1y}m" z="{value@{param@Cue}.{param@ID} L0Loc1z}m" max="6000m"/>
+                          <sector sector="{param@Cue}.{param@ID} L0Loc1sec"/>
+                        </object_position>                        
+                      </check_all>
+                    </check_any>
+                  </condition>
+                  <timing>
+                    <time exact="4s"/>
+                  </timing>
+                  <action>
+                    <do_if value="{object.race@L0M22 Check.Station}" exact="{lookup.race@player}" comment="Check if the station has been used for an other mission.">
+                      <do_choose>
+                        <do_when value="{value@{param@Cue}.{param@ID} L0StationClass}" exact="-1">
+                          <do_if value="{object.type@L0M22 Check.Station}" exact="{value@{param@Cue}.{param@ID} L0StationType}">
+                            <set_value name="{param@Cue}.{param@ID} L0M22 Progress" exact="1"/>
+                          </do_if>
+                        </do_when>
+                        <do_when value="{value@{param@Cue}.{param@ID} L0StationClass}" exact="2135">
+                          <do_if value="{object.products.SS_WARE_ENERGY.exists@L0M22 Check.Station}" exact="1">
+                            <set_value name="{param@Cue}.{param@ID} L0M22 Progress" exact="1"/>
+                          </do_if>
+                        </do_when>
+                        <do_when value="{value@{param@Cue}.{param@ID} L0StationClass}" exact="2136">
+                          <do_if value="{object.products.SS_WARE_ORE.exists@L0M22 Check.Station}" exact="1">
+                            <set_value name="{param@Cue}.{param@ID} L0M22 Progress" exact="1"/>
+                          </do_if>
+                        </do_when>
+                        <do_when value="{value@{param@Cue}.{param@ID} L0StationClass}" exact="2137">
+                          <do_if value="{object.products.SS_WARE_SILICON.exists@L0M22 Check.Station}" exact="1">
+                            <set_value name="{param@Cue}.{param@ID} L0M22 Progress" exact="1"/>
+                          </do_if>
+                        </do_when>
+                        <do_when value="{value@{param@Cue}.{param@ID} L0StationName}" min="1">
+                          <do_if value="{object.products.{value@{param@Cue}.{param@ID} L0StationWare}.exists@L0M22 Check.Station}" exact="1">
+                            <set_value name="{param@Cue}.{param@ID} L0M22 Progress" exact="1"/>
+                          </do_if>
+                        </do_when>
+                      </do_choose>
+                      <do_if value="{value@{param@Cue}.{param@ID} L0M22 Progress}" exact="1">
+                        <cancel_cue cue="L0M22 Stop Checking Station"/>
+                        <set_value name="this.Type" exact="{object.type@L0M22 Check.Station}"/>
+                        <set_value name="this.X" exact="{object.position.x@L0M22 Check.Station}"/>
+                        <set_value name="this.Y" exact="{object.position.y@L0M22 Check.Station}"/>
+                        <set_value name="this.Z" exact="{object.position.z@L0M22 Check.Station}"/>
+                        <set_value name="this.A" exact="{object.rotation.alpha@L0M22 Check.Station}"/>
+                        <set_value name="this.B" exact="{object.rotation.beta@L0M22 Check.Station}"/>
+                        <set_value name="this.G" exact="{object.rotation.gamma@L0M22 Check.Station}"/>
+                        <destroy_object object="L0M22 Check.Station"/>
+                        <create_station name="this.TempStation" typename="{value@this.Type}" race="{param@OfferRace}" safety="0">
+                          <position x="{value@this.X}" y="{value@this.Y}" z="{value@this.Z}"/>
+                          <rotation alpha="{value@this.A}" beta="{value@this.B}" gamma="{value@this.G}"/>
+                          <equipment loadout="default"/>
+                        </create_station>
+                        <set_relation object="L0M22 Check.Station">
+                          <relation relation="neutral"/>
+                        </set_relation>
+                        <do_if value="{param.exists@StationName}" exact="1">
+                          <set_object name="{param@StationName}" value="{object@this.TempStation}"/>
+                        </do_if>
+                        <set_object name="{param@Cue}.{param@ID} L0M22 BuiltStation" value="{object@this.TempStation}"/>
+                      </do_if>
+                    </do_if>
+                  </action>
+                  <patch>
+                    <do_all>
+                      <do_if value="{value@{param@Cue}.{param@ID} L0M22 Progress}" exact="1">
+                        <cancel_cue cue="L0M22 Stop Checking Station"/>
+                      </do_if>
+                      <do_if value="{value@{param@Cue}.{param@ID} L0M22 Progress}" min="1">
+                        <cancel_cue cue="L0M22 Built"/>
+                      </do_if>
+                    </do_all>
+                  </patch>
+                </cue>
+              </cues>
+            </cue>
+            <cue name="L0M22 Hurry Up">
+              <condition>
+                <cue_completed cue="L0M22 Mission"/>
+              </condition>
+              <timing>
+                <time exact="{value@L0M22.Hurry}s"/>
+              </timing>
+              <action>
+                <do_all>
+                  <do_if value="{value@L0M22.IsPlot}" exact="1" negate="1">
+                    <set_value name="this.text" min="501" max="500+{3622,500}"/>
+                    <incoming_message author="{actor.name@{param@Lv1Guide}}" text="{3622,{value@this.text}} {{actor.voice@{param@Lv1Guide}},944}"/>
+                  </do_if>
+                </do_all>
+              </action>
+            </cue>
+            <cue name="L0M22 Time Out">
+              <condition>
+                <cue_completed cue="L0M22 Mission"/>
+              </condition>
+              <timing>
+                <time exact="{value@{param@Cue}.{param@ID} L0Time}s"/>
+              </timing>
+              <action>
+                <do_if value="{value@L0M22.IsPlot}" exact="1" negate="1">
+                  <set_value name="this.text" min="501" max="500+{3622,500}"/>
+                  <incoming_message author="{actor.name@{param@Lv1Guide}}" text="{3622,{value@this.text}} {{actor.voice@{param@Lv1Guide}},851}"/>
+                  <set_value name="{param@Cue}.{param@ID} L0M22 Progress" exact="2"/>
+                  <cancel_cue cue="L0M22 Mission"/>
+                </do_if>
+              </action>
+            </cue>
+            <cue name="L0M22 Aborted">
+              <condition>
+                <objective_cancelled cue="{param@Cue}"/>
+              </condition>
+              <action>
+                <do_all>
+                  <set_value name="{param@Cue}.{param@ID} L0M22 Progress" exact="99"/>
+                  <cancel_cue cue="L0M22 Mission"/>
+                </do_all>
+              </action>
+            </cue>
+          </cues>
+        </cue>
+        <cue name="L0M22 Cleanup" delay="1s" version="2">
+          <condition>
+            <check_value value="{value@{param@Cue}.{param@ID} L0M22 Progress}" min="1"/>
+          </condition>
+          <action>
+            <do_all>
+              <cancel_cue cue="L0M22 Mission"/>
+              <do_if value="{object.exists@{param@Cue}.{param@ID} Beacon}" exact="1">
+                <do_if value="{object.isclass.stationary@{param@Cue}.{param@ID} Beacon}" exact="1">
+                  <destroy_object object="{param@Cue}.{param@ID} Beacon" explosion="0" warp="0"/>
+                </do_if>
+              </do_if>
+              <cancel_cue cue="L0M22"/>
+            </do_all>
+          </action>
+        </cue>
+      </cues>
+    </cue>
+  </cues>
+  <signature>5ckGkWKHquzABKzdirlc3O4ZFF9lbrE4SOUZh8U+hXKS1v363mxvsezS7J5YChlU0phI0Y9n8PAQrz2ABvrGAWXwrCyUoRji1fcd4bILoojn1JEt0u8ac9jopaNSgbCLWWycMKjDSjbC2z8LtRYNGf0gbz4ighQ7aiUHL73kRhSV0UHCr8QBrjAlosahV6+B3h7qq8aO5BxwTwq++Wkj6mmJkIN49cpHZSbIPsG6cPP/6KAdXlfwwrPj4f18MU2PlNL+y+nQRuezfhAn7WqLma4fbxHACnOPjxTopAqnbkoHRLR29gU7454taMfUL2nRuWn+M9CJBh56Eapj42Hfrw==</signature>
+</director>

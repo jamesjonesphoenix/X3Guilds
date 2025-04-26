@@ -1,0 +1,459 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<?xml-stylesheet href="director.xsl" type="text/xsl" ?>
+<director name="template" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="director.xsd">
+  <documentation>
+    <author name="Owen Lake" alias="Xenon_Slayer" contact="E-Mail: Owen@egosoft.com Skype: Owen Lake"/>
+    <content reference="L3M01" name="Level 3 Generic Missons Director" description="The Generic Missions are triggered and managed here."/>
+    <version number="1.0" date="26/06/2009" status="release"/>
+  </documentation>
+  <cues>
+    <cue name="L3M01" delay="5s">
+      <documentation>
+        <content name="Generic Missions" reference="L3M01" type="L3"/>
+        <version  number="0.8" date="03/02/09" status="release"/>
+        <history>
+			<change date="09/12/23" author="Cycrow" description="Added courier mission"/>
+			<change date="10/06/20" author="Ketraar" description="Added Transport Passenger Agent Mission"/>
+			<change date="09/06/20" author="Ketraar" description="Added Defend Object Agent Mission"/>
+          <change date="26/10/12" author="Dillpickle" description="Added missions 180, 181, 182, 183"/>
+          <change date="26/05/10" author="enenra" description="Added in Argon One invincibility fix"/>
+          <change date="26/02/10" author="enenra" description="Corrected mission disciplines for Notoriety Hack and Blueprints missions"/>
+          <change date="02/08/08" author="Owen Lake" description="Commented out 145 for X3TC 1.0"/>
+          <change date="14/07/08" author="Owen Lake" description="Commented out 146 for X3TC 1.0"/>
+          <change date="03/07/08" author="Owen Lake" description="Changed mission choice logic"/>
+          <change date="01/07/08" author="al_main" description="Adjustment to 108 cue ref"/>
+          <change date="25/06/08" author="al_main" description="Added 136 and 161, upped missions per sector by 1"/>
+          <change date="05/06/08" author="al_main" description="Ordered offers by discipline, added 104 variants"/>
+          <change date="30/05/08" author="al_main" description="Quota checking moved to chance variable"/>
+          <change date="29/05/08" author="al_main" description="Format completely re-structured"/>
+          <change date="28/05/08" author="XGamer" description="Added Missions 146 and 147"/>
+          <change date="21/05/08" author="al_main" description="Added mission 122"/>
+          <change date="11/05/08" author="XGamer" description="Added Buy Asteroid Survey by XGamer"/>
+          <change date="07/05/08" author="Owen Lake" description="re-added Mission 113 by Al"/>
+          <change date="19/03/08" author="Owen Lake" description="Added the check attribute to the offering cue names"/>
+          <change date="17/03/08" author="al_main" description="Mission 116 added, cue name typo fixed"/>
+          <change date="13/03/08" author="Owen Lake" description="Umatched offers now cancelled"/>
+          <change date="13/03/08" author="al_main" description="Wait added after sector change"/>
+          <change date="12/03/08" author="al_main" description="Mission 108 added"/>
+          <change date="05/03/08" author="al_main" description="Tidyed up, structure change, Alpha 1 mission list"/>
+          <change date="28/02/08" author="al_main" description="Structure changed, missions added"/>
+          <change date="27/02/08" author="Owen Lake" description="Initial Version"/>
+        </history>
+      </documentation>
+      <condition>
+        <check_age min="20s"/>
+      </condition>
+      <cues>
+		  <cue name="L3M01 Fix Sector Blacklist">
+			  <action>
+				  <do_all>
+				    <find_sector name="L3M01.BlackList1" x="13" y="10" comment="HUB Sector"/>
+				    <set_value name="L3M01.BlacklistSize" exact="1"/>
+				  </do_all>
+			  </action>
+		  </cue>
+		  <cue name="L3M01 Sector Blacklist">
+			  <action>
+				  <do_all>
+					  <find_sector name="L3M01.BlackList1" x="13" y="10" comment="HUB Sector"/>
+					  <set_value name="L3M01.BlacklistSize" exact="1"/>
+					  <set_value name="AGENTMANAGER" exact="0"/>
+            </do_all>
+          </action>
+        </cue>
+
+        <cue name="L3M01 Sector" instantiate="static">
+          <condition>
+            <check_all>
+              <object_changed_sector/>
+              <check_value value="{player.sector}" exact="{sector@Last Mission Sector}" negate="1"/>
+            </check_all>
+          </condition>
+          <timing>
+            <time min="450" max="1050"/>
+          </timing>
+          <action>
+            <do_all>
+              <set_sector name="Last Mission Sector" value="{player.sector}"/>
+              <cancel_cue cue="L3M01 Sector Offer"/>
+            </do_all>
+          </action>
+          <cues>
+            <cue name="L3M01 Sector Offer" instantiate="static" delay="200">
+              <cues>
+                <cue ref="L3M01 Offer"/>
+              </cues>
+            </cue>
+          </cues>
+        </cue>
+        <cue name="L3M01 Gradual" delay="400s" instantiate="static">
+          <cues>
+            <cue ref="L3M01 Offer"/>
+          </cues>
+        </cue>
+      </cues>
+    </cue>
+
+    <cue name="L3M01 Offer" library="1">
+      <action>
+        <do_all>
+          <do_all exact="{value@L3M01.BlacklistSize}" counter="Counter">
+            <do_if value="{player.sector}" exact="{sector@L3M01.BlackList{counter@Counter}}">
+              <set_value name="this.SectorBlacklisted" exact="1"/>
+            </do_if>
+          </do_all>
+          <do_choose>
+            <do_when value="{value@this.SectorBlacklisted}" exact="1">
+              <cancel_cue cue="L3M01 Offer"/>
+            </do_when>
+            <do_otherwise>
+              <set_value name="L3M01.Agentlimit" exact="1"/>
+              <do_if value="{value@AGENTMANAGER}+{player.ownedagents.count}" min="5">
+                <set_value name="L3M01.Agentlimit" exact="0"/>
+              </do_if>
+              <do_any>
+                <!--KEEP THESE HEADERS UPDATED WHEN ADDING MISSIONS / ALTERING WEIGHTINGS-->
+                <!--TXXX trade missions - chance 440-->
+                <set_value name="this.L2M104A" exact="1" chance="{player.sector.quota.TXXX}*100"/>
+                <set_value name="this.L2M104B" exact="1" chance="{player.sector.quota.TXXX}*100"/>
+                <set_value name="this.L2M104C" exact="1" chance="{player.sector.quota.TXXX}*40"/>
+                <set_value name="this.L2M116" exact="1" chance="{player.sector.quota.TXXX}*100"/>
+                <set_value name="this.L2M130" exact="1" chance="{player.sector.quota.TXXX}*100"/>
+                <!--XFXX fight missions - chance 700-->
+                <set_value name="this.L2M101" exact="1" chance="{player.sector.quota.XFXX}*100"/>
+                <set_value name="this.L2M108" exact="1" chance="{player.sector.quota.XFXX}*100"/>
+                <set_value name="this.L2M119" exact="1" chance="{player.sector.quota.XFXX}*65"/>
+                <set_value name="this.L2M127" exact="1" chance="{player.sector.quota.XFXX}*70"/>
+                <!--<set_value name="this.L2M128" exact="1" chance="{player.sector.quota.XFXX}*80"/>-->
+                <set_value name="this.L2M134" exact="1" chance="{player.sector.quota.XFXX}*70"/>
+                <set_value name="this.L2M135" exact="1" chance="{player.sector.quota.XFXX}*90"/>
+                <!--XFXX Agent fight mission - 0-600 -->
+                <set_value name="this.L2M137" exact="1" chance="{player.sector.quota.XFXX}*40*(5-{player.ownedagents.count}-{value@AGENTMANAGER})*{player.headquarters.exists}"/>
+                <!--<set_value name="this.L2M146" exact="1" chance="{player.sector.quota.XFXX}*100"/>-->
+                <set_value name="this.L2M183" exact="1" chance="{player.sector.quota.XFXX}*100" comment="Dual Convoy"/>
+                <!--XXBX build missions - chance 100-->
+                <set_value name="this.L2M122" exact="1" chance="{player.sector.quota.XXBX}*80"/>
+                <!--XXXT think missions - chance 500-->
+				  <set_value name="this.L2GI03" exact="1" chance="{player.sector.quota.XXXT}*100"/>
+				  <set_value name="this.L2M103" exact="1" chance="{player.sector.quota.XXXT}*100"/>
+				  <set_value name="this.L2M105" exact="1" chance="{player.sector.quota.XXXT}*100"/>
+                <set_value name="this.L2M113" exact="1" chance="{player.sector.quota.XXXT}*100"/>
+                <set_value name="this.L2M129" exact="1" chance="{player.sector.quota.XXXT}*100"/>
+                <set_value name="this.L2M133" exact="1" chance="{player.sector.quota.XXXT}*100"/>
+                <set_value name="this.L2M145" exact="1" chance="{player.sector.quota.XXXT}*100"/>
+                <set_value name="this.L2M180" exact="1" chance="{player.sector.quota.XXXT}*100" comment ="Repair Station"/>
+                <set_value name="this.L2M181" exact="1" chance="{player.sector.quota.XXXT}*100" comment ="Multiple Transport"/>
+                <set_value name="this.L2M182" exact="1" chance="{player.sector.quota.XXXT}*100" comment ="Tour Of A Lifetime"/>
+                <!--XXXT Agent Passenger Transport mission - 0-600 -->
+                <set_value name="this.L2M109" exact="1" chance="{player.sector.quota.XXXT}*40*(5-{player.ownedagents.count}-{value@AGENTMANAGER})*{player.headquarters.exists}"/>
+                <!--TXXX, buying offers - chance 400 - 500-->
+                <set_value name="this.L2M136" exact="1" chance="{player.sector.quota.XXXT}*100"/>
+                <set_value name="this.L2M144" exact="1" chance="{player.sector.quota.XXXT}*100"/>
+                <set_value name="this.L2M147" exact="1" chance="{player.sector.quota.XXXT}*100"/>
+                <!--<set_value name="this.L2M150" exact="1" chance="{player.sector.quota.TXXX}*100"/> Disabled due to screwed up cues. Replaced with L2M150a-->
+                <set_value name="this.L2M150a" exact="1" chance="{player.sector.quota.TXXX}*100"/>
+                <set_value name="this.L2M161" exact="1" chance="{player.sector.quota.XXXT}*100*{player.headquarters.exists}"/>
+              </do_any>
+            </do_otherwise>
+          </do_choose>
+        </do_all>
+      </action>
+      <cues>
+        <cue name="Trigger Wait">
+          <condition>
+            <cue_completed cue="L3M01 Offer"/>
+          </condition>
+          <cues>
+            <cue name="Trigger L2M101" check="cancel">
+              <condition>
+                <check_value value="{value@L3M01 Offer.L2M101}" exact="1"/>
+              </condition>
+              <cues>
+                <cue ref="L2M101" comment="Assassination 1"/>
+              </cues>
+            </cue>
+
+			  <cue name="Trigger L2GI03" check="cancel">
+				  <condition>
+					  <check_value value="{value@L3M01 Offer.L2GI03}" exact="1"/>
+				  </condition>
+				  <cues>
+					  <cue ref="L2GI03" comment="Transport Passenger"/>
+				  </cues>
+			  </cue>
+			  <cue name="Trigger L2M103" check="cancel">
+				  <condition>
+					  <check_value value="{value@L3M01 Offer.L2M103}" exact="1"/>
+				  </condition>
+				  <cues>
+					  <cue ref="L2M103" comment="Transport Passenger"/>
+				  </cues>
+			  </cue>
+
+			  <cue name="Trigger L2M104A" check="cancel">
+              <condition>
+                <check_value value="{value@L3M01 Offer.L2M104A}" exact="1"/>
+              </condition>
+              <cues>
+                <cue ref="L2M104A" comment="Deliver Wares to Station in need"/>
+              </cues>
+            </cue>
+
+            <cue name="Trigger L2M104B" check="cancel">
+              <condition>
+                <check_value value="{value@L3M01 Offer.L2M104B}" exact="1"/>
+              </condition>
+              <cues>
+                <cue ref="L2M104B" comment="Deliver Illegal Wares to Pirate Station"/>
+              </cues>
+            </cue>
+
+            <cue name="Trigger L2M104C" check="cancel">
+              <condition>
+                <check_value value="{value@L3M01 Offer.L2M104C}" exact="1"/>
+              </condition>
+              <cues>
+                <cue ref="L2M104C" comment="Deliver Illegal Wares to Trading Station"/>
+              </cues>
+            </cue>
+
+            <cue name="Trigger L2M105" check="cancel">
+              <condition>
+                <check_value value="{value@L3M01 Offer.L2M105}" exact="1"/>
+              </condition>
+              <cues>
+                <cue ref="L2M105" comment="Return Ship"/>
+              </cues>
+            </cue>
+
+            <cue name="Trigger L2M108" check="cancel">
+              <condition>
+                <check_value value="{value@L3M01 Offer.L2M108}" exact="1"/>
+              </condition>
+              <cues>
+                <cue ref="L2M108 XI" comment="Xenon Invasion"/>
+              </cues>
+            </cue>
+
+            <cue name="Trigger L2M109" check="cancel">
+              <condition>
+                <check_value value="{value@L3M01 Offer.L2M109}" exact="1"/>
+              </condition>
+              <cues>
+                <cue ref="L2M109" comment="Agent Transport Passenger"/>
+              </cues>
+            </cue>
+
+            <cue name="Trigger L2M113" check="cancel">
+              <condition>
+                <check_value value="{value@L3M01 Offer.L2M113}" exact="1"/>
+              </condition>
+              <cues>
+                <cue ref="L2M113" comment="Follow Ship"/>
+              </cues>
+            </cue>
+
+            <cue name="Trigger L2M116" check="cancel">
+              <condition>
+                <check_value value="{value@L3M01 Offer.L2M116}" exact="1"/>
+              </condition>
+              <cues>
+                <cue ref="L2M116" comment="Transport Cargo"/>
+              </cues>
+            </cue>
+
+            <cue name="Trigger L2M119" check="cancel">
+              <condition>
+                <check_value value="{value@L3M01 Offer.L2M119}" exact="1"/>
+              </condition>
+              <cues>
+                <cue ref="L2M119" comment="Escort Convoy"/>
+              </cues>
+            </cue>
+
+            <cue name="Trigger L2M122" check="cancel">
+              <condition>
+                <check_value value="{value@L3M01 Offer.L2M122}" exact="1"/>
+              </condition>
+              <cues>
+                <cue ref="L2M122" comment="Build Station"/>
+              </cues>
+            </cue>
+
+            <cue name="Trigger L2M127" check="cancel">
+              <condition>
+                <check_value value="{value@L3M01 Offer.L2M127}" exact="1"/>
+              </condition>
+              <cues>
+                <cue ref="L2M127" comment="Destroy Convoy"/>
+              </cues>
+            </cue>
+
+            <!--<cue name="Trigger L2M128" check="cancel">
+              <condition>
+                <check_value value="{value@L3M01 Offer.L2M128}" exact="1"/>
+              </condition>
+              <cues>
+                <cue ref="L2M128" comment="Capture Passengers"/>
+              </cues>
+            </cue>-->
+
+            <cue name="Trigger L2M129" check="cancel">
+              <condition>
+                <check_value value="{value@L3M01 Offer.L2M129}" exact="1"/>
+              </condition>
+              <cues>
+                <cue ref="L2M129" comment="Deliver Matching Ship"/>
+              </cues>
+            </cue>
+
+            <cue name="Trigger L2M130" check="cancel">
+              <condition>
+                <check_value value="{value@L3M01 Offer.L2M130}" exact="1"/>
+              </condition>
+              <cues>
+                <cue ref="L2M130" comment="Passenger Transport"/>
+              </cues>
+            </cue>
+
+            <cue name="Trigger L2M133" check="cancel">
+              <condition>
+                <check_value value="{value@L3M01 Offer.L2M133}" exact="1"/>
+              </condition>
+              <cues>
+                <cue ref="L2M133" comment="Freight Scan"/>
+              </cues>
+            </cue>
+
+            <cue name="Trigger L2M134" check="cancel">
+              <condition>
+                <check_value value="{value@L3M01 Offer.L2M134}" exact="1"/>
+              </condition>
+              <cues>
+                <cue ref="L2M134" comment="Generic Patrol"/>
+              </cues>
+            </cue>
+
+            <cue name="Trigger L2M135" check="cancel">
+              <condition>
+                <check_value value="{value@L3M01 Offer.L2M135}" exact="1"/>
+              </condition>
+              <cues>
+                <cue ref="L2M135" comment="Defend Object"/>
+              </cues>
+            </cue>
+
+            <cue name="Trigger L2M136" check="cancel">
+              <condition>
+                <check_value value="{value@L3M01 Offer.L2M136}" exact="1"/>
+              </condition>
+              <cues>
+                <cue ref="L2M136" comment="Notoriety Hack"/>
+              </cues>
+            </cue>
+
+            <cue name="Trigger L2M137" check="cancel">
+              <condition>
+                <check_value value="{value@L3M01 Offer.L2M137}" exact="1"/>
+              </condition>
+              <cues>
+                <cue ref="L2M137" comment="Defend Object Agent"/>
+              </cues>
+            </cue>
+
+            <cue name="Trigger L2M144" check="cancel">
+              <condition>
+                <check_value value="{value@L3M01 Offer.L2M144}" exact="1"/>
+              </condition>
+              <cues>
+                <cue ref="L2M144" comment="Buy Asteroid Survey"/>
+              </cues>
+            </cue>
+
+            <cue name="Trigger L2M145" check="cancel">
+              <condition>
+                <check_value value="{value@L3M01 Offer.L2M145}" exact="1"/>
+              </condition>
+              <cues>
+                <cue ref="L2M145" comment="Scan Asteroids"/>
+              </cues>
+            </cue>
+
+            <cue name="Trigger L2M147" check="cancel">
+              <condition>
+                <check_value value="{value@L3M01 Offer.L2M147}" exact="1"/>
+              </condition>
+              <cues>
+                <cue ref="L2M147" comment="Buy Sector Data"/>
+              </cues>
+            </cue>
+
+            <!--<cue name="Trigger L2M150" check="cancel" comment="Should no longer trigger. Leave cue so it continues to patch.">
+              <condition>
+                <check_value value="{value@L3M01 Offer.L2M150}" exact="1"/>
+              </condition>
+              <cues>
+                <cue ref="L2M150" comment="Buy Used Ship"/>
+              </cues>
+            </cue>-->
+
+            <cue name="Trigger L2M150a" check="cancel">
+              <condition>
+                <check_value value="{value@L3M01 Offer.L2M150a}" exact="1"/>
+              </condition>
+              <cues>
+                <cue ref="L2M150a" comment="Buy Used Ship"/>
+              </cues>
+            </cue>
+
+            <cue name="Trigger L2M161" check="cancel">
+              <condition>
+                <check_value value="{value@L3M01 Offer.L2M161}" exact="1"/>
+              </condition>
+              <cues>
+                <cue ref="L2M161" comment="Buy Blueprints"/>
+              </cues>
+            </cue>
+
+            <cue name="Trigger L2M180" check="cancel">
+              <condition>
+                <check_value value="{value@L3M01 Offer.L2M180}" exact="1"/>
+              </condition>
+              <cues>
+                <cue ref="L2M180" comment="Repair Station"/>
+              </cues>
+            </cue>
+
+            <cue name="Trigger L2M181" check="cancel">
+              <condition>
+                <check_value value="{value@L3M01 Offer.L2M181}" exact="1"/>
+              </condition>
+              <cues>
+                <cue ref="L2M181" comment="Multiple Transport"/>
+              </cues>
+            </cue>
+
+            <cue name="Trigger L2M182" check="cancel">
+              <condition>
+                <check_value value="{value@L3M01 Offer.L2M182}" exact="1"/>
+              </condition>
+              <cues>
+                <cue ref="L2M182" comment="Tour Of A Lifetime"/>
+              </cues>
+            </cue>
+
+            <cue name="Trigger L2M183" check="cancel">
+              <condition>
+                <check_value value="{value@L3M01 Offer.L2M183}" exact="1"/>
+              </condition>
+              <cues>
+                <cue ref="L2M183" comment="Dual Convoy"/>
+              </cues>
+            </cue>
+          </cues>
+        </cue>
+      </cues>
+    </cue>
+  </cues>
+  <signature>qbcydoMKGAEM37uzXCU2gSKn5NdLyp4B3XmwFfIwfMoCxtzu4HnFGf4vqxhImS0B0WrYF3FExaS1EwGrFwDE8Jlvf9x31xsWPGYsEuURSXybaedANgLvzLE4srQsJo//35CxtYY8Kc7p9h4UfeWpKvfadhpchfyYPzYi7LV1RCCMMvUkqAEawK07Cj4JHoKdJtjgIxCrm7b9CCV/f2N2EYRHCtTGAOZdLmsStWX91WjX0fn3o8ddv0+7J42OOVAri9wglrm2zVOV4cLL45YkXkIBRmm0M+obGeQ8JgnJdD4RkYAR93uU6h1Ow9q+oSjJKQiaeVbsvpaM7NMk1VsLuw==</signature>
+</director>

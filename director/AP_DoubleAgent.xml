@@ -1,0 +1,906 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<?xml-stylesheet href="director.xsl" type="text/xsl" ?>
+<director name="Albion Prelude Double Agent" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="director.xsd">
+	<documentation>
+		<author name="Cycrow" />
+		<content reference="AP Double Agent" name="doubleagent" description="Albion Prelude - Double Agent plots - Allowing to switch sides of the ware to do the other side plot"/>
+		<version number="1.0" date="07/09/2024" />
+	</documentation>
+	<cues>
+		<cue name="DoubleAgent_Argon" comment="Start double agent after completing AP main plot" delay="5s">
+			<condition>
+				<check_all>
+					<check_value value="{value@NO PLOTS}" exact="0"/>
+					<check_value value="{value@Albion Prelude Plot Start}" exact="1"/>
+					<check_value value="{value@AP Terran Plot Start}" exact="0"/>
+				</check_all>			
+			</condition>
+			<action>
+				<do_all>
+					<find_sector name="DoubleAgent_Argon.Jupiter" x="12" y="2" exact="0"/>					
+				</do_all>
+			</action>
+			<cues>
+				<cue name="DoubleAgent_Argon_Start" delay="2s">							
+					<condition>
+						<check_all>
+							<check_value value="{value@Albion Prelude Plot Ended}" exact="1"/>
+							<check_value value="{value@HUB Player Available}" exact="1"/>											
+							<check_value value="{player.headquarters.exists}" exact="1"/>
+						</check_all>
+					</condition>				
+					<cues>
+						<cue name="DoubleAgent_Argon_GotRep" delay="5s">
+							<condition>
+								<check_all>
+									<check_value value="{player.notoriety.terran.rank}" min="3"/>
+									<check_value value="{player.notoriety.argon.rank}" max="-2"/>
+									<check_value value="{value@L2M023.Started}" exact="0"/>
+								</check_all>
+							</condition>
+							<action>
+								<do_all>
+									<find_sector name="DoubleAgent_Argon.StartSector" x="12" y="1"/>
+									<find_station category="dock" name="DoubleAgent_Argon.StartStation">
+										<sector sector="DoubleAgent_Argon.StartSector"/>
+										<jumps exact="0"/>
+									</find_station>
+									<do_if value="{object.exists@DoubleAgent_Argon.StartStation}" exact="0">
+										<find_station category="dock" name="DoubleAgent_Argon.StartStation">
+											<sector sector="DoubleAgent_Argon.StartSector"/>
+											<jumps min="0" max="2"/>
+										</find_station>
+									</do_if>
+									<set_invincible object="DoubleAgent_Argon.StartStation" invincible="1"/>
+									<create_actor name="DoubleAgent_Argon.Contact" race="terran" object="DoubleAgent_Argon.StartStation" location="crew" voice="121" gender="male" invincible="1"/>
+									<create_offer actor="DoubleAgent_Argon.Contact" conversation="DoubleAgent_A1" discipline="XXXXP" cue="DoubleAgent_Argon"/>
+								</do_all>
+							</action>
+							<cues>
+								<cue name="DoubleAgent_Argon CheckShady" delay="1s">
+									<condition>
+										<check_value value="{value@L2M023.Started}" exact="1"/>
+									</condition>
+									<action>
+										<do_all>
+											<set_invincible object="DoubleAgent_Argon.StartStation" invincible="0"/>
+											<remove_offer actor="DoubleAgent_Argon.Contact" conversation="DoubleAgent_A1" discipline="XXXXP"/>
+											<destroy_actor actor="DoubleAgent_Argon.Contact"/>
+											<cancel_cue cue="DoubleAgent_Argon"/>
+										</do_all>
+									</action>
+								</cue>
+								<cue name="DoubleAgent_Argon Accept" delay="1s">
+									<condition>
+										<conversation_completed answer="accept" conversation="DoubleAgent_A1" actor="DoubleAgent_Argon.Contact"/>
+									</condition>
+									<action>
+										<do_all>
+											<remove_offer actor="DoubleAgent_Argon.Contact" conversation="DoubleAgent_A1" discipline="XXXXP"/>
+											<set_value name="Double Agent Started" exact="1"/>
+											<create_special typename="SS_SPECIAL_INVMARKER" name="DoubleAgent_Argon.Marker">
+												<sector sector="DoubleAgent_Argon.Jupiter"/>
+											</create_special>
+											<set_override_name object="DoubleAgent_Argon.Marker" textid="20621"/>
+											<create_briefing cue="DoubleAgent_Argon" story="{9619,20008}" title="{9619,20002}" text="{9619,20003}" background="sector_terran_saturn.tga">
+												<mission discipline="XFXX" level="average"/>
+												<objectives>
+													<objective step="1">
+														<custom action="{35,2091}" text="{35,2172}" comment="Aid: The War Effort" guidance="DoubleAgent_Argon.Marker"/>
+													</objective>
+												</objectives>
+											</create_briefing>
+											<set_objective cue="DoubleAgent_Argon" story="{9619,20008}" title="{9619,20002}" text="{9619,20003}" noabort="1" active="1">
+												<briefing cue="DoubleAgent_Argon" step="1"/>
+												<mission discipline="XFXX" level="average"/>
+												<custom action="{35,2091}" text="{35,2172}" comment="Aid: The War Effort" guidance="DoubleAgent_Argon.Marker"/>
+											</set_objective>
+											<set_war_reports race="terran"/>
+										</do_all>
+									</action>
+									<cues>
+										<cue name="DoubleAgent_Argon_Player_Entered_War" delay="1s">
+											<condition>
+												<check_value value="{player.sector.warobjectid}" exact="0" negate="1"/>
+											</condition>
+											<action>
+												<do_all>
+													<remove_objective cue="DoubleAgent_Argon"/>
+													<destroy_object object="DoubleAgent_Argon.Marker"/>
+													<do_all exact="3">
+														<create_ship group="DoubleAgent_Argon.War_Ships" typename="SS_SH_A_M4" race="argon" racelogic="0">
+															<position object="{player.ship}" min="10km" max="12km"/>
+															<sector sector="{player.sector}"/>
+															<equipment loadout="default"/>
+															<command command="killenemies"/>
+														</create_ship>
+													</do_all>
+													<create_briefing cue="DoubleAgent_Argon" story="{9619,20008}" title="{9619,20002}" text="{9619,20003}">
+														<mission discipline="XFXX" level="average"/>
+														<objectives>
+															<objective step="1">
+																<custom action="{35,2091}" text="{35,2172}" comment="Aid: The War Effort"/>
+															</objective>
+														</objectives>
+													</create_briefing>
+													<set_objective cue="DoubleAgent_Argon" story="{9619,20008}" title="{9619,20002}" text="{9619,20003}" noabort="1" active="1">
+														<briefing cue="DoubleAgent_Argon" step="1"/>
+														<mission discipline="XFXX" level="average"/>
+														<custom action="{35,2091}" text="{35,2172}" comment="Aid: The War Effort"/>
+													</set_objective>
+												</do_all>
+										  </action>
+										</cue>
+										<cue name="DoubleAgent_Argon_Track_War_Progress" instantiate="static">
+											<condition>
+												<war_score_changed/>
+											</condition>
+											<action>
+												<set_value name="DoubleAgent_Argon.WarPoints" operation="add" exact="{event.param}"/>
+											</action>
+										</cue>
+										<cue name="DoubleAgent_Argon_War_Missions_Done" delay="2s">
+											<condition>
+												<check_value value="{value@DoubleAgent_Argon.WarPoints}" min="2000"/>
+											</condition>
+											<timing>
+												<time exact="10s"/>
+											</timing>
+											<action>
+												<do_all>
+													<set_war_reports/>
+													<cancel_cue cue="DoubleAgent_Argon_Player_Entered_War"/>
+													<cancel_cue cue="DoubleAgent_Argon_Track_War_Progress"/>
+													<play_text actor="DoubleAgent_Argon.Contact" priority="90" textid="300001"/>
+													<create_briefing cue="DoubleAgent_Argon" title="{9619,20002}" text="{9619,20003}">
+														<mission discipline="XXXXP" level="average"/>
+														<objectives>
+															<objective step="2">
+																<talkto actor="DoubleAgent_Argon.Contact"/>
+															</objective>
+														</objectives>
+													</create_briefing>
+													<set_objective cue="DoubleAgent_Argon" title="{9619,20002}" text="{9619,20003}" noabort="1">
+														<briefing cue="DoubleAgent_Argon" step="2"/>
+														<mission discipline="XXXXP" level="average"/>
+														<talkto actor="DoubleAgent_Argon.Contact"/>
+													</set_objective>
+													<create_offer actor="DoubleAgent_Argon.Contact" conversation="DoubleAgent_A2" discipline="XXXXP" cue="DoubleAgent_Argon"/>
+												</do_all>
+											</action>
+											<cues>
+												<cue name="DoubleAgent_Argon Accept2" delay="1s">
+													<condition>
+														<conversation_completed answer="accept" conversation="DoubleAgent_A2" actor="DoubleAgent_Argon.Contact"/>
+													</condition>
+													<action>
+														<do_all>
+															<remove_offer actor="DoubleAgent_Argon.Contact" conversation="DoubleAgent_A2" discipline="XXXXP"/>
+														</do_all>
+													</action>
+													<cues>
+														<cue name="DoubleAgent_Argon Target1">
+															<action>
+																<find_sector name="DoubleAgent_Argon.Target1Sector" core="1" race="argon" sector="{player.sector}" min="2" max="100" border="0"/>
+															</action>
+															<cues>																
+																<cue ref="L0M01 B" version="2">
+																	<params>
+																		<param name="Cue" value="DoubleAgent_Argon"/>
+																		<param name="ID" value="1"/>
+																		<param name="EnemyRace" value="{lookup.race@argon}"/>
+																		<param name="OfferRace" value="{lookup.race@terran}"/>
+																		<param name="Lv1Guide" value="{actor@DoubleAgent_Argon.Contact}"/>
+																		<param name="PageID" value="9619"/>
+																		<param name="TextID" value="20003"/>
+																		<param name="TargetSector" value="{sector@DoubleAgent_Argon.Target1Sector}"/>
+																		<param name="AddText" value="0"/>
+																		<param name="Dock" value="0"/>
+																		<param name="Step" value="3"/>
+																		<param name="Hidden" value="0"/>
+																		<param name="Difficulty" value="4"/>
+																		<param name="RewardCr" value="0"/>
+																		<param name="DisplayRace" value="{lookup.race@terran}"/>
+																		<param name="IsPlot" value="1"/>
+																	</params>
+																</cue>
+																<cue ref="L0M01" comment="Mission 0.1">
+																	<params>
+																		<param name="Cue" value="DoubleAgent_Argon"/>
+																		<param name="ID" value="1"/>
+																		<param name="EnemyRace" value="{lookup.race@argon}"/>
+																		<param name="OfferRace" value="{lookup.race@terran}"/>
+																		<param name="Lv1Guide" value="{actor@DoubleAgent_Argon.Contact}"/>
+																		<param name="PageID" value="9619"/>
+																		<param name="TextID" value="20003"/>
+																		<param name="Hidden" value="0"/>
+																		<param name="TargetSector" value="{sector@DoubleAgent_Argon.Target1Sector}"/>
+																		<param name="Step" value="3"/>
+																		<param name="AddText" value="0"/>
+																		<param name="Difficulty" value="4"/>
+																		<param name="RewardCr" value="0"/>
+																		<param name="DisplayRace" value="{lookup.race@terran}"/>
+																		<param name="IsPlot" value="1"/>
+																	</params>
+																</cue>
+																<cue name="DoubleAgent_Argon Target1_Failed" delay="1s">
+																	<condition>
+																		<check_value value="{value@DoubleAgent_Argon.1 L0M01 Progress}" min="2"/>
+																	</condition>
+																	<timing>
+																		<time min="1s" max="3s"/>
+																	</timing>
+																	<action>
+																		<do_all>
+																			<reset_cue cue="DoubleAgent_Argon Target1"/>
+																		</do_all>
+																	</action>
+																</cue>
+																<cue name="DoubleAgent_Argon Target1_Success" delay="1s">
+																	<condition>
+																		<check_value value="{value@DoubleAgent_Argon.1 L0M01 Progress}" exact="1"/>
+																	</condition>
+																	<timing>
+																		<time min="1s" max="3s"/>
+																	</timing>
+																	<cues>
+																		<cue name="DoubleAgent_Argon Target2">
+																			<action>
+																				<find_sector name="DoubleAgent_Argon.Target2Sector" core="1" race="argon" sector="{player.sector}" min="2" max="100" border="0"/>
+																			</action>
+																			<cues>																
+																				<cue ref="L0M01 B" version="2">
+																					<params>
+																						<param name="Cue" value="DoubleAgent_Argon"/>
+																						<param name="ID" value="2"/>
+																						<param name="EnemyRace" value="{lookup.race@argon}"/>
+																						<param name="OfferRace" value="{lookup.race@terran}"/>
+																						<param name="Lv1Guide" value="{actor@DoubleAgent_Argon.Contact}"/>
+																						<param name="PageID" value="9619"/>
+																						<param name="TextID" value="20003"/>
+																						<param name="TargetSector" value="{sector@DoubleAgent_Argon.Target2Sector}"/>
+																						<param name="AddText" value="0"/>
+																						<param name="Dock" value="0"/>
+																						<param name="Step" value="3"/>
+																						<param name="Hidden" value="0"/>
+																						<param name="Difficulty" value="4"/>
+																						<param name="RewardCr" value="0"/>
+																						<param name="DisplayRace" value="{lookup.race@terran}"/>
+																						<param name="IsPlot" value="1"/>
+																					</params>
+																				</cue>
+																				<cue ref="L0M01" comment="Mission 0.1">
+																					<params>
+																						<param name="Cue" value="DoubleAgent_Argon"/>
+																						<param name="ID" value="2"/>
+																						<param name="EnemyRace" value="{lookup.race@argon}"/>
+																						<param name="OfferRace" value="{lookup.race@terran}"/>
+																						<param name="Lv1Guide" value="{actor@DoubleAgent_Argon.Contact}"/>
+																						<param name="PageID" value="9619"/>
+																						<param name="TextID" value="20003"/>
+																						<param name="TargetSector" value="{sector@DoubleAgent_Argon.Target2Sector}"/>
+																						<param name="Hidden" value="0"/>
+																						<param name="Step" value="3"/>
+																						<param name="AddText" value="0"/>
+																						<param name="Difficulty" value="4"/>
+																						<param name="RewardCr" value="0"/>
+																						<param name="DisplayRace" value="{lookup.race@terran}"/>
+																						<param name="IsPlot" value="1"/>
+																					</params>
+																				</cue>
+																				<cue name="DoubleAgent_Argon Target2_Failed" delay="1s">
+																					<condition>
+																						<check_value value="{value@DoubleAgent_Argon.2 L0M01 Progress}" min="2"/>
+																					</condition>
+																					<timing>
+																						<time min="1s" max="3s"/>
+																					</timing>
+																					<action>
+																						<do_all>
+																							<reset_cue cue="DoubleAgent_Argon Target2"/>
+																						</do_all>
+																					</action>
+																				</cue>
+																				<cue name="DoubleAgent_Argon Target2_Success" delay="1s">
+																					<condition>
+																						<check_value value="{value@DoubleAgent_Argon.2 L0M01 Progress}" exact="1"/>
+																					</condition>
+																					<timing>
+																						<time min="1s" max="3s"/>
+																					</timing>
+																					<cues>
+																						<cue name="DoubleAgent_Argon Target3">
+																							<action>
+																								<find_sector name="DoubleAgent_Argon.Target3Sector" core="1" race="argon" sector="{player.sector}" min="2" max="100" border="0"/>
+																							</action>
+																							<cues>																
+																								<cue ref="L0M01 B" version="2">
+																									<params>
+																										<param name="Cue" value="DoubleAgent_Argon"/>
+																										<param name="ID" value="3"/>
+																										<param name="EnemyRace" value="{lookup.race@argon}"/>
+																										<param name="OfferRace" value="{lookup.race@terran}"/>
+																										<param name="Lv1Guide" value="{actor@DoubleAgent_Argon.Contact}"/>
+																										<param name="PageID" value="9619"/>
+																										<param name="TextID" value="20003"/>
+																										<param name="TargetSector" value="{sector@DoubleAgent_Argon.Target3Sector}"/>
+																										<param name="AddText" value="0"/>
+																										<param name="Dock" value="0"/>
+																										<param name="Step" value="3"/>
+																										<param name="Hidden" value="0"/>
+																										<param name="Difficulty" value="4"/>
+																										<param name="RewardCr" value="0"/>
+																										<param name="DisplayRace" value="{lookup.race@terran}"/>
+																										<param name="IsPlot" value="1"/>
+																									</params>
+																								</cue>
+																								<cue ref="L0M01" comment="Mission 0.1">
+																									<params>
+																										<param name="Cue" value="DoubleAgent_Argon"/>
+																										<param name="ID" value="3"/>
+																										<param name="EnemyRace" value="{lookup.race@argon}"/>
+																										<param name="OfferRace" value="{lookup.race@terran}"/>
+																										<param name="Lv1Guide" value="{actor@DoubleAgent_Argon.Contact}"/>
+																										<param name="TargetSector" value="{sector@DoubleAgent_Argon.Target3Sector}"/>
+																										<param name="PageID" value="9619"/>
+																										<param name="TextID" value="20003"/>
+																										<param name="Hidden" value="0"/>
+																										<param name="Step" value="3"/>
+																										<param name="AddText" value="0"/>
+																										<param name="Difficulty" value="4"/>
+																										<param name="RewardCr" value="0"/>
+																										<param name="DisplayRace" value="{lookup.race@terran}"/>
+																										<param name="IsPlot" value="1"/>
+																									</params>
+																								</cue>
+																								<cue name="DoubleAgent_Argon Target3_Failed" delay="1s">
+																									<condition>
+																										<check_value value="{value@DoubleAgent_Argon.3 L0M01 Progress}" min="2"/>
+																									</condition>
+																									<timing>
+																										<time min="1s" max="3s"/>
+																									</timing>
+																									<action>
+																										<do_all>
+																											<reset_cue cue="DoubleAgent_Argon Target3"/>
+																										</do_all>
+																									</action>
+																								</cue>
+																								<cue name="DoubleAgent_Argon Target3_Success" delay="1s">
+																									<condition>
+																										<check_value value="{value@DoubleAgent_Argon.3 L0M01 Progress}" exact="1"/>
+																									</condition>
+																									<timing>
+																										<time min="1s" max="3s"/>
+																									</timing>
+																									<action>
+																										<do_all>
+																											<play_text actor="DoubleAgent_Argon.Contact" priority="90" textid="300003"/>
+																											<create_briefing cue="DoubleAgent_Argon" title="{9619,20002}" text="{9619,20003}">
+																												<mission discipline="XXXXP" level="average"/>
+																												<objectives>
+																													<objective step="3">
+																														<custom action="{9619,20005}" text="{9619,20006}"/>
+																													</objective>
+																													<objective step="4">
+																														<custom action="{9619,20007}" text="{lookup.race.name@argon}: {lookup.notoriety.argon.name@noton5}" icon="buy"/>
+																													</objective>
+																												</objectives>
+																											</create_briefing>
+																											<set_objective cue="DoubleAgent_Argon" title="{9619,20002}" text="{9619,20003}" noabort="1">
+																												<briefing cue="DoubleAgent_Argon" step="4"/>
+																												<mission discipline="XXXXP" level="average"/>
+																												<custom action="{9619,20007}" text="{lookup.race.name@argon}: {lookup.notoriety.argon.name@noton5}" icon="buy"/>
+																											</set_objective>
+																										</do_all>
+																									</action>
+																									<cues>
+																										<cue name="DoubleAgent_Argon LowerRep" delay="10s">
+																											<condition>
+																												<check_value value="{player.notoriety.argon.rank}" max="-4"/>																												
+																											</condition>
+																											<timing>
+																												<time min="30s" max="60s"/>
+																											</timing>
+																											<action>
+																												<do_all>
+																													<play_text actor="DoubleAgent_Argon.Contact" priority="90" textid="300004"/>
+																													<remove_objective cue="DoubleAgent_Argon" status="complete"/>
+																													<remove_briefing cue="DoubleAgent_Argon"/>
+																													<set_value name="AP Terran Plot Start" exact="1"/>
+																													<set_value name="AP HUB Plot" exact="0"/>
+																													<set_value name="AP HQ Plot" exact="0"/>
+																												</do_all>																												
+																											</action>
+																											<cues>
+																												<cue name="DoubleAgent_Argon Cleanup" delay="1s">
+																													<condition>
+																														<cue_is_complete cue="DoubleAgent_Argon LowerRep"/>
+																													</condition>
+																													<timing>
+																														<time exact="60s"/>
+																													</timing>
+																													<action>
+																														<do_all>
+																															<set_war_reports race="terran"/>
+																															<set_invincible object="DoubleAgent_Argon.StartStation" invincible="0"/>
+																															<destroy_actor actor="DoubleAgent_Argon.Contact"/>
+																															<complete_cue cue="DoubleAgent_Argon"/>
+																														</do_all>
+																													</action>
+																												</cue>
+																											</cues>
+																										</cue>
+																									</cues>
+																								</cue>														
+																							</cues>
+																						</cue>																		
+																					</cues>
+																				</cue>														
+																			</cues>
+																		</cue>
+																	</cues>
+																</cue>														
+															</cues>
+														</cue>
+													</cues>
+												</cue>												
+											</cues>
+										</cue>
+									</cues>
+								</cue>
+							</cues>
+						</cue>
+					</cues>
+				</cue>
+			</cues>
+		</cue>
+		
+		<cue name="DoubleAgent_Terran" comment="Start double agent after completing AP terran plot" delay="5s">
+			<condition>
+				<check_all>
+					<check_value value="{value@NO PLOTS}" exact="0"/>
+					<check_value value="{value@Albion Prelude Plot Start}" exact="0"/>
+					<check_value value="{value@AP Terran Plot Start}" exact="1"/>
+				</check_all>			
+			</condition>
+			<action>
+				<find_sector name="DoubleAgent_Terran.TreasureChest" x="14" y="8" exact="0"/>
+			</action>
+			<cues>
+				<cue name="DoubleAgent_Terran_Start" delay="2s">							
+					<condition>
+						<check_all>
+							<check_value value="{value@Operation Loose Ends Ended}" exact="1"/>
+							<check_value value="{value@HUB Player Available}" exact="1"/>											
+							<check_value value="{player.headquarters.exists}" exact="1"/>
+						</check_all>
+					</condition>				
+					<cues>
+						<cue name="DoubleAgent_Terran_GotRep" delay="5s">
+							<condition>
+								<check_all>
+									<check_value value="{player.notoriety.argon.rank}" min="3"/>
+									<check_value value="{player.notoriety.terran.rank}" max="-2"/>
+									<check_value value="{value@L2M023.Started}" exact="0"/>
+								</check_all>
+							</condition>
+							<action>
+								<do_all>
+									<find_sector name="DoubleAgent_Terran.StartSector" x="14" y="10"/>
+									<find_station category="dock" name="DoubleAgent_Terran.StartStation">
+										<sector sector="DoubleAgent_Terran.StartSector"/>
+										<jumps exact="0"/>
+									</find_station>
+									<do_if value="{object.exists@DoubleAgent_Terran.StartStation}" exact="0">
+										<find_station category="dock" name="DoubleAgent_Terran.StartStation">
+											<sector sector="DoubleAgent_Terran.StartSector"/>
+											<jumps min="0" max="2"/>
+										</find_station>
+									</do_if>
+									<set_invincible object="DoubleAgent_Terran.StartStation" invincible="1"/>
+									<create_actor name="DoubleAgent_Terran.Contact" race="argon" object="DoubleAgent_Terran.StartStation" location="crew" voice="120" gender="female" invincible="1"/>
+									<create_offer actor="DoubleAgent_Terran.Contact" conversation="DoubleAgent_A1" discipline="XXXXP" cue="DoubleAgent_Terran"/>
+								</do_all>
+							</action>
+							<cues>
+								<cue name="DoubleAgent_Terran CheckShady" delay="1s">
+									<condition>
+										<check_value value="{value@L2M023.Started}" exact="1"/>
+									</condition>
+									<action>
+										<do_all>
+											<set_invincible object="DoubleAgent_Terran.StartStation" invincible="0"/>
+											<remove_offer actor="DoubleAgent_Terran.Contact" conversation="DoubleAgent_A1" discipline="XXXXP"/>
+											<destroy_actor actor="DoubleAgent_Terran.Contact"/>
+											<cancel_cue cue="DoubleAgent_Terran"/>
+										</do_all>
+									</action>
+								</cue>
+								<cue name="DoubleAgent_Terran Accept" delay="1s">
+									<condition>
+										<conversation_completed answer="accept" conversation="DoubleAgent_A1" actor="DoubleAgent_Terran.Contact"/>
+									</condition>
+									<action>
+										<do_all>
+											<remove_offer actor="DoubleAgent_Terran.Contact" conversation="DoubleAgent_A1" discipline="XXXXP"/>
+											<set_value name="Double Agent Started" exact="1"/>
+											<create_special typename="SS_SPECIAL_INVMARKER" name="DoubleAgent_Terran.Marker">
+												<sector sector="DoubleAgent_Terran.TresureChest"/>
+											</create_special>
+											<set_override_name object="DoubleAgent_Terran.Marker" textid="20621"/>
+											<create_briefing cue="DoubleAgent_Terran" story="{9619,20009}" title="{9619,20002}" text="{9619,20010}" background="sector_argon_m148.tga">
+												<mission discipline="XFXX" level="average"/>
+												<objectives>
+													<objective step="1">
+														<custom action="{35,2091}" text="{35,2172}" comment="Aid: The War Effort" guidance="DoubleAgent_Terran.Marker"/>
+													</objective>
+												</objectives>
+											</create_briefing>
+											<set_objective cue="DoubleAgent_Terran" story="{9619,20009}" title="{9619,20002}" text="{9619,20010}" noabort="1" active="1">
+												<briefing cue="DoubleAgent_Terran" step="1"/>
+												<mission discipline="XFXX" level="average"/>
+												<custom action="{35,2091}" text="{35,2172}" comment="Aid: The War Effort" guidance="DoubleAgent_Terran.Marker"/>
+											</set_objective>
+											<set_war_reports race="argon"/>
+										</do_all>
+									</action>
+									<cues>
+										<cue name="DoubleAgent_Terran_Player_Entered_War" delay="1s">
+											<condition>
+												<check_value value="{player.sector.warobjectid}" exact="0" negate="1"/>
+											</condition>
+											<action>
+												<do_all>
+													<remove_objective cue="DoubleAgent_Terran"/>
+													<destroy_object object="DoubleAgent_Terran.Marker"/>
+													<do_all exact="3">
+														<create_ship group="DoubleAgent_Terran.War_Ships" typename="SS_SH_USC_M4" race="terran" racelogic="0">
+															<position object="{player.ship}" min="10km" max="12km"/>
+															<sector sector="{player.sector}"/>
+															<equipment loadout="default"/>
+															<command command="killenemies"/>
+														</create_ship>
+													</do_all>
+													<create_briefing cue="DoubleAgent_Terran" story="{9619,20009}" title="{9619,20002}" text="{9619,20010}">
+														<mission discipline="XFXX" level="average"/>
+														<objectives>
+															<objective step="1">
+																<custom action="{35,2091}" text="{35,2172}" comment="Aid: The War Effort"/>
+															</objective>
+														</objectives>
+													</create_briefing>
+													<set_objective cue="DoubleAgent_Terran" story="{9619,20009}" title="{9619,20002}" text="{9619,20010}" noabort="1" active="1">
+														<briefing cue="DoubleAgent_Terran" step="1"/>
+														<mission discipline="XFXX" level="average"/>
+														<custom action="{35,2091}" text="{35,2172}" comment="Aid: The War Effort"/>
+													</set_objective>
+												</do_all>
+										  </action>
+										</cue>
+										<cue name="DoubleAgent_Terran_Track_War_Progress" instantiate="static">
+											<condition>
+												<war_score_changed/>
+											</condition>
+											<action>
+												<set_value name="DoubleAgent_Terran.WarPoints" operation="add" exact="{event.param}"/>
+											</action>
+										</cue>
+										<cue name="DoubleAgent_Terran_War_Missions_Done" delay="2s">
+											<condition>
+												<check_value value="{value@DoubleAgent_Terran.WarPoints}" min="-2000"/>
+											</condition>
+											<timing>
+												<time exact="10s"/>
+											</timing>
+											<action>
+												<do_all>
+													<set_war_reports/>
+													<cancel_cue cue="DoubleAgent_Terran_Player_Entered_War"/>
+													<cancel_cue cue="DoubleAgent_Terran_Track_War_Progress"/>
+													<play_text actor="DoubleAgent_Terran.Contact" priority="90" textid="300001"/>
+													<create_briefing cue="DoubleAgent_Terran" title="{9619,20002}" text="{9619,20010}">
+														<mission discipline="XXXXP" level="average"/>
+														<objectives>
+															<objective step="2">
+																<talkto actor="DoubleAgent_Terran.Contact"/>
+															</objective>
+														</objectives>
+													</create_briefing>
+													<set_objective cue="DoubleAgent_Terran" title="{9619,20002}" text="{9619,20010}" noabort="1">
+														<briefing cue="DoubleAgent_Terran" step="2"/>
+														<mission discipline="XXXXP" level="average"/>
+														<talkto actor="DoubleAgent_Terran.Contact"/>
+													</set_objective>
+													<create_offer actor="DoubleAgent_Terran.Contact" conversation="DoubleAgent_A2" discipline="XXXXP" cue="DoubleAgent_Terran"/>
+												</do_all>
+											</action>
+											<cues>
+												<cue name="DoubleAgent_Terran Accept2" delay="1s">
+													<condition>
+														<conversation_completed answer="accept" conversation="DoubleAgent_A2" actor="DoubleAgent_Terran.Contact"/>
+													</condition>
+													<action>
+														<do_all>
+															<remove_offer actor="DoubleAgent_Terran.Contact" conversation="DoubleAgent_A2" discipline="XXXXP"/>
+														</do_all>
+													</action>
+													<cues>
+														<cue name="DoubleAgent_Terran Target1">
+															<action>
+																<find_sector name="DoubleAgent_Terran.Target1Sector" core="1" race="terran" sector="{player.sector}" min="2" max="100" border="0"/>
+															</action>
+															<cues>																
+																<cue ref="L0M01 B" version="2">
+																	<params>
+																		<param name="Cue" value="DoubleAgent_Terran"/>
+																		<param name="ID" value="1"/>
+																		<param name="EnemyRace" value="{lookup.race@terran}"/>
+																		<param name="OfferRace" value="{lookup.race@argon}"/>
+																		<param name="Lv1Guide" value="{actor@DoubleAgent_Terran.Contact}"/>
+																		<param name="PageID" value="9619"/>
+																		<param name="TextID" value="20010"/>
+																		<param name="TargetSector" value="{sector@DoubleAgent_Terran.Target1Sector}"/>
+																		<param name="AddText" value="0"/>
+																		<param name="Dock" value="0"/>
+																		<param name="Step" value="3"/>
+																		<param name="Hidden" value="0"/>
+																		<param name="Difficulty" value="4"/>
+																		<param name="RewardCr" value="0"/>
+																		<param name="DisplayRace" value="{lookup.race@argon}"/>
+																		<param name="IsPlot" value="1"/>
+																	</params>
+																</cue>
+																<cue ref="L0M01" comment="Mission 0.1">
+																	<params>
+																		<param name="Cue" value="DoubleAgent_Terran"/>
+																		<param name="ID" value="1"/>
+																		<param name="EnemyRace" value="{lookup.race@terran}"/>
+																		<param name="OfferRace" value="{lookup.race@argon}"/>
+																		<param name="Lv1Guide" value="{actor@DoubleAgent_Terran.Contact}"/>
+																		<param name="PageID" value="9619"/>
+																		<param name="TextID" value="20010"/>
+																		<param name="Hidden" value="0"/>
+																		<param name="TargetSector" value="{sector@DoubleAgent_Terran.Target1Sector}"/>
+																		<param name="Step" value="3"/>
+																		<param name="AddText" value="0"/>
+																		<param name="Difficulty" value="4"/>
+																		<param name="RewardCr" value="0"/>
+																		<param name="DisplayRace" value="{lookup.race@argon}"/>
+																		<param name="IsPlot" value="1"/>
+																	</params>
+																</cue>
+																<cue name="DoubleAgent_Terran Target1_Failed" delay="1s">
+																	<condition>
+																		<check_value value="{value@DoubleAgent_Terran.1 L0M01 Progress}" min="2"/>
+																	</condition>
+																	<timing>
+																		<time min="1s" max="3s"/>
+																	</timing>
+																	<action>
+																		<do_all>
+																			<reset_cue cue="DoubleAgent_Terran Target1"/>
+																		</do_all>
+																	</action>
+																</cue>
+																<cue name="DoubleAgent_Terran Target1_Success" delay="1s">
+																	<condition>
+																		<check_value value="{value@DoubleAgent_Terran.1 L0M01 Progress}" exact="1"/>
+																	</condition>
+																	<timing>
+																		<time min="1s" max="3s"/>
+																	</timing>
+																	<cues>
+																		<cue name="DoubleAgent_Terran Target2">
+																			<action>
+																				<find_sector name="DoubleAgent_Terran.Target2Sector" core="1" race="terran" sector="{player.sector}" min="2" max="100" border="0"/>
+																			</action>
+																			<cues>																
+																				<cue ref="L0M01 B" version="2">
+																					<params>
+																						<param name="Cue" value="DoubleAgent_Terran"/>
+																						<param name="ID" value="2"/>
+																						<param name="EnemyRace" value="{lookup.race@terran}"/>
+																						<param name="OfferRace" value="{lookup.race@argon}"/>
+																						<param name="Lv1Guide" value="{actor@DoubleAgent_Terran.Contact}"/>
+																						<param name="PageID" value="9619"/>
+																						<param name="TextID" value="20010"/>
+																						<param name="TargetSector" value="{sector@DoubleAgent_Terran.Target2Sector}"/>
+																						<param name="AddText" value="0"/>
+																						<param name="Dock" value="0"/>
+																						<param name="Step" value="3"/>
+																						<param name="Hidden" value="0"/>
+																						<param name="Difficulty" value="4"/>
+																						<param name="RewardCr" value="0"/>
+																						<param name="DisplayRace" value="{lookup.race@argon}"/>
+																						<param name="IsPlot" value="1"/>
+																					</params>
+																				</cue>
+																				<cue ref="L0M01" comment="Mission 0.1">
+																					<params>
+																						<param name="Cue" value="DoubleAgent_Terran"/>
+																						<param name="ID" value="2"/>
+																						<param name="EnemyRace" value="{lookup.race@terran}"/>
+																						<param name="OfferRace" value="{lookup.race@argon}"/>
+																						<param name="Lv1Guide" value="{actor@DoubleAgent_Terran.Contact}"/>
+																						<param name="PageID" value="9619"/>
+																						<param name="TextID" value="20010"/>
+																						<param name="TargetSector" value="{sector@DoubleAgent_Terran.Target2Sector}"/>
+																						<param name="Hidden" value="0"/>
+																						<param name="Step" value="3"/>
+																						<param name="AddText" value="0"/>
+																						<param name="Difficulty" value="4"/>
+																						<param name="RewardCr" value="0"/>
+																						<param name="DisplayRace" value="{lookup.race@argon}"/>
+																						<param name="IsPlot" value="1"/>
+																					</params>
+																				</cue>
+																				<cue name="DoubleAgent_Terran Target2_Failed" delay="1s">
+																					<condition>
+																						<check_value value="{value@DoubleAgent_Terran.2 L0M01 Progress}" min="2"/>
+																					</condition>
+																					<timing>
+																						<time min="1s" max="3s"/>
+																					</timing>
+																					<action>
+																						<do_all>
+																							<reset_cue cue="DoubleAgent_Terran Target2"/>
+																						</do_all>
+																					</action>
+																				</cue>
+																				<cue name="DoubleAgent_Terran Target2_Success" delay="1s">
+																					<condition>
+																						<check_value value="{value@DoubleAgent_Terran.2 L0M01 Progress}" exact="1"/>
+																					</condition>
+																					<timing>
+																						<time min="1s" max="3s"/>
+																					</timing>
+																					<cues>
+																						<cue name="DoubleAgent_Terran Target3">
+																							<action>
+																								<find_sector name="DoubleAgent_Terran.Target3Sector" core="1" race="terran" sector="{player.sector}" min="2" max="100" border="0"/>
+																							</action>
+																							<cues>																
+																								<cue ref="L0M01 B" version="2">
+																									<params>
+																										<param name="Cue" value="DoubleAgent_Terran"/>
+																										<param name="ID" value="3"/>
+																										<param name="EnemyRace" value="{lookup.race@terran}"/>
+																										<param name="OfferRace" value="{lookup.race@argon}"/>
+																										<param name="Lv1Guide" value="{actor@DoubleAgent_Terran.Contact}"/>
+																										<param name="PageID" value="9619"/>
+																										<param name="TextID" value="20010"/>
+																										<param name="TargetSector" value="{sector@DoubleAgent_Terran.Target3Sector}"/>
+																										<param name="AddText" value="0"/>
+																										<param name="Dock" value="0"/>
+																										<param name="Step" value="3"/>
+																										<param name="Hidden" value="0"/>
+																										<param name="Difficulty" value="4"/>
+																										<param name="RewardCr" value="0"/>
+																										<param name="DisplayRace" value="{lookup.race@argon}"/>
+																										<param name="IsPlot" value="1"/>
+																									</params>
+																								</cue>
+																								<cue ref="L0M01" comment="Mission 0.1">
+																									<params>
+																										<param name="Cue" value="DoubleAgent_Terran"/>
+																										<param name="ID" value="3"/>
+																										<param name="EnemyRace" value="{lookup.race@terran}"/>
+																										<param name="OfferRace" value="{lookup.race@argon}"/>
+																										<param name="Lv1Guide" value="{actor@DoubleAgent_Terran.Contact}"/>
+																										<param name="TargetSector" value="{sector@DoubleAgent_Terran.Target3Sector}"/>
+																										<param name="PageID" value="9619"/>
+																										<param name="TextID" value="20010"/>
+																										<param name="Hidden" value="0"/>
+																										<param name="Step" value="3"/>
+																										<param name="AddText" value="0"/>
+																										<param name="Difficulty" value="4"/>
+																										<param name="RewardCr" value="0"/>
+																										<param name="DisplayRace" value="{lookup.race@argon}"/>
+																										<param name="IsPlot" value="1"/>
+																									</params>
+																								</cue>
+																								<cue name="DoubleAgent_Terran Target3_Failed" delay="1s">
+																									<condition>
+																										<check_value value="{value@DoubleAgent_Terran.3 L0M01 Progress}" min="2"/>
+																									</condition>
+																									<timing>
+																										<time min="1s" max="3s"/>
+																									</timing>
+																									<action>
+																										<do_all>
+																											<reset_cue cue="DoubleAgent_Terran Target3"/>
+																										</do_all>
+																									</action>
+																								</cue>
+																								<cue name="DoubleAgent_Terran Target3_Success" delay="1s">
+																									<condition>
+																										<check_value value="{value@DoubleAgent_Terran.3 L0M01 Progress}" exact="1"/>
+																									</condition>
+																									<timing>
+																										<time min="1s" max="3s"/>
+																									</timing>
+																									<action>
+																										<do_all>
+																											<play_text actor="DoubleAgent_Terran.Contact" priority="90" textid="300003"/>
+																											<create_briefing cue="DoubleAgent_Terran" title="{9619,20002}" text="{9619,20010}">
+																												<mission discipline="XXXXP" level="average"/>
+																												<objectives>
+																													<objective step="3">
+																														<custom action="{9619,20005}" text="{9619,20011}"/>
+																													</objective>
+																													<objective step="4">
+																														<custom action="{9619,20007}" text="{lookup.race.name@terran}: {lookup.notoriety.terran.name@noton5}" icon="buy"/>
+																													</objective>
+																												</objectives>
+																											</create_briefing>
+																											<set_objective cue="DoubleAgent_Terran" title="{9619,20002}" text="{9619,20010}" noabort="1">
+																												<briefing cue="DoubleAgent_Terran" step="4"/>
+																												<mission discipline="XXXXP" level="average"/>
+																												<custom action="{9619,20007}" text="{lookup.race.name@terran}: {lookup.notoriety.terran.name@noton5}" icon="buy"/>
+																											</set_objective>
+																										</do_all>
+																									</action>
+																									<cues>
+																										<cue name="DoubleAgent_Terran LowerRep" delay="10s">
+																											<condition>
+																												<check_value value="{player.notoriety.terran.rank}" max="-4"/>																												
+																											</condition>
+																											<timing>
+																												<time min="30s" max="60s"/>
+																											</timing>
+																											<action>
+																												<do_all>
+																													<play_text actor="DoubleAgent_Terran.Contact" priority="90" textid="300004"/>
+																													<remove_objective cue="DoubleAgent_Terran" status="complete"/>
+																													<remove_briefing cue="DoubleAgent_Terran"/>
+																													<set_value name="AP HUB Plot" exact="0"/>
+																													<set_value name="AP HQ Plot" exact="0"/>
+																													<set_value name="Albion Prelude Plot Start" exact="1"/>
+																												</do_all>																												
+																											</action>
+																											<cues>
+																												<cue name="DoubleAgent_Terran Cleanup" delay="1s">
+																													<condition>
+																														<cue_is_complete cue="DoubleAgent_Terran LowerRep"/>
+																													</condition>
+																													<timing>
+																														<time exact="60s"/>
+																													</timing>
+																													<action>
+																														<do_all>
+																															<set_war_reports race="argon"/>
+																															<set_invincible object="DoubleAgent_Terran.StartStation" invincible="0"/>
+																															<destroy_actor actor="DoubleAgent_Terran.Contact"/>
+																															<complete_cue cue="DoubleAgent_Terran"/>
+																														</do_all>
+																													</action>
+																												</cue>
+																											</cues>
+																										</cue>
+																									</cues>
+																								</cue>														
+																							</cues>
+																						</cue>																		
+																					</cues>
+																				</cue>														
+																			</cues>
+																		</cue>
+																	</cues>
+																</cue>														
+															</cues>
+														</cue>
+													</cues>
+												</cue>												
+											</cues>
+										</cue>
+									</cues>
+								</cue>
+							</cues>
+						</cue>
+					</cues>
+				</cue>
+			</cues>
+		</cue>
+	</cues>
+</director>

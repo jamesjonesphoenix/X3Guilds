@@ -1,0 +1,1496 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<?xml-stylesheet href="director.xsl" type="text/xsl" ?>
+<director name="Race Militaries" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="director.xsd">
+	<documentation>
+		<author name="Cycrow" />
+		<content reference="Militaries" name="Militaries" description="Race Militaries"/>
+		<version number="0.1" date="19/12/23" />
+	</documentation>
+	<cues>		
+		<cue name="Race Militaries" comment="Main Race Military Cue">
+			<condition>
+				<cue_is_complete cue="Guilds_Startup"/>
+			</condition>
+			<cues>
+				<!-- ###### Library ###### -->
+				<cue name="Military_Recruit" library="1">
+					<documentation>
+						<content name="Military Generic Recruitment Mission" type="utility"/>
+						<version date="12/05/2024" number="1.0" status="testing"/>
+						<params>
+							<param name="Data Cue" type="cuename" description="The cue where the military data is from"/>
+							<param name="Reset Cue" type="cuename" description="The cue to reset when the mission ends"/>
+							<param name="Briefing Cue" type="cuename" description="The cue where the briefing will be localised"/>
+							<param name="MissionOutpost" type="objectid" description="The station to offer the missions from"/>
+							<param name="Leader ShipType" type="text" description="The ship type for the leader ship to use"/>
+							<param name="Race" description="The Race to work with"/>
+							<param name="EnemyRace" description="The Enemy Race for the patrol"/>
+							<param name="Recruiter" description="The recruiter actor"/>
+							<param name="MilitaryID" type="text" description="The string id of the military (for Experience)"/>
+							<param name="Name" type="text" description="The name of the Military to show on briefings"/>
+							<param name="PaymentID" type="number" compulsory="0" description="The text id for the payment string"/>
+						</params>
+					</documentation>
+					<cues>
+						<cue name="Military_Recruit_CreateFollower">
+							<cues>
+								<cue ref="SRST">
+									<params>
+										<param name="Race ID" value="{param@Race}" comment="The maker race ID or the strings 'default' or 'pirategroup'"/>
+										<param name="Class ID" value="{lookup.class@m4}" comment="The shipclass ID or the strings 'bigship', 'fighter' or 'freighter'"/>
+										<param name="Cue" value="{param@Data Cue}" comment="The Cue that the shiptype is saved too"/>
+										<param name="CancelCue" value="SRST"/>
+										<param name="Shiptype Address" value="{param@Data Cue}.ShipTypeSRST"/>
+										<param name="Include M3P" value="0" comment="Include the M3Plus ships in the M3 search"/>
+										<param name="Include M4P" value="1" comment="Include the M4Plus ships in the M4 search"/>
+										<param name="Include M5P" value="0" comment="Include the M5Plus ships in the M5 search"/>
+										<param name="Include M6M" value="0" comment="Include the M6M ships in the M6 search"/>
+										<param name="Include M7M" value="0" comment="Include the M7M ships in the M7 search"/>
+									</params>
+								</cue>
+								<cue name="Military_Recruit_CreateFollower_Ship">
+									<condition>
+										<check_all>
+											<cue_is_cancelled cue="SRST"/>
+										</check_all>
+									</condition>
+									<action>
+										<do_all>
+											<do_choose>
+												<do_when value="{param.exists@Nodes}" exact="1">
+													<do_choose>
+														<do_when value="{param@Nodes}" min="2">
+															<set_value name="{param@Data Cue}.Nodes" exact="{param@Nodes}" />
+														</do_when>
+														<do_otherwise>
+															<set_value name="{param@Data Cue}.Nodes" exact="3" />
+														</do_otherwise>
+													</do_choose>
+												</do_when>
+												<do_otherwise>
+													<set_value name="{param@Data Cue}.Nodes" exact="3" />
+												</do_otherwise>
+											</do_choose>
+											<create_ship group="{param@Data Cue}.Followers" race="{param@Race}" capturable="0" boardable="0" dockobject="{param@MissionOutpost}" invincible="1" typename="{value@{param@Data Cue}.ShipTypeSRST}" racelogic="0" textid="{param@FollowerID}">
+												<sector sector="{object.sector@{param@MissionOutpost}}"/>
+												<equipment loadout="maximum"/>
+											</create_ship>
+										</do_all>
+									</action>
+									<cues>
+										<cue name="Military_Recruit_AdditionalFollower">
+											<condition>
+												<check_all>
+													<cue_is_complete cue="Military_Recruit_CreateFollower_Ship"/>
+													<check_value value="{group.object.count@{param@Data Cue}.Followers}" max="1"/>
+												</check_all>
+											</condition>
+											<action>
+												<reset_cue cue="Military_Recruit_CreateFollower"/>
+											</action>
+										</cue>
+									</cues>
+								</cue>								
+							</cues>
+						</cue>
+						<cue name="Military_Recruit_Start">
+							<condition>
+								<check_all>
+									<cue_is_complete cue="Military_Recruit_CreateFollower"/>
+									<check_value value="{group.object.count@{param@Data Cue}.Followers}" min="2"/>
+								</check_all>
+							</condition>
+							<action>
+								<do_all>
+									<cancel_cue cue="Military_Recruit_AdditionalFollower"/>
+									<cancel_cue cue="Military_Recruit_CreateFollower_Ship"/>
+									<cancel_cue cue="Military_Recruit_CreateFollower"/>
+									<create_ship name="{param@Data Cue}.LeaderShip" race="{param@Race}" capturable="0" boardable="0" dockobject="{param@MissionOutpost}" invincible="1" typename="{param@Leader ShipType}" racelogic="0" textid="{param@LeaderID}">
+										<sector sector="{object.sector@{param@MissionOutpost}}"/>
+										<equipment loadout="maximum"/>
+										<command command="follow" commandobject="{player.ship}"/>
+									</create_ship>
+									<do_if value="{actor.exists@{param@Data Cue}.Recruiter}">
+										<set_actor_location actor="{param@Data Cue}.Recruiter" location="pilot" object="{param@Data Cue}.LeaderShip"/>			
+									</do_if>
+									<set_group_command group="{param@Data Cue}.Followers" command="protect" commandobject="{object@{param@Data Cue}.LeaderShip}"/>
+									<find_sector name="{param@Data Cue}.Destiantion" race="{param@Race}" sector="{object.sector@{param@MissionOutpost}}" min="{param@Jumps}" max="{param@Jumps}"/>
+									<do_if value="{sector.exists@{param@Data Cue}.Destiantion}" exact="0">
+										<find_sector name="{param@Data Cue}.Destiantion" race="{param@Race}" sector="{object.sector@{param@MissionOutpost}}" min="{param@Jumps}-1" max="{param@Jumps}+1"/>
+									</do_if>
+								</do_all>
+							</action>
+							<cues>
+								<cue name="Military_Recruit_StartBriefing">
+									<condition>
+										<check_all>
+											<cue_is_complete cue="Military_Recruit_Start"/>
+											<check_value value="{object.exists@{param@Data Cue}.LeaderShip}" exact="1"/>
+										</check_all>
+									</condition>
+									<cues>
+										<cue ref="L0GI04 B">
+											<params>
+												<param name="Cue" value="{param@Data Cue}"/>
+												<param name="Difficulty" value="{lookup.level@hard}"/>
+												<param name="OfferRace" value="{param@Race}"/>
+												<param name="Leader" value="{object@{param@Data Cue}.LeaderShip}"/>
+												<param name="LeaderActor" value="{actor@{param@Data Cue}.Recruiter}"/>
+												<param name="Nodes" value="{value@{param@Data Cue}.Nodes}"/>
+												<param name="SetObjective" value="1"/>
+												<param name="PatrolSector" value="{object.sector@{param@Data Cue}.LeaderShip}"/>
+												<param name="FinalSector" value="{sector@{param@Data Cue}.Destiantion}"/>
+											</params>
+										</cue>
+										<cue name="Military_Recruit_MemberPatrol">
+											<condition>
+												<check_all>
+													<cue_is_complete cue="L0GI04 B"/>
+												</check_all>
+											</condition>
+											<timing>
+												<time min="30s" max="40s"/>
+											</timing>
+											<action>
+												<do_all>
+													<set_value name="{param@Data Cue}.OBS Delay" min="160" max="220"/>
+													<play_text actor="{actor@{param@Data Cue}.Recruiter}" textid="990" priority="90"/>
+													<set_value name="{param@Data Cue}.Feedback" exact="0"/>
+												</do_all>
+											</action>
+											<cues>
+												<cue name="Military_Recruit_StartMemberPatrol">
+													<condition>
+														<cue_is_complete cue="Military_Recruit_MemberPatrol"/>
+													</condition>
+													<cues>														
+														<cue ref="L0GI04">
+															<params>
+																<param name="Cue" value="{param@Data Cue}"/>
+																<param name="Difficulty" value="{lookup.level@hard}"/>
+																<param name="Leader" value="{object@{param@Data Cue}.LeaderShip}"/>
+																<param name="OfferRace" value="{param@Race}"/>
+																<param name="LeaderActor" value="{actor@{param@Data Cue}.Recruiter}"/>
+																<param name="Followers" value="{param@Data Cue}.Followers"/>
+																<param name="Bonus" value="{param@Data Cue}.Bonus"/>
+																<param name="Nodes" value="{value@param@Data Cue}.Nodes}"/>
+																<param name="SetObjective" value="1"/>
+																<param name="PatrolSector" value="{object.sector@{param@Data Cue}.LeaderShip}"/>
+																<param name="FinalSector" value="{sector@{param@Data Cue}.Destiantion}"/>
+																<param name="FeedbackName" value="{param@Data Cue}.Feedback"/>
+																<param name="PatrolDest" value="0"/>
+																<param name="LeaderTalk" value="1"/>
+																<param name="OBS" value="1"/>
+																<param name="OBSDelay" value="{value@{param@Data Cue}.OBS Delay}"/>
+																<param name="OBS Cue" value="{param@Data Cue}" />
+																<param name="OBSSectorIgnoreList" value="{sector@{param@Data Cue}.Destiantion}" />
+																<param name="OBSFleetRace" value="{value@this.EnemyRace}" />
+																<param name="OBSFleetPilotsRace" value="{value@this.EnemyRace}" />
+																<param name="OBSMissionRank" value="8" comment="A 0-30 scale preferably based on the players fight rank"/>
+																<param name="OBSDifficultyRank" value="{lookup.level@hard}" comment="A 1-8 scale of difficulty"/>
+																<param name="OBS Counter" value="{param@Data Cue}.OBS Count" comment="The name of the OBS counter"/>
+																<param name="MaxOBSPerSector" value="2"/>
+																<param name="OBSResetTimePerSector" value="1"/>
+																<param name="Max OBS Instances" value="4" comment="The maximum OBS spawns. 0=Infinate"/>
+																<param name="CheckCurrentEnemies" value="1" comment="Count the number of enemies in the area to lower the amount of enemies"/>
+																<param name="OBSFleetCovered" value="0" comment="0/1 Sets if created pirate ships are covered"/>
+																<param name="OBS Dock Support" value="1" comment="0/1 Sets if the created support ships are docked with their homebase"/>
+																<param name="OBS Support Overflow" value="0" comment="0/1 Sets if additional support ships are created outside when the homebase is full"/>
+																<param name="OBSFleetRelation" value="-1" comment="-1,0,1 OBS fleet relation to the player"/>
+															</params>
+														</cue>
+														<cue name="Military_Recruit_MemberPatrol_Failed">
+															<condition>
+																<check_value value="{value@{param@Data Cue}.Feedback}" min="2"/>
+															</condition>
+															<action>
+																<do_all>
+																	<do_choose>
+																		<do_when value="{value@{param@Data Cue}.Feedback}" exact="99">
+																			<remove_briefing cue="{param@Briefing Cue}"/>
+																		</do_when>
+																		<do_otherwise>
+																			<remove_briefing cue="{param@Briefing Cue}"/>
+																			<remove_objective cue="{param@Briefing Cue}" status="failed"/>
+																		</do_otherwise>
+																	</do_choose>
+																	<destroy_object object="{param@Data Cue}.LeaderShip" warp="1"/>
+																	<destroy_group group="{param@Data Cue}.Followers" warp="1"/>
+																</do_all>
+															</action>
+															<cues>
+																<cue name="Military_Recruit_Reset" delay="1s">
+																	<condition>
+																		<cue_is_complete cue="Military_Recruit_MemberPatrol_Failed"/>
+																	</condition>
+																	<timing>
+																		<time min="10s" max="15s"/>
+																	</timing>
+																	<action>
+																		<reset_cue cue="{param@Reset Cue}"/>
+																	</action>
+																</cue>
+															</cues>
+														</cue>
+														<cue name="Military_Recruit_MemberPatrol_Finished">
+															<condition>
+																<check_value value="{value@{param@Data Cue}.Feedback}" exact="1"/>
+															</condition>
+															<timing>
+																<time min="5s" max="10s"/>
+															</timing>
+															<action>
+																<do_all>
+																	<set_command command="idle" object="{param@Data Cue}.LeaderShip"/>
+																	<do_if value="{param.exists@EndSpeak}" exact="1">
+																		<do_if value="{param@EndSpeak}" min="1">
+																			<play_text actor="{actor@{param@Data Cue}.Recruiter}" textid="{param@EndSpeak}" priority="90"/>
+																		</do_if>
+																	</do_if>
+																	<do_if value="{value@{param@Data Cue}.Bonus}" min="1">
+																		<reward_player>
+																			<money exact="{value@{param@Data Cue}.Bonus}" transactionid="{param@PaymentID}" transactionpage="9620"/>
+																		</reward_player>
+																	</do_if>
+																	<remove_briefing cue="{param@Briefing Cue}"/>
+																	<remove_objective cue="{param@Briefing Cue}" status="complete"/>
+																</do_all>
+															</action>
+															<cues>
+																<cue name="Military_Recruit_MemberPatrol_Cleanup">
+																	<condition>
+																		<cue_is_complete cue="Military_Recruit_MemberPatrol_Finished"/>
+																	</condition>
+																	<timing>
+																		<time min="20s" max="25s"/>
+																	</timing>
+																	<action>
+																		<do_all>
+																			<start_script script="plugin.guilds.recruit">
+																				<scriptargs>
+																					<scriptvalue datatype="string" datavalue="{param@MilitaryID}"/>
+																					<scriptvalue datatype="integer" datavalue="1"/>
+																					<scriptvalue datatype="integer" datavalue="2"/>
+																					<scriptvalue datatype="integer" datavalue="0"/>
+																				</scriptargs>
+																			</start_script>
+																			<destroy_actor actor="{param@Data Cue}.Recruiter"/>
+																			<destroy_object object="{param@Data Cue}.LeaderShip" warp="1"/>
+																			<destroy_group group="{param@Data Cue}.Followers" warp="1"/>
+																		</do_all>
+																	</action>
+																</cue>
+															</cues>
+														</cue>
+													</cues>
+												</cue>
+											</cues>
+										</cue>
+									</cues>
+								</cue>
+							</cues>
+						</cue>
+					</cues>
+				</cue>
+				
+				<cue name="Military_Radiant_Mission" library="1">
+					<documentation>
+						<content name="Military Radiant Missions" type="utility"/>
+						<version date="21/12/2023" number="1.0" status="testing"/>
+						<params>
+							<param name="Data Cue" type="cuename" description="The cue where the military data is from"/>
+							<param name="Reset Cue" type="cuename" description="The cue to reset when the mission ends"/>
+							<param name="Briefing Cue" type="cuename" description="The cue where the briefing will be localised"/>
+							<param name="Leader" type="objectid" compulsory="1" description="The mission speaker"/>
+							<param name="MissionOutpost" type="objectid" description="The station to offer the missions from"/>
+							<param name="Race" description="The Race to work with"/>
+							<param name="MilitaryID" type="text" description="The string id of the military (for Experience)"/>
+							<param name="Name" type="text" description="The name of the Military to show on briefings"/>
+							<param name="PaymentID" type="number" compulsory="0" description="The text id for the payment string"/>
+						</params>
+					</documentation>
+					<action>
+						<do_all>
+							<set_value name="{param@Data Cue}.CancelTime" exact="{player.age}"/>
+							<set_value name="{param@Data Cue}.CancelTime" min="750" max="1000" operation="add"/>
+							<do_choose>
+								<do_when value="{value@{param@Data Cue}.Level}" min="7">
+									<do_any>
+										<set_value name="{param@Data Cue}.Mission" exact="1" chance="80"/>
+										<set_value name="{param@Data Cue}.Mission" exact="2" chance="20"/>
+									</do_any>
+								</do_when>
+								<do_otherwise>
+									<do_any>
+										<set_value name="{param@Data Cue}.Mission" exact="1" chance="60"/>
+										<set_value name="{param@Data Cue}.Mission" exact="2" chance="40"/>
+									</do_any>
+								</do_otherwise>
+							</do_choose>
+						</do_all>
+					</action>
+					<cues>
+						<cue name="Radiant_Military_CancelMission">
+							<condition>
+								<check_age min="{value@{param@Data Cue}.CancelTime}"/>
+							</condition>
+							<action>
+								<do_all>
+									<do_if value="{actor.exists@{param@Leader}}">
+										<remove_offer actor="{param@Leader}" conversation="L2OfferCombat" discipline="XFXX"/>
+										<destroy_actor actor="{param@Leader}"/>
+									</do_if>
+									<destroy_group group="{param@Data Cue}.Objects" warp="1"/>
+									<set_value name="{param@Data Cue}.Mission" exact="99"/>
+								</do_all>
+							</action>
+						</cue>
+						
+						<cue name="Radiant_Military_ResetMission">
+							<condition>
+								<check_value value="{value@{param@Data Cue}.Mission}" exact="99"/>
+							</condition>
+							<timing>
+								<time min="25m" max="30m"/>
+							</timing>
+							<action>
+								<reset_cue cue="{param@Reset Cue}"/>
+							</action>
+						</cue>
+
+						<cue name="Radiant_Military_Mission1">
+							<condition>
+								<check_value value="{value@{param@Data Cue}.Mission}" exact="1"/>
+							</condition>
+							<action>
+								<do_all>
+									<set_value name="{param@Data Cue}.Mission1_Feedback" min="0"/>
+									<create_offer actor="{param@Leader}" cue="{param@Briefing Cue}" conversation="L2OfferCombat" discipline="XFXX"/>
+									<find_sector name="{param@Data Cue}.Mission1_Destination" race="{param@Race}" min="2" max="4" sector="{player.sector}"/>
+									<set_value name="{param@Data Cue}.Mission1_Difficulty" min="{lookup.level@easy}" max="{lookup.level@veryhard}" profile="bell"/>
+									<set_value name="{param@Data Cue}.Mission1_Enemy" exact="{lookup.race@pirate}"/>
+									<do_choose>
+										<do_when value="{param@Race}" exact="{lookup.race@pirate}">
+											<do_any>
+												<set_value name="{param@Data Cue}.Mission1_Enemy" exact="{lookup.race.randomenemy@{param@Race}}" chance="30"/>
+												<set_value name="{param@Data Cue}.Mission1_Enemy" exact="{lookup.race@xenon}" chance="30"/>
+												<set_value name="{param@Data Cue}.Mission1_Enemy" exact="{lookup.race@khaak}" chance="10"/>
+												<set_value name="{param@Data Cue}.Mission1_Enemy" exact="{lookup.race@yaki}" chance="30"/>
+											</do_any>
+										</do_when>
+										<do_when value="{param@Race}" exact="{lookup.race@yaki}">
+											<do_any>
+												<set_value name="{param@Data Cue}.Mission1_Enemy" exact="{lookup.race.randomenemy@{param@Race}}" chance="30"/>
+												<set_value name="{param@Data Cue}.Mission1_Enemy" exact="{lookup.race@xenon}" chance="30"/>
+												<set_value name="{param@Data Cue}.Mission1_Enemy" exact="{lookup.race@khaak}" chance="10"/>
+												<set_value name="{param@Data Cue}.Mission1_Enemy" exact="{lookup.race@pirate}" chance="30"/>
+											</do_any>
+										</do_when>
+										<do_otherwise>
+											<do_any>
+												<set_value name="{param@Data Cue}.Mission1_Enemy" exact="{lookup.race.randomenemy@{param@Race}}" chance="20"/>
+												<set_value name="{param@Data Cue}.Mission1_Enemy" exact="{lookup.race@pirate}" chance="30"/>
+												<set_value name="{param@Data Cue}.Mission1_Enemy" exact="{lookup.race@xenon}" chance="30"/>
+												<set_value name="{param@Data Cue}.Mission1_Enemy" exact="{lookup.race@khaak}" chance="10"/>
+												<set_value name="{param@Data Cue}.Mission1_Enemy" exact="{lookup.race@yaki}" chance="10"/>
+											</do_any>
+										</do_otherwise>
+									</do_choose>
+									<do_choose>
+										<do_when value="{value@{param@Data Cue}.Mission1_Difficulty}" exact="{lookup.level@easy}">
+											<set_value name="{param@Data Cue}.Mission1_Attacks" exact="1"/>
+											<set_value name="{param@Data Cue}.Mission1_Nodes" exact="2"/>
+										</do_when>
+										<do_when value="{value@{param@Data Cue}.Mission1_Difficulty}" exact="{lookup.level@average}">
+											<set_value name="{param@Data Cue}.Mission1_Attacks" min="1" max="2"/>
+											<set_value name="{param@Data Cue}.Mission1_Nodes" min="2" max="3"/>
+										</do_when>
+										<do_otherwise>
+											<set_value name="{param@Data Cue}.Mission1_Attacks" exact="2"/>
+											<set_value name="{param@Data Cue}.Mission1_Nodes" min="2" max="4"/>
+										</do_otherwise>
+									</do_choose>
+									<set_value name="{param@Data Cue}.Mission1_MaxAttacks" exact="({sector.jumps@{param@Data Cue}.Mission1_Destination}*2)-1"/>
+								</do_all>
+							</action>
+							<cues>								
+								<cue ref="SRST">
+									<params>
+										<param name="Race ID" value="{param@Race}" comment="The maker race ID or the strings 'default' or 'pirategroup'"/>
+										<param name="Class ID" value="{lookup.class@m3}" comment="The shipclass ID or the strings 'bigship', 'fighter' or 'freighter'"/>
+										<param name="Cue" value="{param@Data Cue}" comment="The Cue that the shiptype is saved too"/>
+										<param name="CancelCue" value="SRST"/>
+										<param name="Shiptype Address" value="{param@Data Cue}.ShipTypeSRST"/>
+										<param name="Include M3P" value="1" comment="Include the M3Plus ships in the M3 search"/>
+										<param name="Include M4P" value="0" comment="Include the M4Plus ships in the M4 search"/>
+										<param name="Include M5P" value="0" comment="Include the M5Plus ships in the M5 search"/>
+										<param name="Include M6M" value="0" comment="Include the M6M ships in the M6 search"/>
+										<param name="Include M7M" value="0" comment="Include the M7M ships in the M7 search"/>
+									</params>
+								</cue>
+								<cue name="Radiant_Military_Mission1_CreateShip">
+									<condition>
+										<check_all>
+											<cue_is_cancelled cue="SRST"/>
+										</check_all>
+									</condition>
+									<action>
+										<do_all>
+											<create_ship name="{param@Data Cue}.Mission1_LeaderShip" race="{param@Race}" capturable="0" boardable="0" dockobject="{param@MissionOutpost}" typename="{value@{param@Data Cue}.ShipTypeSRST}" racelogic="0" textid="{param@LeaderID}">
+												<sector sector="{object.sector@{param@MissionOutpost}}"/>
+												<equipment loadout="maximum"/>
+											</create_ship>
+											<do_if value="{object.exists@{param@Data Cue}.Mission1_LeaderShip}" exact="0">
+												<create_ship name="{param@Data Cue}.Mission1_LeaderShip" race="{param@Race}" capturable="0" boardable="0" dockobject="{param@MissionOutpost}" typename="{param@DefaultShip}" racelogic="0" textid="{param@LeaderID}">
+													<sector sector="{object.sector@{param@MissionOutpost}}"/>
+													<equipment loadout="maximum"/>
+												</create_ship>
+											</do_if>
+											<add_object_to_group object="{param@Data Cue}.Mission1_LeaderShip" group="{param@Data Cue}.Objects"/>
+										</do_all>
+									</action>
+									<cues>
+										<cue ref="SRST">
+											<params>
+												<param name="Race ID" value="{param@Race}" comment="The maker race ID or the strings 'default' or 'pirategroup'"/>
+												<param name="Class ID" value="{lookup.class@m4}" comment="The shipclass ID or the strings 'bigship', 'fighter' or 'freighter'"/>
+												<param name="Cue" value="{param@Data Cue}" comment="The Cue that the shiptype is saved too"/>
+												<param name="CancelCue" value="SRST"/>
+												<param name="Shiptype Address" value="{param@Data Cue}.ShipTypeSRST"/>
+												<param name="Include M3P" value="1" comment="Include the M3Plus ships in the M3 search"/>
+												<param name="Include M4P" value="1" comment="Include the M4Plus ships in the M4 search"/>
+												<param name="Include M5P" value="0" comment="Include the M5Plus ships in the M5 search"/>
+												<param name="Include M6M" value="0" comment="Include the M6M ships in the M6 search"/>
+												<param name="Include M7M" value="0" comment="Include the M7M ships in the M7 search"/>
+											</params>
+										</cue>
+										<cue name="Radiant_Military_Mission1_CreateEscaortShip1">
+											<condition>
+												<check_all>
+													<cue_is_cancelled cue="SRST"/>
+												</check_all>
+											</condition>
+											<action>
+												<do_all>
+													<create_ship name="{param@Data Cue}.Mission1_Follower1" group="{param@Data Cue}.Mission1_Followers" race="{param@Race}" capturable="0" boardable="0" dockobject="{param@MissionOutpost}" typename="{value@{param@Data Cue}.ShipTypeSRST}" racelogic="0" textid="{param@FollowerID}">
+														<sector sector="{object.sector@{param@MissionOutpost}}"/>
+														<equipment loadout="maximum"/>
+													</create_ship>
+													<add_object_to_group object="{param@Data Cue}.Mission1_Follower1" group="{param@Data Cue}.Objects"/>
+													<set_group_command group="{param@Data Cue}.Mission1_Followers" command="protect" commandobject="{object@{param@Data Cue}.Mission1_LeaderShip}"/>
+												</do_all>
+											</action>
+											<cues>
+												<cue ref="SRST">
+													<params>
+														<param name="Race ID" value="{param@Race}" comment="The maker race ID or the strings 'default' or 'pirategroup'"/>
+														<param name="Class ID" value="{lookup.class@m4}" comment="The shipclass ID or the strings 'bigship', 'fighter' or 'freighter'"/>
+														<param name="Cue" value="{param@Data Cue}" comment="The Cue that the shiptype is saved too"/>
+														<param name="CancelCue" value="SRST"/>
+														<param name="Shiptype Address" value="{param@Data Cue}.ShipTypeSRST"/>
+														<param name="Include M3P" value="1" comment="Include the M3Plus ships in the M3 search"/>
+														<param name="Include M4P" value="1" comment="Include the M4Plus ships in the M4 search"/>
+														<param name="Include M5P" value="1" comment="Include the M5Plus ships in the M5 search"/>
+														<param name="Include M6M" value="0" comment="Include the M6M ships in the M6 search"/>
+														<param name="Include M7M" value="0" comment="Include the M7M ships in the M7 search"/>
+													</params>
+												</cue>
+												<cue name="Radiant_Military_Mission1_CreateEscaortShip2">
+													<condition>
+														<check_all>
+															<cue_is_cancelled cue="SRST"/>
+														</check_all>
+													</condition>
+													<action>
+														<do_all>
+															<create_ship name="{param@Data Cue}.Mission1_Follower2" group="{param@Data Cue}.Mission1_Followers" race="{param@Race}" capturable="0" boardable="0" dockobject="{param@MissionOutpost}" typename="{value@{param@Data Cue}.ShipTypeSRST}" racelogic="0" textid="{param@FollowerID}">
+																<sector sector="{object.sector@{param@MissionOutpost}}"/>
+																<equipment loadout="maximum"/>
+															</create_ship>
+															<add_object_to_group object="{param@Data Cue}.Mission1_Follower2" group="{param@Data Cue}.Objects"/>
+															<set_group_command group="{param@Data Cue}.Mission1_Followers" command="protect" commandobject="{object@{param@Data Cue}.Mission1_LeaderShip}"/>
+														</do_all>
+													</action>
+												</cue>
+											</cues>
+										</cue>
+
+										<cue name="Radiant_Military_CheckResign1">
+											<condition>
+												<check_value value="{value@{param@Joined}}" exact="0"/>
+											</condition>
+											<action>
+												<do_all>
+													<remove_offer actor="{param@Leader}" conversation="L2OfferCombat" discipline="XFXX"/>
+													<destroy_actor actor="{param@Leader}"/>
+													<destroy_object object="{param@Data Cue}.Mission1_LeaderShip" warp="1"/>
+													<destroy_group group="{param@Data Cue}.Mission1_Followers" warp="1"/>
+													<cancel_cue cue="Radiant_Military_Mission1_Briefing"/>
+													<set_value name="{param@Data Cue}.Mission" exact="99"/>
+												</do_all>
+											</action>
+										</cue>												
+										
+										<cue name="Radiant_Military_Mission1_Briefing">
+											<condition>
+												<conversation_completed answer="briefing" conversation="L2OfferCombat" actor="{param@Leader}"/>
+											</condition>
+											<action>
+												<set_value name="{param@Briefing Cue}.Cue" exact="{param@Data Cue}"/>
+											</action>
+											<cues>
+												<cue ref="L0GI04 B">
+													<params>
+														<param name="Cue" value="{param@Briefing Cue}"/>
+														<param name="Step" value="1"/>
+														<param name="Difficulty" value="{value@{param@Data Cue}.Mission1_Difficulty}"/>
+														<param name="RewardCr" value="{param@Data Cue}.Mission1_RewardCr"/>
+														<param name="Preview" value="1"/>
+														<param name="OfferRace" value="{param@Race}"/>
+														<param name="Leader" value="{object@{param@Data Cue}.Mission1_LeaderShip}"/>
+														<param name="LeaderActor" value="{actor@{param@Data Cue}.Leader}"/>
+														<param name="EnemyRace" value="{value@{param@Data Cue}.Mission1_Enemy}"/>
+														<param name="Nodes" value="{value@{param@Data Cue}.Mission1_Nodes}"/>
+														<param name="Complete Briefing" value="1"/>
+														<param name="SetObjective" value="0"/>
+														<param name="PatrolSector" value="{object.sector@{param@Data Cue}.Mission1_LeaderShip}"/>
+														<param name="FinalSector" value="{sector@{param@Data Cue}.Mission1_Destination}"/>
+													</params>
+												</cue>
+												<cue name="Radiant_Military_Mission1_UpdateBriefing">
+													<condition>
+														<cue_is_complete cue="L0GI04 B"/>
+													</condition>
+													<action>
+														<create_briefing cue="{param@Briefing Cue}" race="{param@Name}"/>
+													</action>
+												</cue>
+											</cues>
+										</cue>
+
+										<cue name="Radiant_Military_Mission1_Accept">
+											<condition>
+												<check_any>
+													<conversation_completed answer="accept" conversation="L2OfferCombat" actor="{param@Leader}"/>
+												</check_any>
+											</condition>
+											<action>
+												<do_all>
+													<cancel_cue cue="Radiant_Military_CancelMission"/>
+													<increment_statistic statistic="7020"/>
+													<remove_offer actor="{param@Leader}" conversation="L2OfferCombat" discipline="XFXX"/>
+													<set_actor_location actor="{param@Data Cue}.Leader" object="{param@Data Cue}.Mission1_LeaderShip" location="pilot"/>
+													<set_command object="{param@Data Cue}.Mission1_LeaderShip" command="moveposition">
+														<position x="0" y="0" z="0"/>
+														<sector sector="{object.sector@{param@Data Cue}.Mission1_LeaderShip}"/>
+													</set_command>
+												</do_all>
+											</action>
+											<cues>
+												<cue ref="L0GI04 B">
+													<params>
+														<param name="Cue" value="{param@Briefing Cue}"/>
+														<param name="Step" value="1"/>
+														<param name="Difficulty" value="{value@{param@Data Cue}.Mission1_Difficulty}"/>
+														<param name="RewardCr" value="{param@Data Cue}.Mission1_RewardCr"/>
+														<param name="OfferRace" value="{param@Race}"/>
+														<param name="Leader" value="{object@{param@Data Cue}.Mission1_LeaderShip}"/>
+														<param name="LeaderActor" value="{actor@{param@Data Cue}.Leader}"/>
+														<param name="EnemyRace" value="{value@{param@Data Cue}.Mission1_Enemy}"/>
+														<param name="Nodes" value="{value@{param@Data Cue}.Mission1_Nodes}"/>
+														<param name="SetObjective" value="1"/>
+														<param name="Complete Briefing" value="0"/>
+														<param name="PatrolSector" value="{object.sector@{param@Data Cue}.Mission1_LeaderShip}"/>
+														<param name="FinalSector" value="{sector@{param@Data Cue}.Mission1_Destination}"/>
+													</params>
+												</cue>
+												<cue name="Radiant_Military_Mission1_UpdateBriefing2">
+													<condition>
+														<cue_is_complete cue="L0GI04 B"/>
+													</condition>
+													<action>
+														<create_briefing cue="{param@Briefing Cue}" race="{param@Name}"/>
+													</action>
+												</cue>
+
+												<cue name="Radiant_Military_Mission1_StartDelay">
+													<condition>
+														<cue_is_complete cue="Radiant_Military_Mission1_UpdateBriefing2"/>
+													</condition>
+													<timing>
+														<time exact="30s"/>
+													</timing>
+													<cues>
+														<cue name="Radiant_Military_Mission1_Start">
+															<condition>
+																<cue_is_complete cue="Radiant_Military_Mission1_StartDelay"/>
+															</condition>
+															<cues>
+																<cue ref="L0GI04">
+																	<params>
+																		<param name="Cue" value="{param@Briefing Cue}"/>
+																		<param name="Step" value="1"/>
+																		<param name="Difficulty" value="{value@{param@Data Cue}.Mission1_Difficulty}"/>
+																		<param name="RewardCr" value="{param@Data Cue}.Mission1_RewardCr"/>
+																		<param name="OfferRace" value="{param@Race}"/>
+																		<param name="Leader" value="{object@{param@Data Cue}.Mission1_LeaderShip}"/>
+																		<param name="LeaderActor" value="{actor@{param@Data Cue}.Leader}"/>
+																		<param name="EnemyRace" value="{value@{param@Data Cue}.Mission1_Enemy}"/>
+																		<param name="Nodes" value="{value@{param@Data Cue}.Mission1_Nodes}"/>
+																		<param name="SetObjective" value="1"/>
+																		<param name="PatrolSector" value="{object.sector@{param@Data Cue}.Mission1_LeaderShip}"/>
+																		<param name="FinalSector" value="{sector@{param@Data Cue}.Mission1_Destination}"/>
+																		<param name="Followers" value="{param@Data Cue}.Mission1_Followers"/>
+																		<param name="Bonus" value="{param@Data Cue}.Mission1_Bonus"/>
+																		<param name="FeedbackName" value="{param@Data Cue}.Mission1_Feedback"/>
+																		<param name="PatrolDest" value="0"/>
+																		<param name="LeaderTalk" value="1"/>
+																		<param name="OBS" value="1"/>
+																		<param name="OBSDelay" value="{param@Data Cue}.Mission1_OBS Delay"/>
+																		<param name="OBS Cue" value="{param@Briefing Cue}" />
+																		<param name="OBSSectorIgnoreList" value="{sector@{param@Data Cue}.Mission1_Destination}" />
+																		<param name="OBSFleetRace" value="{value@{param@Data Cue}.Mission1_Enemy}" />
+																		<param name="OBSFleetPilotsRace" value="{value@{param@Data Cue}.Mission1_Enemy}" />
+																		<param name="OBSMissionRank" value="5+({value@{param@Data Cue}.Level}*2)" comment="A 0-30 scale preferably based on the players fight rank"/>
+																		<param name="OBSDifficultyRank" value="{value@{param@Data Cue}.Mission1_Difficulty}" comment="A 1-8 scale of difficulty"/>
+																		<param name="OBS Counter" value="{param@Data Cue}.Mission1_OBS Count" comment="The name of the OBS counter"/>
+																		<param name="MaxOBSPerSector" value="{value@{param@Data Cue}.Mission1_Attacks}"/>
+																		<param name="OBSResetTimePerSector" value="1"/>
+																		<param name="Max OBS Instances" value="{value@{param@Data Cue}.Mission1_MaxAttacks}" comment="The maximum OBS spawns. 0=Infinate"/>
+																		<param name="CheckCurrentEnemies" value="1" comment="Count the number of enemies in the area to lower the amount of enemies"/>
+																		<param name="OBSFleetCovered" value="0" comment="0/1 Sets if created pirate ships are covered"/>
+																		<param name="OBS Dock Support" value="1" comment="0/1 Sets if the created support ships are docked with their homebase"/>
+																		<param name="OBS Support Overflow" value="0" comment="0/1 Sets if additional support ships are created outside when the homebase is full"/>
+																		<param name="OBSFleetRelation" value="-1" comment="-1,0,1 OBS fleet relation to the player"/>
+																	</params>
+																</cue>
+																<cue name="Radiant_Military_Mission1_UpdateBriefing3">
+																	<timing>
+																		<time exact="1s"/>
+																	</timing>
+																	<action>
+																		<do_all>
+																			<create_briefing cue="{param@Briefing Cue}" race="{param@Name}"/>
+																			<set_objective cue="{param@Briefing Cue}" race="{param@Name}" silent="1"/>
+																		</do_all>
+																	</action>
+																</cue>
+																<cue name="Radiant_Military_Mission1_Finished">
+																	<condition>
+																		<check_value value="{value@{param@Data Cue}.Mission1_Feedback}" min="1"/>
+																	</condition>
+																	<timing>
+																		<time min="5s" max="10s"/>
+																	</timing>
+																	<action>
+																		<do_all>
+																			<remove_briefing cue="{param@Briefing Cue}"/>
+																			<set_command object="{param@Data Cue}.Mission1_LeaderShip" command="idle"/>
+																			<set_group_command group="{param@Data Cue}.Mission1_Followers" command="idle"/>
+																			<do_choose>
+																				<do_when value="{value@{param@Data Cue}.Mission1_Feedback}" exact="1">
+																					<remove_objective cue="{param@Briefing Cue}" status="complete"/>
+																					<reward_player>
+																						<money exact="{value@{param@Data Cue}.Mission1_RewardCr}+{value@{param@Data Cue}.Mission1_Bonus}" transactionid="{param@PaymentID}" transactionpage="9620"/>
+																					</reward_player>
+																					<set_value name="this.xp" exact="100+(50*{value@{param@Data Cue}.Mission1_Difficulty})+(50*{value@{param@Data Cue}.Level})"/>
+																					<set_value name="this.xp" operation="add" min="0" max="50"/>
+																					<increment_statistic statistic="7030"/>
+																					<start_script script="plugin.guilds.doexp">
+																						<scriptargs>
+																							<scriptvalue datatype="integer" datavalue="{value@this.xp}"/>
+																							<scriptvalue datatype="string" datavalue="{param@MilitaryID}"/>
+																							<scriptvalue datatype="integer" datavalue="2000"/>
+																						</scriptargs>
+																					</start_script>
+																				</do_when>
+																				<do_when value="{value@{param@Data Cue}.Mission1_Feedback}" exact="1">
+																					<remove_objective cue="{param@Briefing Cue}" status="aborted"/>
+																				</do_when>
+																				<do_otherwise>
+																					<remove_objective cue="{param@Briefing Cue}" status="failed"/>
+																				</do_otherwise>
+																			</do_choose>
+																		</do_all>
+																	</action>
+																	<cues>
+																		<cue name="Radiant_Military_Mission1_Cleanup">
+																			<timing>
+																				<time min="35s" max="45s"/>
+																			</timing>
+																			<action>
+																				<do_all>
+																					<destroy_object object="{param@Data Cue}.Mission1_LeaderShip" warp="1"/>
+																					<destroy_group group="{param@Data Cue}.Mission1_Followers" warp="1"/>
+																					<set_value name="{param@Data Cue}.Mission" exact="99"/>
+																				</do_all>
+																			</action>
+																		</cue>
+																	</cues>
+																</cue>
+															</cues>
+														</cue>
+													</cues>
+												</cue>
+											</cues>
+										</cue>
+									</cues>
+								</cue>
+							</cues>
+						</cue>
+						
+						<cue name="Radiant_Military_Mission2">
+							<condition>
+								<check_value value="{value@{param@Data Cue}.Mission}" exact="2"/>
+							</condition>
+							<action>
+								<do_all>
+									<set_value name="{param@Data Cue}.Mission2_Feedback" min="0"/>
+									<create_offer actor="{param@Leader}" cue="{param@Briefing Cue}" conversation="L2OfferCombat" discipline="XFXX"/>
+									<set_value name="{param@Data Cue}.Mission2_Difficulty" min="{lookup.level@easy}" max="{lookup.level@veryhard}" profile="bell"/>
+									<set_value name="{param@Data Cue}.Mission2_Enemy" exact="{lookup.race@pirate}"/>
+									<do_any>
+										<set_value name="{param@Data Cue}.Mission2_Enemy" exact="{lookup.race.randomenemy@{param@Race}}" chance="20"/>
+										<set_value name="{param@Data Cue}.Mission2_Enemy" exact="{lookup.race@pirate}" chance="50"/>
+										<set_value name="{param@Data Cue}.Mission2_Enemy" exact="{lookup.race@xenon}" chance="10"/>
+										<set_value name="{param@Data Cue}.Mission2_Enemy" exact="{lookup.race@khaak}" chance="5"/>
+										<set_value name="{param@Data Cue}.Mission2_Enemy" exact="{lookup.race@yaki}" chance="15"/>
+									</do_any>
+									<set_value name="{param@Data Cue}.Mission2_PatrolTime" min="120*{value@{param@Data Cue}.Mission2_Difficulty}" max="150*{value@{param@Data Cue}.Mission2_Difficulty}"/>
+									<set_value name="{param@Data Cue}.Mission2_Max OBS Instances" min="1*{value@{param@Data Cue}.Mission2_Difficulty}" max="3*{value@{param@Data Cue}.Mission2_Difficulty}"/>
+									<set_value name="{param@Data Cue}.Mission2_OBS Instances Per Sector" exact="{value@{param@Data Cue}.Mission2_Max OBS Instances}"/>
+									<set_value name="{param@Data Cue}.Mission2_PageID" exact="9620"/>
+									<set_value name="{param@Data Cue}.Mission2_Step" exact="1"/>
+								</do_all>
+							</action>
+							<cues>
+								<cue name="Radiant_Military_Mission2_Briefing">
+									<condition>
+										<conversation_completed actor="{param@Leader}" answer="briefing" conversation="L2OfferCombat"/>
+									</condition>
+									<action>
+										<set_value name="{param@Data Cue}.TempStep" exact="1"/>
+									</action>
+									<cues>
+										<cue ref="L0M34 B">
+											<params>
+												<param name="Cue" value="{param@Briefing Cue}" comment="The cue where values will be localized"/>
+												<param name="Step" value="{param@Data Cue}.TempStep"/>
+												<param name="Preview" value="1"/>
+												<param name="SetObjective" value="0"/>
+												<param name="FinalSector" value="{actor.sector@{param@Leader}}" comment="The Address of the destination. Overrides all other criteria."/>
+												<param name="PatrolSector" value="{actor.sector@{param@Leader}}" comment="The next sector on the way to the destination"/>
+												<param name="EnemyRace" value="{value@{param@Data Cue}.Mission2_Enemy}" comment="Race id or mask"/>
+												<param name="OfferRace" value="{param@Race}" comment="Name of the offer race"/>
+												<param name="Complete Briefing" value="1" comment="Run the briefing completion library"/>
+												<param name="Difficulty" value="{value@{param@Data Cue}.Mission2_Difficulty}" comment="The value address for the difficulty"/>
+												<!--reward parameters (in priority order)-->
+												<param name="RoundReward" value="1" comment="Round the reward to a reasonable value? Factor to round by - 1, 2, 4 or 5 are sensible."/>
+												<param name="RewardCr" value="{param@Data Cue}.Mission2_RewardCr" comment="Reward - credits"/>
+											</params>
+										</cue>
+										<cue name="Radiant_Military_Mission2_UpdateBriefing">
+											<condition>
+												<cue_is_complete cue="L0M34 B"/>
+											</condition>
+											<action>
+												<do_all>
+													<create_briefing cue="{param@Briefing Cue}" race="{param@Name}"/>
+												</do_all>
+											</action>
+										</cue>
+									</cues>
+								</cue>
+								<cue name="Radiant_Military_Mission2_Accept">
+									<condition>
+										<check_any>
+											<conversation_completed answer="accept" conversation="L2OfferCombat" actor="{param@Leader}"/>
+										</check_any>
+									</condition>
+									<action>
+										<do_all>
+											<cancel_cue cue="Radiant_Military_CancelMission"/>
+											<increment_statistic statistic="7020"/>
+											<remove_offer actor="{param@Leader}" conversation="L2OfferCombat" discipline="XFXX"/>
+										</do_all>
+									</action>
+									<cues>
+										<cue ref="L0M34">
+											<params>
+												<param name="Cue" value="{param@Briefing Cue}" comment="The cue where values will be localized"/>
+												<param name="Step" value="{param@Data Cue}.Mission2_Step"/>
+												<param name="FinalSector" value="{actor.sector@{param@Leader}}" comment="The Address of the destination. Overrides all other criteria."/>
+												<param name="PatrolSector" value="{actor.sector@{param@Leader}}" comment="The next sector on the way to the destination"/>
+												<param name="EnemyRace" value="{value@{param@Data Cue}.Mission2_Enemy}" comment="Race id or mask"/>
+												<param name="OfferRace" value="{param@Race}" comment="Name of the offer race"/>
+												<param name="Preview" value="0" comment="Is the briefing a preview"/>
+												<param name="SetObjective" value="1" comment="Set the objectives and run the Objective library"/>
+												<param name="IsPlot" value="0" comment="Is this a plot mission"/>
+												<param name="Complete Briefing" value="1" comment="Run the briefing completion library"/>
+												<param name="UseTimer" value="0" comment="Override the plot signal and use a timer"/>
+												<param name="Difficulty" value="{value@{param@Data Cue}.Mission2_Difficulty}" comment="The value address for the difficulty"/>
+												<!--reward parameters (in priority order)-->
+												<param name="RewardCr" value="{param@Data Cue}.Mission2_RewardCr" comment="Reward - credits"/>
+												<param name="Bonus" value="L2M134.Bonus"/>
+												<param name="FeedbackName" value="{param@Data Cue}.Mission2_Feedback" comment="The address where the step value is stored"/>
+												<param name="PatrolDest" value="1" comment="Patrol the destination sector"/>
+												<param name="PatrolTime" value="{value@{param@Data Cue}.Mission2_PatrolTime}" comment="Duration of patrol per sector in seconds"/>
+												<param name="KillScore Name" value="{param@Data Cue}.Mission2_KillScore"/>
+												<param name="KillCount Name" value="{param@Data Cue}.Mission2_TotalShips"/>
+
+												<param name="OBS" value="1" comment="Activate the OBS"/>
+												<param name="Max OBS Instances" value="{value@{param@Data Cue}.Mission2_Max OBS Instances}" comment="The maximum OBS spawns. 0=Infinate"/>
+												<param name="MaxOBSPerSector" value="{value@{param@Data Cue}.Mission2_OBS Instances Per Sector}"/>
+												<param name="OBS Counter" value="{param@Data Cue}.Mission2_OBS Count" comment="The name of the OBS counter"/>
+												<param name="OBS Cue" value="{param@Data Cue}" comment="The cue name where the ship groups are saved too"/>
+												<param name="OBSFleetRace" value="{value@{param@Data Cue}.Mission2_Enemy}" comment="The maker race ID of the ships or the racemask 'default' or 'pirategroup'"/>
+												<param name="OBSFleetPilotsRace" value="{value@{param@Data Cue}.Mission2_Enemy}" comment="The race ID of the pilots"/>
+												<param name="OBSMissionRank" value="5+({value@{param@Data Cue}.Level}*2)" comment="A 0-30 scale preferably based on the players fight rank"/>
+												<param name="OBSDifficultyRank" value="{value@{param@Data Cue}.Mission2_Difficulty}" comment="A 1-8 scale of difficulty"/>
+												<param name="CheckCurrentEnemies" value="1" comment="Count the number of enemies in the area to lower the amount of enemies"/>
+												<param name="OBSFleetCovered" value="0" comment="0/1 Sets if created pirate ships are covered"/>
+												<param name="OBS Dock Support" value="1" comment="0/1 Sets if the created support ships are docked with their homebase"/>
+												<param name="OBS Support Overflow" value="0" comment="0/1 Sets if additional support ships are created outside when the homebase is full"/>
+												<param name="OBSFleetRelation" value="-1" comment="-1,0,1 OBS fleet relation to the player"/>
+											</params>
+										</cue>
+										<cue name="Radiant_Military_Mission2_Ended" delay="2s">
+											<condition>
+												<check_value value="{value@{param@Data Cue}.Mission2_Feedback}" exact="0" negate="1"/>
+											</condition>
+											<action>
+												<do_all>
+													<set_value name="{param@Data Cue}.Reward" exact="{value@{param@Data Cue}.Mission2_RewardCr}+{value@{param@Data Cue}.Mission2_Bonus}"/>
+													<do_choose>
+														<do_when value="{value@{param@Data Cue}.Mission2_Feedback}" exact="1">
+															<set_value name="this.xp" exact="10+(30*{value@{param@Data Cue}.Mission2_Difficulty})+(30*{value@{param@Data Cue}.Level})"/>
+															<do_choose>
+																<do_when value="{value@{param@Data Cue}.Mission2_TotalShips}" exact="0">
+																	<set_value name="{param@Data Cue}.Reward" operation="divide" exact="5"/>
+																	<set_value name="this.xp" operation="divide" exact="4"/>
+																	<incoming_message author="{actor.name@{param@Leader}}" text="{{value@{param@Data Cue}.Mission2_PageID},1000025}"/>
+																</do_when>
+																<do_when value="{value@{param@Data Cue}.Mission2_TotalShips}" exact="1">
+																	<incoming_message author="{actor.name@{param@Leader}}" text="{{value@{param@Data Cue}.Mission2_PageID},1000026}"/>
+																</do_when>
+																<do_otherwise>
+																	<incoming_message author="{actor.name@{param@Leader}}" text="{{value@{param@Data Cue}.Mission2_PageID},1000027}"/>
+																</do_otherwise>
+															</do_choose>
+															<reward_player>
+																<money exact="{value@{param@Data Cue}.Reward}" transactionid="{param@PaymentID}" transactionpage="9620"/>
+															</reward_player>
+															<remove_objective cue="{param@Briefing Cue}" status="complete"/>
+															<start_script script="plugin.guilds.doexp">
+																<scriptargs>
+																	<scriptvalue datatype="integer" datavalue="{value@this.xp}"/>
+																	<scriptvalue datatype="string" datavalue="{param@MilitaryID}"/>
+																	<scriptvalue datatype="integer" datavalue="2000"/>
+																</scriptargs>
+															</start_script>
+														</do_when>
+														<do_when value="{value@L2M134 Patrol.Feedback}" exact="99">
+															<remove_objective cue="{param@Briefing Cue}" status="aborted"/>
+														</do_when>
+														<do_otherwise>
+															<remove_objective cue="{param@Briefing Cue}" status="failed"/>
+															<!--<incoming_message author="{actor.name@{param@Leader}}" text="{{value@{param@Data Cue}.Mission2_PageID},24}"/>-->
+														</do_otherwise>
+													</do_choose>
+													<remove_briefing cue="{param@Briefing Cue}"/>
+													<destroy_actor actor="{param@Leader}"/>
+													<set_value name="{param@Data Cue}.Mission" exact="99"/>
+												</do_all>
+											</action>
+										</cue>
+									</cues>
+								</cue>
+							</cues>
+						</cue>
+					</cues>
+				</cue>
+
+
+				<!-- ###### ARGON ###### -->
+				<cue name="Argon Military">
+					<action>
+						<do_all>
+							<find_sector x="3" y="5" name="Argon Military.ElenaF Alpha" race="argon"/>
+							<do_choose>
+								<do_when value="{sector.exists@Argon Military.ElenaF Alpha}" exact="1">
+									<find_station name="Argon Military.Outpost" race="argon" class="dock" typename="SS_DOCK_A_MILITARY">
+										<sector sector="{sector@Argon Military.ElenaF Alpha}"/>
+										<jumps exact="0"/>
+									</find_station>
+								</do_when>
+								<do_otherwise>
+									<find_station name="Argon Military.Outpost" race="argon" class="dock" typename="SS_DOCK_A_MILITARY">
+										<sector sector="{player.sector}"/>
+										<jumps min="1"/>
+									</find_station>
+								</do_otherwise>
+							</do_choose>
+						</do_all>
+					</action>
+					<cues>
+						<cue name="Argon Military_Leveled">
+							<condition>
+								<script_event name="guild.military.argon.level"/>
+							</condition>
+							<action>
+								<do_all>
+									<set_value name="Argon Military.Level" exact="{event.param}"/>
+									<reset_cue cue="Argon Military_Leveled"/>
+								</do_all>
+							</action>
+						</cue>
+						<cue name="Argon Military_Joined">
+							<condition>
+								<script_event name="guild.joined.military.argon"/>
+							</condition>
+							<action>
+								<do_all>
+									<set_value name="Race Military Argon Joined" exact="1"/>
+									<set_value name="Race Military Argon Plot" exact="0"/>
+									<set_value name="Race Military Joined" exact="{lookup.race@argon}"/>
+									<do_if value="{actor.exists@Argon Military.Recruiter}" exact="1">
+										<remove_offer actor="Argon Military.Recruiter" conversation="L3RMA_01_01" discipline="XXXXP"/>
+										<destroy_actor actor="Argon Military.Recruiter"/>
+									</do_if>
+									<reset_cue cue="Argon Military_Resign"/>
+								</do_all>
+							</action>
+						</cue>
+
+						<cue name="Argon Military_Resign">
+							<condition>
+								<script_event name="guild.leave.military.argon"/>
+							</condition>
+							<action>
+								<do_all>
+									<set_value name="Race Military Argon Joined" exact="0"/>
+									<set_value name="Race Military Joined" exact="0"/>
+									<reset_cue cue="Argon Military_Joined"/>
+									<reset_cue cue="Argon Military_Recruit"/>
+								</do_all>
+							</action>
+						</cue>
+
+						<cue name="Argon Military_Missions" delay="1s">
+							<condition>
+								<check_all>
+									<check_value value="{value@Race Military Argon Joined}" exact="1"/>
+									<object_changed_sector/>
+								</check_all>
+							</condition>
+							<action>
+								<do_all>
+									<find_station name="Argon Military.MissionOutpost" race="argon" class="dock" typename="SS_DOCK_A_MILITARY" silent="1">
+										<sector sector="{player.sector}"/>
+										<jumps exact="0"/>
+									</find_station>
+									<do_if value="{object.exists@Argon Military.MissionOutpost}" exact="0">
+										<reset_cue cue="Argon Military_Missions"/>
+									</do_if>
+								</do_all>
+							</action>
+							<cues>
+								<cue name="Argon Military_StartMission">
+									<condition>
+										<check_value value="{object.exists@Argon Military.MissionOutpost}" exact="1"/>
+									</condition>
+									<action>
+										<create_actor name="Argon Military.Leader" face="104" voice="120" race="argon" gender="female" object="Argon Military.MissionOutpost"/>
+									</action>
+									<cues>
+										<cue ref="Military_Radiant_Mission">
+											<params>
+												<param name="Data Cue" value="Argon Military"/>
+												<param name="Reset Cue" value="Argon Military_Missions"/>
+												<param name="Briefing Cue" value="Argon Military_Missions"/>
+												<param name="Leader" value="{actor@Argon Military.Leader}"/>
+												<param name="MissionOutpost" value="{object@Argon Military.MissionOutpost}"/>
+												<param name="Race" value="{lookup.race@argon}"/>
+												<param name="Name" value="{9620,1000005}"/>
+												<param name="PaymentID" value="1000006"/>
+												<param name="LeaderID" value="90003"/>
+												<param name="FollowerID" value="90005"/>
+												<param name="DefaultShip" value="SS_SH_A_M3_1"/>
+												<param name="MilitaryID" value="military.argon"/>
+												<param name="Joined" value="Race Military Argon Joined"/>
+											</params>
+										</cue>
+									</cues>
+								</cue>
+							</cues>
+						</cue>
+
+						<cue name="Argon Military_CheckOutpost" delay="5s">
+							<condition>
+								<check_value value="{object.exists@Argon Military.Outpost}" exact="0"/>
+							</condition>
+							<timing>
+								<time min="60s" max="120s"/>
+							</timing>
+							<action>
+								<do_all>
+									<find_sector x="3" y="5" name="Argon Military.ElenaF Alpha" race="argon"/>
+									<do_choose>
+										<do_when value="{sector.exists@Argon Military.ElenaF Alpha}" exact="1">
+											<find_station name="Argon Military.Outpost" race="argon" class="dock" typename="SS_DOCK_A_MILITARY">
+												<sector sector="{sector@Argon Military.ElenaF Alpha}"/>
+												<jumps exact="0"/>
+											</find_station>
+										</do_when>
+										<do_otherwise>
+											<find_station name="Argon Military.Outpost" race="argon" class="dock" typename="SS_DOCK_A_MILITARY">
+												<sector sector="{player.sector}"/>
+												<jumps min="1"/>
+											</find_station>
+										</do_otherwise>
+									</do_choose>
+									<reset_cue cue="Argon Military_CheckOutpost"/>
+								</do_all>
+							</action>
+						</cue>
+
+						<cue name="Argon Military_Recruit">
+							<condition>
+								<check_all>
+									<check_value value="{value@Race Military Argon Joined}" exact="0"/>
+									<check_value value="{value@Race Military Joined}" exact="0"/>
+									<check_value value="{player.notoriety.argon}" min="{lookup.notoriety@notop5}"/>
+									<check_value value="{player.fightrank.rank}" min="10"/>
+									<check_value value="{object.exists@Argon Military.Outpost}"/>
+								</check_all>
+							</condition>
+							<action>
+								<do_all>
+									<create_actor name="Argon Military.Recruiter" character="{9620,1000008}" face="104" voice="120" race="argon" gender="female" object="Argon Military.Outpost"/>
+									<create_offer actor="Argon Military.Recruiter" cue="Argon Military" conversation="L3RMA_01_01" discipline="XXXXP"/>
+								</do_all>
+							</action>
+							<cues>
+								<cue name="Argon Military_CheckOther">
+									<condition>
+										<check_all>
+											<check_value value="{value@Race Military Argon Joined}" exact="0"/>
+											<check_value value="{value@Race Military Joined}" exact="0" negate="1"/>
+										</check_all>
+									</condition>
+									<action>
+										<do_all>
+											<destroy_actor actor="Argon Military.Recruiter"/>
+											<remove_offer actor="Argon Military.Recruiter" conversation="L3RMA_01_01" discipline="XXXXP"/>
+											<remove_offer actor="Argon Military.Recruiter" conversation="L3RMA_01_02" discipline="XXXXP"/>
+											<remove_briefing cue="Argon Military"/>
+											<reset_cue cue="Argon Military_Recruit"/>
+										</do_all>
+									</action>
+								</cue>
+								<cue name="Argon Military_RecruiterDied">
+									<condition>
+										<check_value value="{actor.exists@Argon Military.Recruiter}" exact="0"/>
+									</condition>
+									<action>
+										<reset_cue cue="Argon Military_Recruit"/>
+									</action>
+								</cue>
+								<cue name="Argon Military_Payment">
+									<condition>
+										<conversation_completed answer="accept" conversation="L3RMA_01_01" actor="Argon Military.Recruiter"/>
+									</condition>
+									<action>
+										<do_all>
+											<do_choose>
+												<do_when value="{player.money}" min="30000">
+													<cancel_cue cue="Argon Military_CheckOther"/>
+													<reward_player>
+														<money exact="-30000" transactionpage="9620" transactionid="1000019"/>
+													</reward_player>
+													<set_invincible object="Argon Military.Outpost" invincible="1"/>
+													<remove_offer actor="Argon Military.Recruiter" conversation="L3RMA_01_01" discipline="XXXXP"/>
+													<create_offer actor="Argon Military.Recruiter" conversation="L3RMA_01_02" cue="Argon Military" discipline="XXXXP"/>
+													<create_briefing cue="Argon Military" story="{9620,1000022}" title="{9620,1000022}" text="{9620,1000023}" background="elena_military.tga" race="{9620,1000005}" targetrace="{9620,1000005}">
+														<mission discipline="XXXXP" level="easy"/>
+														<objectives>
+															<objective step="1">
+																<talkto actor="Argon Military.Recruiter"/>
+															</objective>
+														</objectives>
+													</create_briefing>
+													<set_objective cue="Argon Military" story="{9620,1000022}" title="{9620,1000022}" text="{9620,1000023}" race="{9620,1000005}" targetrace="{9620,1000005}">
+														<briefing cue="Argon Military" step="1"/>
+														<mission discipline="XXXXP" level="easy"/>
+														<talkto actor="Argon Military.Recruiter"/>
+													</set_objective>
+													<cancel_cue cue="Argon Military_CheckOther"/>
+												</do_when>
+												<do_otherwise>
+													<incoming_message text="{9620,1000024}" author="{actor.name@Argon Military.Recruiter}"/>
+													<reset_cue cue="Argon Military_Payment"/>
+												</do_otherwise>
+											</do_choose>
+										</do_all>
+									</action>
+									<cues>
+										<cue name="Argon Military_CheckOther2">
+											<condition>
+												<check_all>
+													<check_value value="{value@Race Military Argon Joined}" exact="0"/>
+													<check_value value="{value@Race Military Joined}" exact="0" negate="1"/>
+												</check_all>
+											</condition>
+											<action>
+												<do_all>
+													<destroy_actor actor="Argon Military.Recruiter"/>
+													<remove_offer actor="Argon Military.Recruiter" conversation="L3RMA_01_01" discipline="XXXXP"/>
+													<remove_offer actor="Argon Military.Recruiter" conversation="L3RMA_01_02" discipline="XXXXP"/>
+													<remove_briefing cue="Argon Military"/>
+													<remove_objective cue="Argon Military" status="aborted"/>
+													<reset_cue cue="Argon Military_Recruit"/>
+												</do_all>
+											</action>
+										</cue>
+										
+										<cue name="Argon Military_Accept">
+											<condition>
+												<conversation_completed answer="accept" conversation="L3RMA_01_02" actor="Argon Military.Recruiter"/>
+											</condition>
+											<action>
+												<do_all>
+													<remove_offer actor="Argon Military.Recruiter" conversation="L3RMA_01_02" discipline="XXXXP"/>
+													<set_invincible object="Argon Military.Outpost" invincible="0"/>
+												</do_all>
+											</action>
+											<cues>
+												<cue ref="Military_Recruit">
+													<params>
+														<param name="MissionOutpost" value="{object@Argon Military.Outpost}"/>
+														<param name="Briefing Cue" value="Argon Military"/>
+														<param name="Reset Cue" value="Argon Military_Recruit"/>
+														<param name="Leader ShipType" value="SS_SH_A_M3_1"/>
+														<param name="RewardCr" value="Argon Military.RewardCr"/>
+														<param name="DisplayRace" value="{9620,1000005}"/>
+														<param name="EnemyRace" value="{lookup.race@xenon}"/>
+														<param name="Recruiter" value="{actor@Argon Military.Recruiter}"/>
+														<param name="Data Cue" value="Argon Military"/>
+														<param name="Step" value="2"/>
+														<param name="Jumps" value="4"/>
+														<param name="PaymentID" value="1000006"/>
+														<param name="EndSpeak" value="100023"/>
+														<param name="LeaderID" value="90003"/>
+														<param name="FollowerID" value="90005"/>
+														<param name="MilitaryID" value="military.argon"/>
+														<param name="Race" value="{lookup.race@argon}"/>
+													</params>
+												</cue>
+											</cues>
+										</cue>
+									</cues>
+								</cue>
+							</cues>
+						</cue>
+					</cues>
+				</cue>
+				<!-- ####################-->
+
+				<!-- ###### TERRAN ###### -->
+				<cue name="Terran Military">
+					<action>
+						<do_all>
+							<find_sector x="12" y="1" name="Terran Military.Saturn" race="terran"/>
+							<do_choose>
+								<do_when value="{sector.exists@Terran Military.Saturn}" exact="1">
+									<find_station name="Terran Military.Outpost" race="terran" class="dock" typename="SS_DOCK_ATF_MILITARY_1">
+										<sector sector="{sector@Terran Military.Saturn}"/>
+										<jumps exact="0"/>
+									</find_station>
+								</do_when>
+								<do_otherwise>
+									<find_station name="Terran Military.Outpost" race="terran" class="dock" typename="SS_DOCK_TR_MILITARY_2">
+										<sector sector="{player.sector}"/>
+										<jumps min="1"/>
+									</find_station>
+								</do_otherwise>
+							</do_choose>
+						</do_all>
+					</action>
+					<cues>
+						<cue name="Terran Military_Leveled">
+							<condition>
+								<script_event name="guild.military.terran.level"/>
+							</condition>
+							<action>
+								<do_all>
+									<set_value name="Terran Military.Level" exact="{event.param}"/>
+									<reset_cue cue="Terran Military_Leveled"/>
+								</do_all>
+							</action>
+						</cue>
+						<cue name="Terran Military_Joined">
+							<condition>
+								<script_event name="guild.joined.military.terran"/>
+							</condition>
+							<action>
+								<do_all>
+									<set_value name="Race Military Terran Joined" exact="1"/>
+									<set_value name="Race Military Joined" exact="{lookup.race@terran}"/>
+									<do_if value="{actor.exists@Terran Military.Recruiter}" exact="1">
+										<remove_offer actor="Terran Military.Recruiter" conversation="L3RMT_01_01" discipline="XXXXP"/>
+										<destroy_actor actor="Terran Military.Recruiter"/>
+									</do_if>
+									<reset_cue cue="Terran Military_Resign"/>
+								</do_all>
+							</action>
+						</cue>
+
+						<cue name="Terran Military_Resign">
+							<condition>
+								<script_event name="guild.leave.military.terran"/>
+							</condition>
+							<action>
+								<do_all>
+									<set_value name="Race Military Terran Joined" exact="0"/>
+									<set_value name="Race Military Joined" exact="0"/>
+									<reset_cue cue="Terran Military_Joined"/>
+									<reset_cue cue="Terran Military_Recruit"/>
+								</do_all>
+							</action>
+						</cue>
+
+						<cue name="Terran Military_Missions" delay="1s">
+							<condition>
+								<check_all>
+									<check_value value="{value@Race Military Terran Joined}" exact="1"/>
+									<object_changed_sector/>
+								</check_all>
+							</condition>
+							<action>
+								<do_all>
+									<find_station name="Terran Military.MissionOutpost" race="terran" class="dock" typename="SS_DOCK_ATF_MILITARY_1" silent="1">
+										<sector sector="{player.sector}"/>
+										<jumps exact="0"/>
+									</find_station>
+									<do_if value="{object.exists@Terran Military.MissionOutpost}" exact="0">
+										<find_station name="Terran Military.MissionOutpost" race="terran" class="dock" typename="SS_DOCK_TR_MILITARY_2" silent="1">
+											<sector sector="{player.sector}"/>
+											<jumps exact="0"/>
+										</find_station>
+									</do_if>
+									<do_if value="{object.exists@Terran Military.MissionOutpost}" exact="0">
+										<find_station name="Terran Military.MissionOutpost" race="terran" class="dock" typename="SS_DOCK_ATF_MILITARY_2" silent="1">
+											<sector sector="{player.sector}"/>
+											<jumps exact="0"/>
+										</find_station>
+									</do_if>
+									<do_if value="{object.exists@Terran Military.MissionOutpost}" exact="0">
+										<reset_cue cue="Terran Military_Missions"/>
+									</do_if>
+								</do_all>
+							</action>
+							<cues>
+								<cue name="Terran Military_StartMission">
+									<condition>
+										<check_value value="{object.exists@Terran Military.MissionOutpost}" exact="1"/>
+									</condition>
+									<action>
+										<do_all>
+											<create_actor name="Terran Military.Leader" face="1133" voice="125" race="terran" gender="male" object="Terran Military.MissionOutpost"/>
+										</do_all>
+									</action>
+									<cues>
+										<cue ref="Military_Radiant_Mission">
+											<params>
+												<param name="Data Cue" value="Terran Military"/>
+												<param name="Reset Cue" value="Terran Military_Missions"/>
+												<param name="Briefing Cue" value="Terran Military_Missions"/>
+												<param name="Leader" value="{actor@Terran Military.Leader}"/>
+												<param name="MissionOutpost" value="{object@Terran Military.MissionOutpost}"/>
+												<param name="Race" value="{lookup.race@terran}"/>
+												<param name="Name" value="{9620,1100001}"/>
+												<param name="PaymentID" value="1100002"/>
+												<param name="LeaderID" value="90015"/>
+												<param name="FollowerID" value="90017"/>
+												<param name="DefaultShip" value="SS_SH_USC_M3"/>
+												<param name="Joined" value="Race Military Terran Joined"/>
+												<param name="MilitaryID" value="military.terran"/>
+											</params>
+										</cue>
+									</cues>
+								</cue>
+							</cues>
+						</cue>
+
+						<cue name="Terran Military_CheckOutpost" delay="5s">
+							<condition>
+								<check_value value="{object.exists@Terran Military.Outpost}" exact="0"/>
+							</condition>
+							<timing>
+								<time min="60s" max="120s"/>
+							</timing>
+							<action>
+								<do_all>
+									<find_sector x="12" y="1" name="Terran Military.Saturn" race="terran"/>
+									<do_choose>
+										<do_when value="{sector.exists@Terran Military.Saturn}" exact="1">
+											<find_station name="Terran Military.Outpost" race="terran" class="dock" typename="SS_DOCK_ATF_MILITARY_1">
+												<sector sector="{sector@Terran Military.Saturn}"/>
+												<jumps exact="0"/>
+											</find_station>
+										</do_when>
+										<do_otherwise>
+											<find_station name="Terran Military.Outpost" race="terran" class="dock" typename="SS_DOCK_TR_MILITARY_2">
+												<sector sector="{player.sector}"/>
+												<jumps min="1"/>
+											</find_station>
+										</do_otherwise>
+									</do_choose>
+									<reset_cue cue="Terran Military_CheckOutpost"/>
+								</do_all>
+							</action>
+						</cue>
+
+						<cue name="Terran Military_Recruit">
+							<condition>
+								<check_all>
+									<check_value value="{value@Race Military Terran Joined}" exact="0"/>
+									<check_value value="{value@Race Military Joined}" exact="0"/>
+									<check_value value="{player.notoriety.terran}" min="{lookup.notoriety@notop5}"/>
+									<check_value value="{player.fightrank.rank}" min="10"/>
+									<check_value value="{object.exists@Terran Military.Outpost}"/>
+								</check_all>
+							</condition>
+							<action>
+								<do_all>
+									<create_actor name="Terran Military.Recruiter" character="{9620,1100003}" face="1133" voice="125" race="terran" gender="male" object="Terran Military.Outpost"/>
+									<create_offer actor="Terran Military.Recruiter" cue="Terran Military" conversation="L3RMT_01_01" discipline="XXXXP"/>
+								</do_all>
+							</action>
+							<cues>
+								<cue name="Terran Military_CheckOther">
+									<condition>
+										<check_all>
+											<check_value value="{value@Race Military Terran Joined}" exact="0"/>
+											<check_value value="{value@Race Military Joined}" exact="0" negate="1"/>
+										</check_all>
+									</condition>
+									<action>
+										<do_all>
+											<destroy_actor actor="Terran Military.Recruiter"/>
+											<remove_offer actor="Terran Military.Recruiter" conversation="L3RMT_01_01" discipline="XXXXP"/>
+											<remove_offer actor="Terran Military.Recruiter" conversation="L3RMT_01_02" discipline="XXXXP"/>
+											<remove_briefing cue="Terran Military"/>
+											<reset_cue cue="Terran Military_Recruit"/>
+										</do_all>
+									</action>
+								</cue>
+								<cue name="Terran Military_RecruiterDied">
+									<condition>
+										<check_value value="{actor.exists@Terran Military.Recruiter}" exact="0"/>
+									</condition>
+									<action>
+										<reset_cue cue="Terran Military_Recruit"/>
+									</action>
+								</cue>
+								<cue name="Terran Military_Payment">
+									<condition>
+										<conversation_completed answer="accept" conversation="L3RMT_01_01" actor="Terran Military.Recruiter"/>
+									</condition>
+									<action>
+										<do_all>
+											<do_choose>
+												<do_when value="{player.money}" min="40000">
+													<reward_player>
+														<money exact="-40000" transactionpage="9620" transactionid="1100004"/>
+													</reward_player>
+													<set_invincible object="Terran Military.Outpost" invincible="1"/>
+													<remove_offer actor="Terran Military.Recruiter" conversation="L3RMT_01_01" discipline="XXXXP"/>
+													<create_offer actor="Terran Military.Recruiter" conversation="L3RMT_01_02" cue="Terran Military" discipline="XXXXP"/>
+													<create_briefing cue="Terran Military" story="{9620,1100005}" title="{9620,1100005}" text="{9620,1100006}" background="terran_military.tga" race="{9620,1100001}" targetrace="{9620,1100001}">
+														<mission discipline="XXXXP" level="easy"/>
+														<objectives>
+															<objective step="1">
+																<talkto actor="Terran Military.Recruiter"/>
+															</objective>
+														</objectives>
+													</create_briefing>
+													<set_objective cue="Terran Military" story="{9620,1100005}" title="{9620,1100005}" text="{9620,1100006}" race="{9620,1100001}" targetrace="{9620,1100001}">
+														<briefing cue="Terran Military" step="1"/>
+														<mission discipline="XXXXP" level="easy"/>
+														<talkto actor="Terran Military.Recruiter"/>
+													</set_objective>
+													<cancel_cue cue="Terran Military_CheckOther"/>
+												</do_when>
+												<do_otherwise>
+													<incoming_message text="{9620,1100007}" author="{actor.name@Terran Military.Recruiter}"/>
+													<reset_cue cue="Terran Military_Payment"/>
+												</do_otherwise>
+											</do_choose>
+										</do_all>
+									</action>
+									<cues>
+										<cue name="Terran Military_CheckOther2">
+											<condition>
+												<check_all>
+													<check_value value="{value@Race Military Terran Joined}" exact="0"/>
+													<check_value value="{value@Race Military Joined}" exact="0" negate="1"/>
+												</check_all>
+											</condition>
+											<action>
+												<do_all>
+													<destroy_actor actor="Terran Military.Recruiter"/>
+													<remove_offer actor="Terran Military.Recruiter" conversation="L3RMT_01_01" discipline="XXXXP"/>
+													<remove_offer actor="Terran Military.Recruiter" conversation="L3RMT_01_02" discipline="XXXXP"/>
+													<remove_briefing cue="Terran Military"/>
+													<remove_objective cue="Terran Military" status="aborted"/>
+													<reset_cue cue="Terran Military_Recruit"/>
+												</do_all>
+											</action>
+										</cue>
+										<cue name="Terran Military_Accept">
+											<condition>
+												<conversation_completed answer="accept" conversation="L3RMT_01_02" actor="Terran Military.Recruiter"/>
+											</condition>
+											<action>
+												<do_all>
+													<remove_offer actor="Terran Military.Recruiter" conversation="L3RMT_01_02" discipline="XXXXP"/>
+													<set_invincible object="Terran Military.Outpost" invincible="0"/>
+												</do_all>
+											</action>
+											<cues>
+												<cue ref="Military_Recruit">
+													<params>
+														<param name="MissionOutpost" value="{object@Terran Military.Outpost}"/>
+														<param name="Briefing Cue" value="Terran Military"/>
+														<param name="Reset Cue" value="Terran Military_Recruit"/>
+														<param name="Leader ShipType" value="SS_SH_USC_M3"/>
+														<param name="RewardCr" value="Terran Military.RewardCr"/>
+														<param name="DisplayRace" value="{9620,1100001}"/>
+														<param name="EnemyRace" value="{lookup.race@xenon}"/>
+														<param name="Recruiter" value="{actor@Terran Military.Recruiter}"/>
+														<param name="Data Cue" value="Terran Military"/>
+														<param name="Step" value="2"/>
+														<param name="Jumps" value="2"/>
+														<param name="Nodes" value="2"/>
+														<param name="PaymentID" value="1100005"/>
+														<param name="EndSpeak" value="110003"/>
+														<param name="LeaderID" value="90015"/>
+														<param name="FollowerID" value="90017"/>
+														<param name="MilitaryID" value="military.terran"/>
+														<param name="Race" value="{lookup.race@terran}"/>
+													</params>
+												</cue>
+											</cues>
+										</cue>
+									</cues>
+								</cue>
+							</cues>
+						</cue>
+					</cues>
+				</cue>
+				<!-- ####################-->
+			</cues>
+		</cue>
+	</cues>
+</director>

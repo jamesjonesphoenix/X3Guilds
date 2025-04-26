@@ -1,0 +1,1093 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<?xml-stylesheet href="director.xsl" type="text/xsl" ?>
+<director name="Merchants Guild" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="director.xsd">
+	<documentation>
+		<author name="Cycrow" />
+		<content reference="Merceneries Guild" name="guilds" description="Mercheries Guild"/>
+		<version number="1.0" date="14/06/24" />
+	</documentation>
+	<cues>
+		
+		<cue name="Merc Guild" comment="Main Merceneries Guild missions">
+			<condition>
+				<cue_is_complete cue="Guilds_Startup"/>
+			</condition>
+			<cues>
+				<!-- ######################## Escort Missions ########################## -->
+				<cue name="Merc_Escort_Money" instantiate="static">
+					<condition>
+						<script_event name="merc.escort.price"/>
+					</condition>
+					<action>
+						<do_all>
+							<set_value name="Merc Guild.Escort_Reward" exact="{event.param}"/>
+						</do_all>
+					</action>
+				</cue>
+				<cue name="Merc_Escort_Start">
+					<condition>
+						<script_event name="merc.escort.start"/>
+					</condition>
+					<action>
+						<do_all>
+							<set_object name="Merc Guild.Escort_Destination" value="{event.param}"/>
+							<do_choose>
+								<do_when value="{object.exists@Merc Guild.Escort_Destination}" exact="1">
+									<set_object name="Merc Guild.Escort_Ship" value="{event.object}"/>
+									<set_value name="Merc Guild.Escort_Level" exact="2+({value@{event.param2}}*2)"/>
+									<do_any>
+										<set_value name="Merc Guild.Escort_Enemy" exact="{lookup.race@xenon}" chance="30"/>
+										<set_value name="Merc Guild.Escort_Enemy" exact="{lookup.race@pirate}" chance="30" />
+										<set_value name="Merc Guild.Escort_Enemy" exact="{lookup.race.randomenemy@{object.race@Merc Guild.Escort_Ship}}" chance="20"/>
+										<set_value name="Merc Guild.Escort_Enemy" exact="{lookup.race@yaki}" chance="20" />
+									</do_any>
+									<do_any>
+										<set_value name="Merc Guild.Escort_Encounters" exact="1" chance="60"/>
+										<set_value name="Merc Guild.Escort_Encounters" exact="2" chance="40"/>
+									</do_any>
+									<set_value name="Merc Guild.Escort_Feedback" exact="0"/>								
+									<create_actor name="Merc Guild.Escort_ShipActor" race="{object.race@Merc Guild.Escort_Ship}" voiceflags="32"/>
+									<do_if value="{actor.exists@Merc Guild.Escort_ShipActor}" exact="1">
+										<set_actor_location actor="Merc Guild.Escort_ShipActor" location="pilot" object="Merc Guild.Escort_Ship"/>
+									</do_if>
+									<set_value name="Merc Guild.Escort_Wait" min="300" max="600"/>
+									<create_ship group="Merc Guild.Escort_Followers" boardable="0" capturable="0" race="friend" typename="SS_SH_MERC_M4" racelogic="0">
+										<position object="Merc Guild.Escort_Ship" min="5km" max="20km"/>
+										<sector sector="{object.sector@Merc Guild.Escort_Ship}"/>
+										<equipment loadout="maximum"/>
+										<command command="protect" commandobject="{object@Merc Guild.Escort_Ship}"/>
+									</create_ship>
+									<create_ship group="Merc Guild.Escort_Followers" boardable="0" capturable="0" race="friend" typename="SS_SH_MERC_M5" racelogic="0">
+										<position object="Merc Guild.Escort_Ship" min="5km" max="20km"/>
+										<sector sector="{object.sector@Merc Guild.Escort_Ship}"/>
+										<equipment loadout="maximum"/>
+										<command command="protect" commandobject="{object@Merc Guild.Escort_Ship}"/>
+									</create_ship>
+									<create_ship group="Merc Guild.Escort_Followers" boardable="0" capturable="0" race="friend" typename="SS_SH_MERC_M5" racelogic="0">
+										<position object="Merc Guild.Escort_Ship" min="5km" max="20km"/>
+										<sector sector="{object.sector@Merc Guild.Escort_Ship}"/>
+										<equipment loadout="maximum"/>
+										<command command="protect" commandobject="{object@Merc Guild.Escort_Ship}"/>
+									</create_ship>
+									<increment_statistic statistic="7040"/>
+								</do_when>
+								<do_otherwise>
+									<remove_objective cue="Merc_Escort_Start" status="aborted"/>
+									<reset_cue cue="Merc_Escort_Start"/>
+								</do_otherwise>								
+							</do_choose>
+						</do_all>
+					</action>
+					<cues>
+						<cue ref="L0GI06 B">
+							<params>
+								<param name="Cue" value="Merc_Escort_Start"/>
+								<param name="ID" value="1"/>
+								<param name="Step" value="1"/>
+								<param name="Difficulty" value="{lookup.level@hard}"/>
+								<param name="OfferRace" value="{object.race@Merc Guild.Escort_Ship}"/>
+								<param name="EnemyRace" value="{value@Merc Guild.Escort_Enemy}"/>
+								<param name="Escort" value="{object@Merc Guild.Escort_Ship}"/>
+								<param name="EscortActor" value="{actor@Merc Guild.Escort_ShipActor}"/>
+								<param name="SetObjective" value="0"/>
+								<param name="NoCommand" value="1"/>
+								<param name="EscortTalk" value="1"/>
+								<param name="RewardCr" value="Merc Guild.Escort_Reward"/>
+								<param name="WaitTime" value="{value@Merc Guild.Escort_Wait}"/>
+								<param name="Complete Briefing" value="1"/>
+								<param name="Preview" value="0"/>
+								<param name="NoCommand" value="1"/>
+								<param name="CurrentSector" value="{object.sector@Merc Guild.Escort_Ship}"/>
+								<param name="DestSector" value="{object.sector@Merc Guild.Escort_Destination}"/>
+								<param name="Destination" value="{object@Merc Guild.Escort_Destination}"/>
+							</params>
+						</cue>
+						<cue name="Merc_Escort_Start_UpdateBreifing">
+							<condition>
+								<cue_completed cue="L0GI06 B"/>
+							</condition>
+							<action>
+								<create_briefing cue="Merc_Escort_Start" race="{9620,302}" targetrace="{9620,302}">
+									<thumbnails>
+										<thumbnail image="merc.tga" order="1"/>
+									</thumbnails>
+								</create_briefing>
+							</action>
+							<cues>
+								<cue ref="L0GI06" version="1">
+									<params>
+										<param name="Cue" value="Merc_Escort_Start"/>
+										<param name="ID" value="1"/>
+										<param name="Step" value="1"/>
+										<param name="Difficulty" value="{lookup.level@hard}"/>
+										<param name="OfferRace" value="{object.race@Merc Guild.Escort_Ship}"/>
+										<param name="EnemyRace" value="{value@Merc Guild.Escort_Enemy}"/>
+										<param name="Escort" value="{object@Merc Guild.Escort_Ship}"/>
+										<param name="EscortActor" value="{actor@Merc Guild.Escort_ShipActor}"/>
+										<param name="RewardCr" value="Merc Guild.Escort_Reward"/>
+										<param name="WaitTime" value="{value@Merc Guild.Escort_Wait}"/>
+										<param name="CurrentSector" value="{object.sector@Merc Guild.Escort_Ship}"/>
+										<param name="DestSector" value="{object.sector@Merc Guild.Escort_Destination}"/>
+										<param name="Destination" value="{object@Merc Guild.Escort_Destination}"/>
+										<param name="SetObjective" value="1"/>
+										<param name="Complete Briefing" value="1"/>
+										<param name="Followers" value="Merc Guild.Escort_Followers"/>
+										<param name="NoCommand" value="1"/>
+										<param name="EscortTalk" value="1"/>
+										<param name="FeedbackName" value="Merc Guild.Escort_FeedBack"/>
+										<param name="IsPlot" value="0"/>
+										<param name="OBS" value="1"/>
+										<param name="OBSDelayMin" value="300"/>
+										<param name="OBSDelayMax" value="400"/>
+										<param name="OBS Cue" value="Merc_Escort_Start" />
+										<param name="OBSSectorChance" value="60" />
+										<param name="OBSFleetRace" value="{value@Merc Guild.Escort_Enemy}" />
+										<param name="OBSFleetPilotsRace" value="{value@Merc Guild.Escort_Enemy}" />
+										<param name="OBSMissionRank" value="{value@Merc Guild.Escort_Level}" comment="A 0-30 scale preferably based on the players fight rank"/>
+										<param name="OBSDifficultyRank" value="{lookup.level@hard}" comment="A 1-8 scale of difficulty"/>
+										<param name="OBS Counter" value="Merc Guild.Escort_OBS Count" comment="The name of the OBS counter"/>
+										<param name="MaxOBSPerSector" value="{value@Merc Guild.Escort_Encounters}"/>
+										<param name="OBSPerSectorMin" value="1"/>
+										<param name="OBSPerSectorMax" value="2"/>
+										<param name="OBSResetTimePerSector" value="1"/>
+										<param name="Max OBS Instances" value="8" comment="The maximum OBS spawns. 0=Infinate"/>
+										<param name="CheckCurrentEnemies" value="0" comment="Count the number of enemies in the area to lower the amount of enemies"/>
+										<param name="OBSFleetCovered" value="0" comment="0/1 Sets if created pirate ships are covered"/>
+										<param name="OBS Dock Support" value="1" comment="0/1 Sets if the created support ships are docked with their homebase"/>
+										<param name="OBS Support Overflow" value="0" comment="0/1 Sets if additional support ships are created outside when the homebase is full"/>
+										<param name="OBSFleetRelation" value="-1" comment="-1,0,1 OBS fleet relation to the player"/>
+									</params>
+								</cue>
+								<cue name="Merc_Escort_End" delay="1s">
+									<condition>
+										<check_all>
+											<check_value value="{value@Merc Guild.Escort_FeedBack}" min="1"/>
+										</check_all>
+									</condition>
+									<action>
+										<do_all>
+											<destroy_group group="Merc Guild.Escort_Followers" warp="1"/>
+											<remove_briefing cue="Merc_Escort_Start"/>
+											<do_choose>
+												<do_when value="{value@Merc Guild.Escort_FeedBack}" exact="1">
+													<remove_objective cue="Merc_Escort_Start" status="complete"/>
+													<reward_player>
+														<money exact="{value@Merc Guild.Escort_Reward}" transactionpage="9620" transactionid="300021"/>
+													</reward_player>
+													<increment_statistic statistic="7050"/>
+													<start_script script="plugin.guilds.mission">
+														<scriptargs>
+															<scriptvalue datatype="string" datavalue="merc"/>
+															<scriptvalue datatype="string" datavalue="escort.success"/>
+															<scriptvalue datatype="ship" datavalue="{object@Merc Guild.Escort_Ship}"/>
+														</scriptargs>
+													</start_script>
+												</do_when>
+												<do_when value="{value@Merc Guild.Escort_FeedBack}" exact="99">
+													<remove_objective cue="Merc_Escort_Start" status="aborted"/>
+													<start_script script="plugin.guilds.mission">
+														<scriptargs>
+															<scriptvalue datatype="string" datavalue="merc"/>
+															<scriptvalue datatype="string" datavalue="escort.fail"/>
+															<scriptvalue datatype="ship" datavalue="{object@Merc Guild.Escort_Ship}"/>
+														</scriptargs>
+													</start_script>
+												</do_when>
+												<do_otherwise>
+													<remove_objective cue="Merc_Escort_Start" status="failed"/>
+													<start_script script="plugin.guilds.mission">
+														<scriptargs>
+															<scriptvalue datatype="string" datavalue="merc"/>
+															<scriptvalue datatype="string" datavalue="escort.fail"/>
+															<scriptvalue datatype="ship" datavalue="{object@Merc Guild.Escort_Ship}"/>
+														</scriptargs>
+													</start_script>
+												</do_otherwise>
+											</do_choose>
+											<set_value name="Merc Guild.Escort_Feedback" exact="0"/>
+											<reset_cue cue="Merc_Escort_Start"/>
+										</do_all>
+									</action>
+								</cue>
+							</cues>													
+						</cue>
+					</cues>
+				</cue>
+				
+				<!-- ######################## Radiant Missions ########################## -->
+				<cue name="Merc_Radiant" comment="Radiant Missions">
+					<condition>
+						<check_all>
+							<check_value value="{value@Merc Guild.Joined}" exact="1"/>
+							<check_value value="{object.exists@Merc Guild.GuildHQ}" exact="1"/>
+						</check_all>			
+					</condition>
+					<timing>
+						<time min="120s" max="180s"/>
+					</timing>
+					<action>
+						<do_all>
+							<set_value name="Merc_Radiant.Mission" exact="1"/>
+							<set_value name="Merc_Radiant.StartTime" exact="{player.age}"/>
+						</do_all>
+					</action>
+					<cues>
+						<cue name="Merc_Radiant_HQCheck" comment="Check if HQ still exists">
+							<condition>
+								<object_destroyed object="Merc Guild.GuildHQ"/>
+							</condition>
+							<action>
+								<do_all>
+									<reset_cue cue="Merc_Radiant"/>								
+								</do_all>
+							</action>
+						</cue>
+						
+						<cue name="Merc_Radiant_Mission_1">
+							<condition>
+								<check_value value="{value@Merc_Radiant.Mission}" exact="1"/>
+							</condition>
+							<timing>
+								<time exact="30s"/>
+							</timing>
+							<action>
+								<do_all>
+									<do_any>
+										<create_actor name="Merc_Radiant_Mission_1.MissionGiver" race="{lookup.race@argon}" voiceflags="32" location="crew" object="Merc Guild.GuildHQ" chance="20"/>
+										<create_actor name="Merc_Radiant_Mission_1.MissionGiver" race="{lookup.race@boron}" voiceflags="32" location="crew" object="Merc Guild.GuildHQ" chance="10"/>
+										<create_actor name="Merc_Radiant_Mission_1.MissionGiver" race="{lookup.race@split}" voiceflags="32" location="crew" object="Merc Guild.GuildHQ" chance="20"/>
+										<create_actor name="Merc_Radiant_Mission_1.MissionGiver" race="{lookup.race@paranid}" voiceflags="32" location="crew" object="Merc Guild.GuildHQ" chance="40"/>
+										<create_actor name="Merc_Radiant_Mission_1.MissionGiver" race="{lookup.race@teladi}" voiceflags="32" location="crew" object="Merc Guild.GuildHQ" chance="10"/>
+									</do_any>
+									<do_any>
+										<set_value name="Merc_Radiant_Mission_1.Difficulty" exact="{lookup.level@average}" chance="30"/>
+										<set_value name="Merc_Radiant_Mission_1.Difficulty" exact="{lookup.level@hard}" chance="60" />
+										<set_value name="Merc_Radiant_Mission_1.Difficulty" exact="{lookup.level@veryhard}" chance="10" />
+									</do_any>
+									<do_any>
+										<set_value name="Merc_Radiant_Mission_1.Enemy" exact="{lookup.race@xenon}" chance="30"/>										
+										<set_value name="Merc_Radiant_Mission_1.Enemy" exact="{lookup.race@pirate}" chance="30" />										
+										<set_value name="Merc_Radiant_Mission_1.Enemy" exact="{lookup.race.randomenemy@{actor.race@Merc_Radiant_Mission_1.MissionGiver}}" chance="20"/>
+										<set_value name="Merc_Radiant_Mission_1.Enemy" exact="{lookup.race@yaki}" chance="20" />		
+									</do_any>
+									<find_sector name="Merc_Radiant_Mission_1.Sector" race="{actor.race@Merc_Radiant_Mission_1.MissionGiver}" sector="{object.sector@Merc Guild.GuildHQ}" min="2" max="6"/>
+									<do_if value="{sector.exists@Merc_Radiant_Mission_1.Sector}" exact="0">
+										<find_sector name="Merc_Radiant_Mission_1.Sector" race="{actor.race@Merc_Radiant_Mission_1.MissionGiver}" sector="{objecor@Merc Guild.GuildHQ}" min="3" max="9"/>
+									</do_if>
+									
+									<do_choose>
+										<do_when value="{sector.exists@Merc_Radiant_Mission_1.Sector}" exact="0">
+											<reset_cue cue="Merc_Radiant"/>
+										</do_when>
+										<do_otherwise>
+											<find_sector name="Merc_Radiant_Mission_1.EndSector" race="{actor.race@Merc_Radiant_Mission_1.MissionGiver}" sector="Merc_Radiant_Mission_1.Sector" min="2" max="3"/>
+											<do_if value="{sector.exists@Merc_Radiant_Mission_1.EndSector}" exact="0">
+												<find_sector name="Merc_Radiant_Mission_1.EndSector" race="{actor.race@Merc_Radiant_Mission_1.MissionGiver}" sector="Merc_Radiant_Mission_1.Sector" min="2" max="4"/>
+											</do_if>
+											<do_choose>
+												<do_when value="{sector.exists@Merc_Radiant_Mission_1.EndSector}" exact="0">
+													<reset_cue cue="Merc_Radiant"/>
+												</do_when>
+												<do_otherwise>
+													<find_station name="Merc_Radiant_Mission_1.Destination" race="{actor.race@Merc_Radiant_Mission_1.MissionGiver}" >
+														<sector sector="Merc_Radiant_Mission_1.EndSector"/>
+														<jumps exact="0"/>
+													</find_station>
+													<do_if value="{object.exists@Merc_Radiant_Mission_1.Destination}" exact="0">
+														<find_station name="Merc_Radiant_Mission_1.Destination" race="{actor.race@Merc_Radiant_Mission_1.MissionGiver}" >
+															<sector sector="Merc_Radiant_Mission_1.EndSector"/>
+															<jumps min="0" max="1"/>
+														</find_station>
+													</do_if>
+													<do_choose>
+														<do_when value="{object.exists@Merc_Radiant_Mission_1.Destination}" exact="0">
+															<reset_cue cue="Merc_Radiant"/>
+														</do_when>
+														<do_otherwise>
+															<set_value name="Merc_Radiant_Mission_1.ShipClass" list="{lookup.class@ts}"/>
+															<do_any>
+																<set_value name="Merc_Radiant_Mission_1.ShipClass" list="{lookup.class@tp}" chance="30"/>
+																<set_value name="Merc_Radiant_Mission_1.ShipClass" list="{lookup.class@ts}" chance="50"/>
+																<set_value name="Merc_Radiant_Mission_1.ShipClass" list="{lookup.class@m3}" chance="20"/>
+															</do_any>
+															<set_value name="Merc_Radiant_Mission_1.RewardCr" min="200000" max="300000"/>
+															<set_value name="Merc_Radiant_Mission_1.RewardCr" operation="multiply" exact="{value@Merc_Radiant_Mission_1.Difficulty}"/>
+															<set_value name="Merc_Radiant_Mission_1.RewardCr" operation="multiply" exact="{value@Merc Guild.Level}"/>
+															<set_value name="Merc_Radiant_Mission_1.WaitTime" min="1200" max="2400"/>										
+															<create_offer actor="Merc_Radiant_Mission_1.MissionGiver" conversation="L2OfferEscort" discipline="XFXX" cue="Merc_Radiant_Mission_1"/>
+														</do_otherwise>
+													</do_choose>													
+												</do_otherwise>
+											</do_choose>
+										</do_otherwise>
+									</do_choose>									
+								</do_all>
+							</action>
+							<cues>
+								<cue name="Merc_Radiant_1_PickShip" delay="1s">
+									<condition>
+										<check_all>
+											<cue_is_complete cue="Merc_Radiant_Mission_1"/>
+											<check_value value="{object.exists@Merc_Radiant_Mission_1.Destination}" exact="1"/>
+										</check_all>									
+									</condition>
+									<cues>
+										<cue ref="SRST">
+											<params>
+												<param name="Race ID" value="{actor.race@Merc_Radiant_Mission_1.MissionGiver}" comment="The maker race ID or the strings 'default' or 'pirategroup'"/>
+												<param name="Class ID" value="{value@Merc_Radiant_Mission_1.ShipClass}" comment="The shipclass ID or the strings 'bigship', 'fighter' or 'freighter'"/>
+												<param name="Cue" value="Merc_Radiant_Mission_1" comment="The Cue that the shiptype is saved too"/>
+												<param name="CancelCue" value="SRST"/>
+												<param name="Shiptype Address" value="Merc_Radiant_Mission_1.ShipTypeSRST"/>
+												<param name="Include M3P" value="0" comment="Include the M3Plus ships in the M3 search"/>
+												<param name="Include M4P" value="0" comment="Include the M4Plus ships in the M4 search"/>
+												<param name="Include M5P" value="0" comment="Include the M5Plus ships in the M5 search"/>
+												<param name="Include M6M" value="0" comment="Include the M6M ships in the M6 search"/>
+												<param name="Include M7M" value="0" comment="Include the M7M ships in the M7 search"/>
+											</params>
+										</cue>
+									</cues>
+								</cue>
+								<cue name="Merc_Radiant_1_Breifing">
+									<condition>
+										<check_any>
+											<conversation_completed answer="briefing" conversation="L2OfferEscort" actor="Merc_Radiant_Mission_1.MissionGiver"/>
+										</check_any>
+									</condition>
+									<cues>
+										<cue ref="L0GI06 B">
+											<params>
+												<param name="Cue" value="Merc_Radiant_Mission_1"/>
+												<param name="ID" value="1"/>
+												<param name="Difficulty" value="{value@Merc_Radiant_Mission_1.Difficulty}"/>
+												<param name="OfferRace" value="{actor.race@Merc_Radiant_Mission_1.MissionGiver}"/>
+												<param name="EnemyRace" value="{value@Merc_Radiant_Mission_1.Enemy}"/>
+												<param name="SetObjective" value="0"/>
+												<param name="Step" value="1"/>												
+												<param name="RewardCr" value="Merc_Radiant_Mission_1.RewardCr"/>							
+												<param name="WaitTime" value="{value@Merc_Radiant_Mission_1.WaitTime}"/>		
+												<param name="Complete Briefing" value="1"/>												
+												<param name="Preview" value="1"/>
+												<param name="CurrentSector" value="{sector@Merc_Radiant_Mission_1.Sector}"/>
+												<param name="DestSector" value="{sector@Merc_Radiant_Mission_1.EndSector}"/>
+											</params>
+										</cue>
+										<cue name="Merc_Radiant_1_UpdateBreifing">
+											<condition>
+												<cue_completed cue="L0GI06 B"/>
+											</condition>
+											<action>
+												<create_briefing cue="Merc_Radiant_Mission_1" background="merc_hq.tga" race="{9620,302}" targetrace="{9620,302}" story="{9620,302}">
+													<thumbnails>
+														<thumbnail image="merc.tga" order="1"/>
+													</thumbnails>
+												</create_briefing>
+											</action>
+										</cue>
+									</cues>
+								</cue>
+								<cue name="Merc_Radiant_1_Accept">
+									<condition>
+										<check_any>
+											<conversation_completed answer="accept" conversation="L2OfferEscort" actor="Merc_Radiant_Mission_1.MissionGiver"/>
+										</check_any>
+									</condition>
+									<action>
+										<do_all>
+											<create_ship name="Merc_Radiant_Mission_1.Escort" race="{actor.race@Merc_Radiant_Mission_1.MissionGiver}" typename="{value@Merc_Radiant_Mission_1.ShipTypeSRST}" boardable="0" capturable="0" racelogic="0">
+												<position x="0" y="0" z="0" min="10km" max="20km"/>
+												<sector sector="Merc_Radiant_Mission_1.Sector"/>													
+												<equipment loadout="maximum"/>
+												<command command="idle"/>
+											</create_ship>
+											<create_ship group="Merc_Radiant_Mission_1.EscortFollowers" boardable="0" capturable="0" race="friend" typename="SS_SH_MERC_M4" racelogic="0">
+												<position x="0" y="0" z="0" min="5km" max="20km"/>
+												<sector sector="Merc_Radiant_Mission_1.Sector"/>
+												<equipment loadout="maximum"/>
+												<command command="protect" commandobject="{object@Merc_Radiant_Mission_1.Escort}"/>
+											</create_ship>
+											<create_ship group="Merc_Radiant_Mission_1.EscortFollowers" boardable="0" capturable="0" race="friend" typename="SS_SH_MERC_M5" racelogic="0">
+												<position x="0" y="0" z="0" min="5km" max="20km"/>
+												<sector sector="Merc_Radiant_Mission_1.Sector"/>
+												<equipment loadout="maximum"/>
+												<command command="protect" commandobject="{object@Merc_Radiant_Mission_1.Escort}"/>
+											</create_ship>
+											<create_ship group="Merc_Radiant_Mission_1.EscortFollowers" boardable="0" capturable="0" race="friend" typename="SS_SH_MERC_M5" racelogic="0">
+												<position x="0" y="0" z="0" min="5km" max="20km"/>
+												<sector sector="Merc_Radiant_Mission_1.Sector"/>
+												<equipment loadout="maximum"/>
+												<command command="protect" commandobject="{object@Merc_Radiant_Mission_1.Escort}"/>
+											</create_ship>
+
+											<do_if value="{value@Merc_Radiant_Mission_1.Difficulty}" max="{lookup.level@hard}">
+												<create_ship group="Merc_Radiant_Mission_1.EscortFollowers" boardable="0" capturable="0" race="friend" typename="SS_SH_MERC_M4" racelogic="0">
+													<position x="0" y="0" z="0" min="5km" max="20km"/>
+													<sector sector="Merc_Radiant_Mission_1.Sector"/>
+													<equipment loadout="maximum"/>
+													<command command="protect" commandobject="{object@Merc_Radiant_Mission_1.Escort}"/>
+												</create_ship>
+											</do_if>
+											
+											<do_if value="{value@Merc_Radiant_Mission_1.Difficulty}" max="{lookup.level@average}">
+												<create_ship group="Merc_Radiant_Mission_1.EscortFollowers" boardable="0" capturable="0" race="friend" typename="SS_SH_MERC_M3P" racelogic="0">
+													<position x="0" y="0" z="0" min="5km" max="20km"/>
+													<sector sector="Merc_Radiant_Mission_1.Sector"/>
+													<equipment loadout="maximum"/>
+													<command command="protect" commandobject="{object@Merc_Radiant_Mission_1.Escort}"/>
+												</create_ship>												
+											</do_if>
+
+											<set_value name="Merc_Radiant_Mission_1.Attacks" exact="{value@Merc_Radiant_Mission_1.Difficulty}-3"/>
+											<do_if value="{value@Merc_Radiant_Mission_1.Attacks}" max="1">
+												<set_value name="Merc_Radiant_Mission_1.Attacks" exact="1"/>
+											</do_if>
+											<set_value name="Merc_Radiant_Mission_1.TotalAttacks" exact="({value@Merc_Radiant_Mission_1.Difficulty}-2)*2"/>
+											<!--
+											<do_if value="{value@Merc_Radiant_Mission_1.TotalAttacks}" max="4">
+												<set_value name="Merc_Radiant_Mission_1.TotalAttacks" exact="4"/>
+											</do_if>
+											-->
+											<set_value name="Merc_Radiant_Mission_1.OBSDelay" min="100" max="180"/>
+											
+											<create_actor name="Merc_Radiant_Mission_1.EscortActor" location="pilot" object="Merc_Radiant_Mission_1.Escort" race="{actor.race@Merc_Radiant_Mission_1.MissionGiver}" voiceflags="32"/>
+											<set_value name="Merc_Radiant_Mission_1.FeedBack" exact="0"/>
+											<set_value name="Merc_Radiant_Mission_1.OBS Count" exact="0"/>
+											<remove_offer actor="Merc_Radiant_Mission_1.MissionGiver" conversation="L2OfferEscort" discipline="XFXX"/>
+											<increment_statistic statistic="7000"/>
+											<set_value name="Merc_Radiant_Mission_1.Rank" exact="5+({value@Merc Guild.Level}*2)"/>	
+										</do_all>
+									</action>
+									<cues>
+										<cue name="Merc_Radiant_Mission_1 StartMission" delay="1s">
+											<condition>
+												<cue_is_complete cue="Merc_Radiant_1_Accept"/>
+											</condition>
+											<cues>
+												<cue ref="L0GI06" version="1">
+													<params>
+														<param name="Cue" value="Merc_Radiant_Mission_1"/>
+														<param name="ID" value="1"/>
+														<param name="Difficulty" value="{value@Merc_Radiant_Mission_1.Difficulty}"/>
+														<param name="OfferRace" value="{actor.race@Merc_Radiant_Mission_1.MissionGiver}"/>
+														<param name="EnemyRace" value="{value@Merc_Radiant_Mission_1.Enemy}"/>
+														<param name="Step" value="1"/>
+														<param name="CurrentSector" value="{sector@Merc_Radiant_Mission_1.Sector}"/>
+														<param name="DestSector" value="{sector@Merc_Radiant_Mission_1.EndSector}"/>
+														<param name="Destination" value="{object@Merc_Radiant_Mission_1.Destination}"/>
+														<param name="Escort" value="{object@Merc_Radiant_Mission_1.Escort}"/>
+														<param name="EscortActor" value="{actor@Merc_Radiant_Mission_1.EscortActor}"/>
+														<param name="WaitTime" value="{value@Merc_Radiant_Mission_1.WaitTime}"/>		
+														<param name="Complete Briefing" value="1"/>												
+														<param name="Preview" value="0"/>
+														<param name="RewardCr" value="Merc_Radiant_Mission_1.RewardCr"/>							
+														<param name="SetObjective" value="1"/>
+														<param name="Followers" value="Merc_Radiant_Mission_1.EscortFollowers"/>
+														<param name="EscortTalk" value="1"/>
+														<param name="FeedbackName" value="Merc_Radiant_Mission_1.FeedBack"/>
+														<param name="IsPlot" value="0"/>
+														<param name="OBS" value="1"/>
+														<param name="OBSDelay" value="{value@Merc_Radiant_Mission_1.OBSDelay}"/>
+														<param name="OBSDelayMin" value="120"/>
+														<param name="OBSDelayMax" value="300"/>
+														<param name="OBS Cue" value="Merc_Radiant_Mission_1" />
+														<param name="OBSFleetRace" value="{value@Merc_Radiant_Mission_1.Enemy}" />
+														<param name="OBSFleetPilotsRace" value="{value@Merc_Radiant_Mission_1.Enemy}" />
+														<param name="OBSMissionRank" value="{value@Merc_Radiant_Mission_1.Rank}" comment="A 0-30 scale preferably based on the players fight rank"/>
+														<param name="OBSDifficultyRank" value="{value@Merc_Radiant_Mission_1.Difficulty}" comment="A 1-8 scale of difficulty"/>
+														<param name="OBS Counter" value="Merc_Radiant_Mission_1.OBS Count" comment="The name of the OBS counter"/>
+														<param name="MaxOBSPerSector" value="{value@Merc_Radiant_Mission_1.Attacks}"/>
+														<param name="OBSResetTimePerSector" value="1"/>
+														<param name="Max OBS Instances" value="{value@Merc_Radiant_Mission_1.TotalAttacks}" comment="The maximum OBS spawns. 0=Infinate"/>
+														<param name="CheckCurrentEnemies" value="1" comment="Count the number of enemies in the area to lower the amount of enemies"/>
+														<param name="OBSFleetCovered" value="0" comment="0/1 Sets if created pirate ships are covered"/>
+														<param name="OBS Dock Support" value="1" comment="0/1 Sets if the created support ships are docked with their homebase"/>
+														<param name="OBS Support Overflow" value="0" comment="0/1 Sets if additional support ships are created outside when the homebase is full"/>
+														<param name="OBSFleetRelation" value="-1" comment="-1,0,1 OBS fleet relation to the player"/>
+													</params>
+												</cue>
+												<cue name="Merc_Radiant_Mission_1 End" delay="1s">
+													<condition>
+														<check_value value="{value@Merc_Radiant_Mission_1.FeedBack}" min="1"/>
+													</condition>
+													<timing>
+														<time min="1s" max="3s"/>
+													</timing>
+													<action>
+														<do_all>
+															<destroy_actor actor="Merc_Radiant_Mission_1.EscortActor"/>
+															<destroy_object object="Merc_Radiant_Mission_1.Escort" warp="1"/>
+															<destroy_group group="Merc_Radiant_Mission_1.EscortFollowers" warp="1"/>
+															<remove_briefing cue="Merc_Radiant_Mission_1"/>
+															<do_choose>
+																<do_when value="{value@Merc_Radiant_Mission_1.FeedBack}" exact="1">
+																	<remove_objective cue="Merc_Radiant_Mission_1" status="complete"/>
+																	<reward_player>
+																		<money exact="{value@Merc_Radiant_Mission_1.RewardCr}" transactionpage="9620" transactionid="300009"/>
+																	</reward_player>
+																	<increment_statistic statistic="7010"/>
+																	<show_help text="{9620,300018}"/>
+																	<start_script script="plugin.guilds.doexp">
+																		<scriptargs>
+																			<scriptvalue datatype="integer" datavalue="{value@Merc_Radiant_Mission_1.Difficulty}*200"/>
+																			<scriptvalue datatype="string" datavalue="merc"/>
+																			<scriptvalue datatype="integer" datavalue="2000"/>
+																		</scriptargs>
+																	</start_script>
+																</do_when>
+																<do_when value="{value@Merc_Radiant_Mission_1.FeedBack}" exact="99">
+																	<remove_objective cue="Merc_Radiant_Mission_1" status="aborted"/>
+																</do_when>
+																<do_otherwise>
+																	<remove_objective cue="Merc_Radiant_Mission_1" status="failed"/>
+																</do_otherwise>
+															</do_choose>
+															<destroy_actor actor="Merc_Radiant_Mission_1.MissionGiver"/>
+															<set_value name="Merc_Radiant.Mission" exact="100"/>
+														</do_all>
+													</action>
+												</cue>
+											</cues>
+										</cue>
+									</cues>
+								</cue>
+							</cues>
+						</cue>
+						
+						<cue name="Merc_Radiant_Reset" comment="Reset radiant missions">
+							<condition>
+								<check_value value="{value@Merc_Radiant.Mission}" exact="100"/>
+							</condition>
+							<timing>
+								<time min="30m" max="60m"/>
+							</timing>
+							<action>
+								<do_all>
+									<set_value name="{value@Merc_Radiant.Mission}" exact="0"/>
+									<reset_cue cue="Merc_Radiant"/>
+								</do_all>
+							</action>
+						</cue>
+					</cues>
+				</cue>
+		
+				
+				<!-- ######################## Joined Event ########################## -->
+				<cue name="L3GMC01_Level">
+					<condition>
+						<script_event name="guild.merc.level"/>						
+					</condition>
+					<action>
+						<set_value name="Merc Guild.Level" exact="{event.param}"/>
+					</action>
+				</cue>
+				<cue name="L3GMC01_Joined">
+					<condition>
+						<check_all>
+							<cue_is_complete cue="L3GMC01_Accept" negate="1"/>
+							<script_event name="guild.joined.merc"/>
+						</check_all>
+					</condition>
+					<action>
+						<do_all>
+							<cancel_cue cue="L3GMC01"/>
+							<set_group_invincible group="L3GMC01.GuildObjs" invincible="0"/>
+							<do_if value="{actor.exists@L3GMC01.MissionGiver}">
+								<remove_offer actor="L3GMC01.MissionGiver" conversation="L3GMC01_1" discipline="XXXXP"/>
+								<destroy_actor actor="L3GMC01.MissionGiver"/>
+							</do_if>
+							<set_value name="Merc Guild.Joined" exact="1"/>
+						</do_all>
+					</action>
+				</cue>
+				
+				<cue name="L3GMC01_HQ">
+					<condition>
+						<script_event name="guild.hq.merc"/>
+					</condition>
+					<action>
+						<do_all>
+							<set_object name="Merc Guild.GuildHQ" value="{event.object}"/>
+							<reset_cue cue="L3GMC01_HQ"/>
+						</do_all>
+					</action>
+				</cue>
+
+				<!-- ######################## Recruitment Mission ########################## -->
+				<cue name="L3GMC01" comment="Guilds, Merc, Reqcruitment">
+					<condition>
+						<check_all>
+							<check_value value="{object.exists@Merc Guild.GuildHQ}" exact="1"/>
+							<check_value value="{value@Merc Guild.Joined}" exact="0"/>
+						</check_all>
+					</condition>
+					<cues>
+						<cue name="L3GMC01_Start">
+							<condition>
+								<check_all>
+									<check_value value="{player.fightrank}" min="2500"/>
+								</check_all>
+							</condition>
+							<action>
+								<do_all>
+									<add_object_to_group group="L3GMC01.GuildObjs" object="Merc Guild.GuildHQ"/>
+									<set_group_relation group="L3GMC01.GuildObjs">
+										<relation object="{player.ship}" relation="friend" mutual="1"/>
+										<relation relation="friend" mutual="0"/>
+									</set_group_relation>
+									<create_actor name="L3GMC01.MissionGiver" character="{9620,300002}" race="split" location="crew" object="Merc Guild.GuildHQ" voice="320" />
+									<create_offer actor="L3GMC01.MissionGiver" conversation="L3GMC01_1" cue="L3GMC01" discipline="XXXXP"/>
+								</do_all>
+							</action>
+							<cues>
+								<cue name="L3GMC01_MissionGiver Dies" delay="1s">
+									<condition>
+										<check_value value="{actor.exists@L3GMC01.MissionGiver}" exact="0"/>
+									</condition>
+									<action>
+										<do_all>
+											<reset_cue cue="L3GMC01"/>
+										</do_all>
+									</action>
+								</cue>
+								<cue name="L3GMC01_Accept">
+									<condition>
+										<conversation_completed actor="L3GMC01.MissionGiver" conversation="L3GMC01_1" answer="accept"/>
+									</condition>
+									<action>
+										<do_choose>
+											<do_when value="{player.money}" min="15000">
+												<reward_player>
+													<money exact="-15000" transactionpage="9620" transactionid="300003"/>
+												</reward_player>
+												<set_group_relation group="L3GMC01.GuildObjs">
+													<relation object="{player.ship}" relation="friend" mutual="1"/>
+														<relation relation="friend" mutual="0"/>
+												</set_group_relation>
+												<cancel_cue cue="L3GMC01_MissionGiver Dies"/>
+												<set_group_invincible group="L3GMC01.GuildObjs" invincible="1"/>
+												<remove_offer actor="L3GMC01.MissionGiver" conversation="L3GMC01_1" discipline="XXXXP"/>
+												<create_offer actor="L3GMC01.MissionGiver" conversation="L3GMC01_2" cue="L3GMC01_Accept" discipline="XXXXP"/>
+												<create_briefing cue="L3GMC01" story="{9620,300004}" title="{9620,300004}" text="{9620,300005}" background="merc_hq.tga" race="{9620,302}" targetrace="{9620,302}">
+													<mission discipline="XXXXP" level="easy"/>
+													<thumbnails>
+														<thumbnail image="merc.tga" order="1"/>
+													</thumbnails>
+													<objectives>
+														<objective step="1">
+															<talkto actor="L3GMC01.MissionGiver"/>
+														</objective>
+													</objectives>
+												</create_briefing>
+												<set_objective cue="L3GMC01" story="{9620,300004}" title="{9620,300004}" text="{9620,300005}" race="{9620,302}" targetrace="{9620,302}">
+													<briefing cue="L3GMC01" step="1"/>
+													<mission discipline="XXXXP" level="easy"/>
+													<talkto actor="L3GMC01.MissionGiver"/>
+												</set_objective>
+											</do_when>
+											<do_otherwise>
+												<incoming_message text="{9620,300006}" author="{9620,300002}"/>
+												<reset_cue cue="L3GMC01_Accept"/>
+											</do_otherwise>
+										</do_choose>
+									</action>
+									<cues>
+										<cue name="L3GMC01_Accept_2">
+											<condition>
+												<conversation_completed actor="L3GMC01.MissionGiver" conversation="L3GMC01_2" answer="accept"/>
+											</condition>
+											<action>
+												<do_all>
+													<remove_offer actor="L3GMC01.MissionGiver" conversation="L3GMC01_2" discipline="XXXXP"/>
+													<find_sector name="L3GMC01.StartSector" sector="{object.sector@Merc Guild.GuildHQ}" min="1" max="1" race="paranid"/>
+													<do_if value="{sector.exists@L3GMC01.StartSector}" exact="0">
+														<find_sector name="L3GMC01.StartSector" sector="{object.sector@Merc Guild.GuildHQ}" min="1" max="2" race="paranid"/>
+													</do_if>
+													<create_ship name="L3GMC01.Escort" boardable="0" capturable="0" race="paranid" typename="SS_SH_P_TS" racelogic="0">
+														<position x="0" y="0" z="0" min="5km" max="20km"/>
+														<sector sector="L3GMC01.StartSector"/>
+														<equipment loadout="maximum"/>
+														<command command="idle"/>
+													</create_ship>
+													<create_ship group="L3GMC01.EscortFollowers" boardable="0" capturable="0" race="friend" typename="SS_SH_MERC_M4" racelogic="0">
+														<position x="0" y="0" z="0" min="5km" max="20km"/>
+														<sector sector="L3GMC01.StartSector"/>
+														<equipment loadout="maximum"/>
+														<command command="protect" commandobject="{object@L3GMC01.Escort}"/>
+													</create_ship>
+													<create_ship group="L3GMC01.EscortFollowers" boardable="0" capturable="0" race="friend" typename="SS_SH_MERC_M4" racelogic="0">
+														<position x="0" y="0" z="0" min="5km" max="20km"/>
+														<sector sector="L3GMC01.StartSector"/>
+														<equipment loadout="maximum"/>
+														<command command="protect" commandobject="{object@L3GMC01.Escort}"/>
+													</create_ship>
+													<create_ship group="L3GMC01.EscortFollowers" boardable="0" capturable="0" race="friend" typename="SS_SH_MERC_M5" racelogic="0">
+														<position x="0" y="0" z="0" min="5km" max="20km"/>
+														<sector sector="L3GMC01.StartSector"/>
+														<equipment loadout="maximum"/>
+														<command command="protect" commandobject="{object@L3GMC01.Escort}"/>
+													</create_ship>
+													<create_ship group="L3GMC01.EscortFollowers" boardable="0" capturable="0" race="friend" typename="SS_SH_MERC_M5" racelogic="0">
+														<position x="0" y="0" z="0" min="5km" max="20km"/>
+														<sector sector="L3GMC01.StartSector"/>
+														<equipment loadout="maximum"/>
+														<command command="protect" commandobject="{object@L3GMC01.Escort}"/>
+													</create_ship>
+													<create_ship group="L3GMC01.EscortFollowers" boardable="0" capturable="0" race="friend" typename="SS_SH_MERC_M3" racelogic="0">
+														<position x="0" y="0" z="0" min="5km" max="20km"/>
+														<sector sector="L3GMC01.StartSector"/>
+														<equipment loadout="maximum"/>
+														<command command="protect" commandobject="{object@L3GMC01.Escort}"/>
+													</create_ship>
+													<create_actor name="L3GMC01.EscortActor" location="pilot" object="L3GMC01.Escort" race="paranid" voiceflags="32"/>
+													<find_sector name="L3GMC01.EndSector" sector="L3GMC01.StartSector" min="2" max="2" race="paranid"/>
+													<do_if value="{sector.exists@L3GMC01.EndSector}" exact="0">
+														<find_sector name="L3GMC01.EndSector" sector="L3GMC01.StartSector" min="1" max="3" race="paranid"/>
+													</do_if>
+													<find_station name="L3GMC01.Destination" race="paranid" findobject="L3GMC01.Escort" dockingallowed="1">
+														<sector sector="{sector@L3GMC01.EndSector}"/>
+														<jumps exact="0"/>
+													</find_station>
+													<do_if value="{object.exists@L3GMC01.Destination}" exact="0">
+														<find_station name="L3GMC01.Destination" race="paranid" findobject="L3GMC01.Escort" dockingallowed="1">
+															<sector sector="{sector@L3GMC01.EndSector}"/>
+															<jumps min="0" max="1"/>
+														</find_station>
+													</do_if>
+													<set_value name="L3GMC01.FeedBack" exact="0"/>
+												</do_all>
+											</action>
+											<cues>
+												<cue ref="L0GI06 B">
+													<params>
+														<param name="Cue" value="L3GMC01"/>
+														<param name="ID" value="1"/>
+														<param name="Difficulty" value="{lookup.level@average}"/>
+														<param name="OfferRace" value="{object.race@L3GMC01.Escort}"/>
+														<param name="EnemyRace" value="{lookup.race@yaki}"/>
+														<param name="Escort" value="{object@L3GMC01.Escort}"/>
+														<param name="EscortActor" value="{actor@L3GMC01.EscortActor}"/>
+														<param name="SetObjective" value="1"/>
+														<param name="Followers" value="L3GMC01.EscortFollowers"/>
+														<param name="Step" value="2"/>
+														<param name="EscortTalk" value="1"/>
+														<param name="CurrentSector" value="{sector@L3GMC01.StartSector}"/>
+														<param name="DestSector" value="{sector@L3GMC01.EndSector}"/>
+														<param name="Destination" value="{object@L3GMC01.Destination}"/>
+													</params>
+												</cue>
+												<cue name="L3GMC01_UpdateBriefing">
+													<condition>
+														<cue_is_complete cue="L0GI06 B"/>
+													</condition>
+													<cues>														
+														<cue ref="L0GI06" version="1">
+															<params>
+																<param name="Cue" value="L3GMC01"/>
+																<param name="ID" value="1"/>
+																<param name="Step" value="2"/>
+																<param name="OfferRace" value="{object.race@L3GMC01.Escort}"/>
+																<param name="EnemyRace" value="{lookup.race@yaki}"/>
+																<param name="CurrentSector" value="{sector@L3GMC01.StartSector}"/>
+																<param name="DestSector" value="{sector@L3GMC01.EndSector}"/>
+																<param name="Destination" value="{object@L3GMC01.Destination}"/>
+																<param name="Escort" value="{object@L3GMC01.Escort}"/>
+																<param name="EscortActor" value="{actor@L3GMC01.EscortActor}"/>
+																<param name="SetObjective" value="1"/>
+																<param name="Followers" value="L3GMC01.EscortFollowers"/>
+																<param name="EscortTalk" value="1"/>
+																<param name="FeedbackName" value="L3GMC01.FeedBack"/>
+																<param name="IsPlot" value="0"/>
+																<param name="OBS" value="1"/>
+																<param name="OBSDelay" value="120"/>
+																<param name="OBS Cue" value="L3GMC01" />
+																<param name="OBSFleetRace" value="{lookup.race@yaki}" />
+																<param name="OBSFleetPilotsRace" value="{lookup.race@yaki}" />
+																<param name="OBSMissionRank" value="10" comment="A 0-30 scale preferably based on the players fight rank"/>
+																<param name="OBSDifficultyRank" value="{lookup.level@average}" comment="A 1-8 scale of difficulty"/>
+																<param name="OBS Counter" value="L3GMC01.OBS Count" comment="The name of the OBS counter"/>
+																<param name="MaxOBSPerSector" value="1"/>
+																<param name="OBSResetTimePerSector" value="1"/>
+																<param name="Max OBS Instances" value="4" comment="The maximum OBS spawns. 0=Infinate"/>
+																<param name="CheckCurrentEnemies" value="1" comment="Count the number of enemies in the area to lower the amount of enemies"/>
+																<param name="OBSFleetCovered" value="0" comment="0/1 Sets if created pirate ships are covered"/>
+																<param name="OBS Dock Support" value="1" comment="0/1 Sets if the created support ships are docked with their homebase"/>
+																<param name="OBS Support Overflow" value="0" comment="0/1 Sets if additional support ships are created outside when the homebase is full"/>
+																<param name="OBSFleetRelation" value="-1" comment="-1,0,1 OBS fleet relation to the player"/>
+															</params>
+														</cue>
+														<cue name="L3GMC01_End" delay="2s">
+															<condition>
+																<check_value value="{value@L3GMC01.FeedBack}" min="1"/>
+															</condition>
+															<action>
+																<do_all>
+																	<destroy_actor actor="L3GMC01.EscortActor"/>
+																	<destroy_object object="L3GMC01.Escort" warp="1"/>
+																	<destroy_group group="L3GMC01.EscortFollowers" warp="1"/>
+																	<cancel_cue cue="L3GMC01_MissionGiver Dies"/>
+																	<do_choose>
+																		<do_when value="{value@L3GMC01.FeedBack}" exact="1">
+																			<set_value name="L3GMC01.Completed" exact="1"/>
+																		</do_when>
+																		<do_otherwise>
+																			<remove_objective cue="L3GMC01" status="failed"/>
+																			<remove_briefing cue="L3GMC01"/>
+																			<set_value name="L3GMC01.Reset" exact="1"/>
+																		</do_otherwise>
+																	</do_choose>
+																</do_all>
+															</action>
+															<cues>
+																<cue name="L3GMC01 Failed">
+																	<condition>
+																		<check_all>
+																			<cue_is_complete cue="L3GMC01_End"/>
+																			<check_value value="{value@L3GMC01.Reset}" exact="1"/>
+																		</check_all>
+																	</condition>
+																	<timing>
+																		<time min="15s" max="20s"/>
+																	</timing>
+																	<action>																		
+																		<do_all>
+																			<set_value name="L3GMC01.Reset" exact="0"/>
+																			<set_value name="L3GMC01.Completed" exact="0"/>
+																			<destroy_actor actor="L3GMC01.MissionGiver"/>
+																			<set_group_invincible group="L3GMC01.GuildObjs" invincible="0"/>
+																			<remove_group group="L3GMC01.GuildObjs"/>
+																		</do_all>
+																	</action>
+																	<cues>
+																		<cue name="L3GMC01 Reset">
+																			<condition>
+																				<cue_is_complete cue="L3GMC01 Failed"/>
+																			</condition>
+																			<timing>
+																				<time min="120s" max="180s"/>
+																			</timing>
+																			<action>
+																				<reset_cue cue="L3GMC01"/>
+																			</action>
+																		</cue>
+																	</cues>
+																</cue>
+																<cue name="L3GMC01 Succeded">
+																	<condition>
+																		<check_all>
+																			<cue_is_complete cue="L3GMC01_End"/>
+																			<check_value value="{value@L3GMC01.Completed}" exact="1"/>
+																		</check_all>
+																	</condition>
+																	<action>
+																		<do_all>
+																			<do_if value="{value@L3GMC01.RewardCr}" min="1">
+																				<reward_player>
+																					<money exact="{value@L3GMC01.RewardCr}" transactionpage="9620" transactionid="300009"/>
+																				</reward_player>
+																			</do_if>
+																			<set_value name="L3GMC01.Reset" exact="0"/>
+																			<set_value name="L3GMC01.Completed" exact="0"/>
+																			<create_briefing cue="L3GMC01" story="{9620,300004}" title="{9620,300004}" text="{9620,300011}" background="merc_hq.tga" race="{9620,302}" targetrace="{9620,302}">
+																				<mission discipline="XXXXP" level="easy"/>
+																				<thumbnails>
+																					<thumbnail image="merc.tga" order="1"/>
+																				</thumbnails>
+																				<objectives>
+																					<objective step="5">
+																						<dockat object="Merc Guild.GuildHQ"/>
+																					</objective>
+																				</objectives>
+																			</create_briefing>
+																			<set_objective cue="L3GMC01" story="{9620,300004}" title="{9620,300004}" text="{9620,300011}" noabort="1" race="{9620,302}" targetrace="{9620,302}">
+																				<briefing cue="L3GMC01" step="5"/>
+																				<mission discipline="XXXXP" level="easy"/>
+																				<dockat object="Merc Guild.GuildHQ"/>
+																			</set_objective>
+																		</do_all>
+																	</action>
+																	<cues>
+																		<cue name="L3GMC01 Speak_Return">
+																			<condition>
+																				<cue_is_complete cue="L3GMC01 Succeded"/>
+																			</condition>
+																			<timing>
+																				<time exact="6s"/>
+																			</timing>
+																			<action>
+																				<play_text actor="L3GMC01.MissionGiver" textid="110004" priority="90"/>
+																			</action>
+																		</cue>
+																		<cue name="L3GMC01 Return">
+																			<condition>
+																				<object_is_docked dockobject="Merc Guild.GuildHQ"/>
+																			</condition>
+																			<timing>
+																				<time exact="7s"/>
+																			</timing>
+																			<action>
+																				<do_all>
+																					<remove_briefing cue="L3GMC01"/>
+																					<remove_objective cue="L3GMC01" status="complete"/>
+																					<incoming_message text="{9620,300010}" author="{actor.name@L3GMC01.MissionGiver}"/>
+																					<play_text actor="L3GMC01.MissionGiver" textid="110003" priority="90"/>
+																					<set_group_invincible group="L3GMC01.GuildObjs" invincible="0"/>
+																					<remove_group group="L3GMC01.GuildObjs"/>
+																					<set_value name="Merc Guild.Joined" exact="1"/>
+																					<start_script script="plugin.guilds.recruit">
+																						<scriptargs>
+																							<scriptvalue datatype="string" datavalue="merc"/>
+																							<scriptvalue datatype="integer" datavalue="1"/>
+																							<scriptvalue datatype="integer" datavalue="1"/>
+																							<scriptvalue datatype="integer" datavalue="1"/>
+																						</scriptargs>
+																					</start_script>
+																				</do_all>
+																			</action>
+																			<cues>
+																				<cue name="L3GMC01 Finalise">
+																					<condition>
+																						<cue_is_complete cue="L3GMC01 Return"/>
+																					</condition>
+																					<timing>
+																						<time exact="15s"/>
+																					</timing>
+																					<action>
+																						<do_all>
+																							<destroy_actor actor="L3GMC01.MissionGiver"/>
+																							<complete_cue cue="L3GMC01"/>
+																						</do_all>
+																					</action>
+																				</cue>
+																			</cues>
+																		</cue>
+																	</cues>
+																</cue>
+															</cues>
+														</cue>
+													</cues>
+												</cue>
+											</cues>
+										</cue>
+									</cues>
+								</cue>
+							</cues>
+						</cue>
+					</cues>
+				</cue>
+
+				<!-- ######################## Progression Mission 1 ########################## -->
+				<!--
+				<cue name="L3GA02" comment="Guilds, Assassin Hunters, Progression 1">
+					<condition>
+						<script_event name="guild.assassin.level"/>
+					</condition>
+					<action>
+						<do_all>
+							<do_choose>
+								<do_when value="{event.param}" exact="4">
+									<set_value name="L3GA02 Mission" exact="1"/>
+								</do_when>
+								<do_otherwise>
+									<reset_cue cue="L3GA02"/>
+								</do_otherwise>
+							</do_choose>
+						</do_all>
+					</action>
+					<cues>
+						<cue name="L3GA02 Start">
+							<condition>
+								<check_all>
+									<check_value value="{value@L3GA02 Mission}" exact="1"/>
+								</check_all>
+							</condition>
+							<timing>
+								<time min="300s" max="420s"/>
+							</timing>
+							<action>
+								<do_all>
+									<set_value name="L3GA02 Mission" exact="2"/>
+									<incoming_message text="{9620,1132}" author="{9620,1120}"/>
+								</do_all>
+							</action>							
+						</cue>
+					</cues>
+				</cue>
+				-->
+				
+				<!-- ######################## Progression Mission 2 ########################## -->
+				<!--
+				<cue name="L3GA03" comment="Guilds, Assassins, Progression 2">
+					<condition>
+						<script_event name="guild.assassin.level"/>
+					</condition>
+					<action>
+						<do_all>
+							<do_choose>
+								<do_when value="{event.param}" exact="7">
+									<set_value name="L3GA03 Mission" exact="1"/>
+								</do_when>
+								<do_otherwise>
+									<reset_cue cue="L3GA03"/>
+								</do_otherwise>
+							</do_choose>
+						</do_all>						
+					</action>
+					<cues>
+						<cue name="L3GA03 Start">
+							<condition>
+								<check_all>
+									<cue_is_complete cue="L3GA02"/>
+									<check_value value="{value@L3GA02 Mission}" exact="100"/>
+									<check_value value="{value@L3GA03 Mission}" exact="1"/>
+								</check_all>
+							</condition>
+							<action>
+								<do_all>
+									<incoming_message text="Starting 2nd assassins guild quest"/>
+									
+								</do_all>
+							</action>
+						</cue>
+					</cues>
+				</cue>
+				-->
+				
+				<!-- ######################## Endgame Mission ########################## -->
+				<!--
+				<cue name="L3GA04" comment="Guilds, Assassins, Endgame Mission">
+					<condition>
+						<script_event name="guild.assassin.level"/>
+					</condition>
+					<action>
+						<do_all>
+							<do_choose>
+								<do_when value="{event.param}" exact="10">
+									<set_value name="L3GA04 Mission" exact="1"/>
+								</do_when>
+								<do_otherwise>
+									<reset_cue cue="L3GA04"/>
+								</do_otherwise>
+							</do_choose>
+						</do_all>
+					</action>
+					<cues>
+						<cue name="L3GA04 Start">
+							<condition>
+								<check_all>
+									<check_value value="{value@L3GA02 Mission}" exact="100"/>
+									<check_value value="{value@L3GA03 Mission}" exact="100"/>
+									<check_value value="{value@L3GA04 Mission}" exact="1"/>
+								</check_all>
+							</condition>
+							<action>
+								<incoming_message text="Starting Assassins guild final quest"/>
+							</action>							
+						</cue>
+					</cues>
+				</cue>
+				-->
+				
+			</cues>
+		</cue>
+	</cues>
+</director>

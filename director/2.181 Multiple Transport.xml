@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<?xml-stylesheet href="director.xsl" type="text/xsl" ?>
+<director name="test" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="director.xsd">
+  <documentation>
+    <author name="Phil Royle" alias="Dillpickle" contact="E-Mail: phil@piroyle.co.uk"/>
+    <content reference="2.181 Multiple Transport" name="Multiple Transport" description="Mission for Multiple Passenger Transport"/>
+    <version number="1.0" date="09/10/2012" status="development" />
+  </documentation>
+  <cues>
+    <cue name="L2M181" library="1" check="cancel">
+      <documentation>
+        <content reference="2.181 Multiple Transport" name="Multiple Transport Mission" type="L2"/>
+        <version number="1.0" date="09/10/2012" status="development" />
+        <history>
+          <change date="07/10/2012" author="Dillpickle" description="initial version"/>
+        </history>
+      </documentation>
+      <condition>
+        <check_all>
+          <check_value value="{player.sector.warobjectid}" exact="0"/>
+          <count_stations min="1" findobject="{player.ship}" race="player">
+            <jumps max="5"/>
+          </count_stations>
+          <count_stations min="1" dockingallowed="1" findobject="{player.ship}" friend="1" neutral="1" race="default|terran|pirategroup|corporations|goner|other1|yaki">
+            <sector sector="{player.sector}"/>
+          </count_stations>
+        </check_all>
+      </condition>
+      <action>
+        <do_all>
+          <find_station class="station" dockingallowed="1" race="default|terran" name="this.OfferStation">
+            <sector sector="{player.sector}"/>
+          </find_station>
+          <do_choose>
+            <do_when value="{object.exists@this.OfferStation}" exact="1">
+              <set_value name="this.Difficulty" min="{lookup.level@veryeasy}" max="{lookup.level@veryhard}" profile="bell"/>
+              <set_value name="this.PassengerCount" min="{value@this.Difficulty}+2" max="{value@this.Difficulty}+3"/>
+              <set_value name="this.PageID" exact="3381"/>
+              <do_any>
+                <set_value name="this.OfferRace" exact="{player.sector.race}" chance="25"/>
+                <set_value name="this.OfferRace" exact="{object.race@this.OfferStation}" chance="35"/>
+                <set_value name="this.OfferRace" exact="{random.race@default}" chance="40"/>
+              </do_any>
+              <do_if value="{value@this.OfferRace}" list="{lookup.race@xenon}|{lookup.race@khaak}|{lookup.race@player}|{lookup.race@enemy}|{lookup.race@neutral}|{lookup.race@friend}|{lookup.race@abandoned}|{lookup.race@other2}">
+                <set_value name="this.OfferRace" exact="{object.race@this.OfferStation}"/>
+              </do_if>
+              <!--do we need enemy race?-->
+              <do_any>
+                <set_value name="this.EnemyRace" exact="{lookup.race@pirate}" chance="95"/>
+                <set_value name="this.EnemyRace" exact="{lookup.race@yaki}" chance="5"/>
+              </do_any>
+              <!--select offer length-->
+              <set_value name="this.TimeOut" min="{player.age}+600" max="{player.age}+1200"/>
+            </do_when>
+            <do_otherwise>
+              <cancel_cue cue="L2M181"/>
+            </do_otherwise>
+          </do_choose>
+        </do_all>
+      </action>
+      <cues>
+        <cue name="L2M181 Offer">
+          <condition>
+            <cue_completed cue="L2M181"/>
+          </condition>
+          <action>
+            <do_all>
+              <set_value name="this.SectorChanges" exact="0"/>
+              <do_choose>
+                <do_when value="{value@L2M181.OfferRace}" exact="{lookup.race@goner}">
+                  <do_any>
+                    <create_actor name="L2M181 Offer.Guide" race="goner" voice="110" face="901" object="L2M181.station" location="crew"/>
+                    <create_actor name="L2M181 Offer.Guide" race="goner" voice="111" face="901" object="L2M181.station" location="crew"/>
+                    <create_actor name="L2M181 Offer.Guide" race="goner" voice="110" face="902" object="L2M181.station" location="crew"/>
+                    <create_actor name="L2M181 Offer.Guide" race="goner" voice="111" face="902" object="L2M181.station" location="crew"/>
+                  </do_any>
+                </do_when>
+                <do_otherwise>
+                  <create_actor name="L2M181 Offer.Guide" race="{value@L2M181.OfferRace}" voiceflags="32" object="L2M181.OfferStation" location="crew"/>
+                </do_otherwise>
+              </do_choose>
+              <set_value name="L2M181 Offer.PageID" exact="3381"/>
+              <set_value name="L2M181 Offer.TextID" min="181011" max="181011"/>
+              <set_value name="L2M181 Offer.TitleID" min="181001" max="181003"/>
+              <set_value name="L2M181 Offer.BackgroundID" min="181501" max="181506"/>
+              <create_offer actor="L2M181 Offer.Guide" conversation="L2OfferNormal" discipline="XXXT " cue="L2M181 Offer"/>
+            </do_all>
+          </action>
+          <cues>
+            <cue name="L2M181 Briefing">
+              <condition>
+                <conversation_completed answer="briefing" conversation="L2OfferNormal" actor="L2M181 Offer.Guide"/>
+              </condition>
+              <cues>
+                <cue ref="L0M81 B" version="2">
+                  <params>
+                    <param name="Cue" value="L2M181 Offer"/>
+                    <param name="ID" value="1"/>
+                    <param name="EnemyRace" value="{value@L2M181.EnemyRace}"/>
+                    <param name="OfferRace" value="{value@L2M181.OfferRace}"/>
+                    <param name="Lv1Guide" value="{actor@L2M181 Offer.Guide}"/>
+                    <param name="PassengerCount" value="{value@L2M181.PassengerCount}"/>
+                    <param name="PageID" value="{value@L2M181 Offer.PageID}"/>
+                    <param name="TextID" value="{value@L2M181 Offer.TextID}"/>
+                    <param name="TitleID" value="{value@L2M181 Offer.TitleID}"/>
+                    <param name="BriefingBackground" value="{3381,{value@L2M181 Offer.BackgroundID}}"/>
+                    <param name="Difficulty" value="{value@L2M181.Difficulty}"/>
+                    <param name="RewardCr" value="L2M181 Offer.RewardCr"/>
+                    <!--<param name="RoundReward" value="1"/>-->
+                    <param name="TPNeeded" value="1"/>
+                  </params>
+                </cue>
+              </cues>
+            </cue>
+            <cue name="L2M181 Accepted">
+              <condition>
+                <conversation_completed answer="accept" conversation="L2OfferNormal" actor="L2M181 Offer.Guide"/>
+              </condition>
+              <timing>
+                <time min="250" max="350"/>
+              </timing>
+              <action>
+                <do_all>
+                  <remove_offer actor="L2M181 Offer.Guide" conversation="L2OfferNormal" discipline="XXXT"/>
+                  <cancel_cue cue="L2M181 Check Offer"/>
+                  <increment_statistic statistic="5160"/>
+                </do_all>
+              </action>
+              <cues>
+                <cue ref="L0M81" comment="Mission 0.1">
+                  <params>
+                    <param name="Cue" value="L2M181 Offer"/>
+                    <param name="ID" value="1"/>
+                    <param name="EnemyRace" value="{value@L2M181.EnemyRace}"/>
+                    <param name="OfferRace" value="{value@L2M181.OfferRace}"/>
+                    <param name="Lv1Guide" value="{actor@L2M181 Offer.Guide}"/>
+                    <param name="PassengerCount" value="{value@L2M181.PassengerCount}"/>
+                    <param name="PageID" value="{value@L2M181 Offer.PageID}"/>
+                    <param name="TextID" value="{value@L2M181 Offer.TextID}"/>
+                    <param name="TitleID" value="{value@L2M181 Offer.TitleID}"/>
+                    <param name="BriefingBackground" value="{3381,{value@L2M181 Offer.BackgroundID}}"/>
+                    <param name="Difficulty" value="{value@L2M181.Difficulty}"/>
+                    <param name="RewardCr" value="L2M181 Offer.RewardCr"/>
+                    <!--<param name="RoundReward" value="1"/>-->
+                    <param name="TPNeeded" value="1"/>
+                  </params>
+                </cue>
+                <cue name="L2M181 End" delay="1s">
+                  <condition>
+                    <check_value value="{value@L2M181 Offer.1 L0M81 Progress}" min="1"/>
+                  </condition>
+                  <action>
+                    <do_all>
+						<set_value name="L2M181.Notoriety" exact="{reward.notoriety.{value@L2M181.OfferRace}@{value@L2M181.Difficulty}}"/>
+						<remove_briefing cue="L2M181 Offer"/>
+                      <do_choose>
+                        <do_when value="{value@L2M181 Offer.1 L0M81 Progress}" exact="1">
+                          <remove_objective cue="L2M181 Offer" status="complete"/>
+                          <reward_player>
+                            <money exact="{value@L2M181 Offer.RewardCr}"/>
+                            <notoriety>
+                              <relation race="{value@L2M181.OfferRace}" exact="{value@L2M181.Notoriety}"/>
+                            </notoriety>
+                          </reward_player>
+                          <incoming_message author="{actor.name@L2M181 Offer.Guide}" text="{3381,181036}"/>
+                          <increment_statistic statistic="5170"/>
+                          <increment_statistic statistic="5180" exact="{value@L2M181 Offer.1 L0M81 Passengers Delivered}"/>
+                        </do_when>
+                        <do_when value="{value@L2M181 Offer.1 L0M81 Progress}" exact="2" comment="Time Out">
+                          <remove_objective cue="L2M181 Offer" status="failed"/>
+                          <set_value name="L2M181.PassengerPay" exact="({value@L2M181 Offer.RewardCr}/{value@L2M181.PassengerCount})/2"/>
+                          <set_value name="L2M181.PartialPay" exact="{value@L2M181.PassengerPay}*{value@L2M181 Offer.1 Passengers Delivered}"/>
+                          <reward_player>
+                            <money exact="{value@L2M181.PartialPay}"/>
+                            <notoriety>
+                              <relation race="{value@L2M181.OfferRace}" exact="-1"/>
+                            </notoriety>
+                          </reward_player>
+                          <incoming_message author="{actor.name@L2M181 Offer.Guide}" text="{3381,181025}"/>
+                        </do_when>
+                        <do_when value="{value@L2M181 Offer.1 L0M81 Progress}" exact="3" comment="Killed">
+                          <remove_objective cue="L2M181 Offer" status="failed"/>
+                          <reward_player>
+                            <notoriety>
+                              <relation race="{value@L2M181.OfferRace}" exact="-{value@L2M181.Notoriety}/4+1"/>
+                            </notoriety>
+                          </reward_player>
+                          <incoming_message author="{actor.name@L2M181 Offer.Guide}" text="{3381,181037}"/>
+                        </do_when>
+                        <do_when value="{value@L2M181 Offer.1 L0M81 Progress}" exact="5" comment="Ejected">
+                          <remove_objective cue="L2M181 Offer" status="failed"/>
+                          <reward_player>
+                            <notoriety>
+                              <relation race="{value@L2M181.OfferRace}" exact="-{value@L2M181.Notoriety}/4+1"/>
+                            </notoriety>
+                          </reward_player>
+                          <incoming_message author="{actor.name@L2M181 Offer.Guide}" text="{3381,181038}"/>
+                        </do_when>
+                        <do_when value="{value@L2M181 Offer.1 L0M81 Progress}" exact="92" comment="Out of time, not picked up">
+                          <remove_objective cue="L2M181 Offer" status="failed"/>
+                          <reward_player>
+                            <notoriety>
+                              <relation race="{value@L2M181.OfferRace}" exact="-1"/>
+                            </notoriety>
+                          </reward_player>
+                          <incoming_message author="{actor.name@L2M181 Offer.Guide}" text="{3381,181025}"/>
+                        </do_when>
+                        <do_otherwise comment="Must be 99, Aborted?">
+                          <remove_objective cue="L2M181 Offer" status="aborted"/>
+                          <incoming_message author="{actor.name@L2M181 Offer.Guide}" text="{3381,181035}"/>
+                        </do_otherwise>
+                      </do_choose>
+                    </do_all>
+                  </action>
+                  <cues>
+                    <cue name="L2M181 Final End" delay="2s">
+                      <condition>
+                        <check_value value="{group.object.count@L2M181 Offer.1 PassengerGroup}" exact="0"/>
+                      </condition>
+                      <timing>
+                        <time exact="3s"/>
+                      </timing>
+                      <action>
+                        <do_all>
+                          <destroy_actor actor="L2M181 Offer.Guide"/>
+                          <cancel_cue cue="L2M181"/>
+                        </do_all>
+                      </action>
+                    </cue>
+                  </cues>
+                </cue>
+              </cues>
+            </cue>
+            <cue name="L2M181 Check Offer">
+              <condition>
+                <cue_completed cue="L2M181 Offer"/>
+              </condition>
+              <cues>
+                <cue name="L2M181 Time Out" delay="30s">
+                  <condition>
+                    <check_any>
+                      <check_age value="{player.age}" min="{value@L2M181.TimeOut}"/>
+                      <object_relation object="L2M181.OfferStation">
+                        <relation relation="enemy"/>
+                      </object_relation>
+                    </check_any>
+                  </condition>
+                  <cues>
+                    <cue name="L2M181 Check Comms" delay="500">
+                      <condition>
+                        <check_all>
+                          <check_value value="{player.menu.dialog}" exact="0"/>
+                          <check_value value="{player.menu.briefing}" exact="0"/>
+                          <cue_is_active cue="L2M181 Accepted" negate="1"/>
+                        </check_all>
+                      </condition>
+                      <action>
+                        <do_all>
+                          <remove_offer actor="L2M181 Offer.Guide" conversation="L2OfferNormal" discipline="XXXT"/>
+                          <destroy_actor actor="L2M181 Offer.Guide"/>
+                          <cancel_cue cue="L2M181"/>
+                        </do_all>
+                      </action>
+                    </cue>
+                  </cues>
+                </cue>
+                <cue name="L2M181 Sector Out" instantiate="static">
+                  <condition>
+                    <check_all>
+                      <object_changed_sector/>
+                      <cue_is_active cue="L2M181 Accepted" negate="1"/>
+                    </check_all>
+                  </condition>
+                  <action>
+                    <do_if value="{player.sector}" exact="{actor.sector@L2M181 Offer.Guide}" negate="1">
+                      <set_value name="L2M181 Offer.SectorChanges" exact="{value@L2M181 Offer.SectorChanges}+1"/>
+                      <do_if value="{value@L2M181 Offer.SectorChanges}" min="4">
+                        <remove_offer actor="L2M181 Offer.Guide" conversation="L2OfferNormal" discipline="XXXT"/>
+                        <destroy_actor actor="L2M181 Offer.Guide"/>
+                        <cancel_cue cue="L2M181"/>
+                      </do_if>
+                    </do_if>
+                  </action>
+                </cue>
+              </cues>
+            </cue>
+          </cues>
+        </cue>
+      </cues>
+    </cue>
+  </cues>
+</director>

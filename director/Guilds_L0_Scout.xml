@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<?xml-stylesheet href="director.xsl" type="text/xsl" ?>
+<director name="Guilds, Level 0, Scout Sector" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="director.xsd">
+    <documentation>
+        <author alias="Cycrow"/>
+        <content reference="Guild Mission, Level 0, Scout Sector" name="Scout Sector" description="Mission to scout out a sector using waypoints" />
+        <version number="1.0" date="06/12/20023" status="development"/>
+    </documentation>
+    <cues>
+        <cue name="L0GI07 B" library="1">
+            <documentation>
+                <content name="L0GI07 Scout" reference="XXXT" type="briefing"/>
+                <version number="1.0" date="03/01/2025" status="development"/>
+                <params>
+                    <param name="Cue" type="cuename" compulsory="1" description="The cue where the briefing and objectives are stored"/>
+                    <param name="ID" type="number" compulsory="1" description="The mission Id for dealing with mission chains"/>
+                    <param name="OfferRace" type="number" compulsory="1" description="Race offering the mission"/>
+                    <param name="EnemyRace" type="number" compulsory="1" description="Race of the enemy"/>
+                    <param name="Lv1Guide" type="actorname" compulsory="1" description="The person offering the mission"/>
+                    <param name="PageID" type="number" description="Page ID of mission description"/>
+                    <param name="TextID" type="number" description="Text ID of mission description"/>
+					<param name="Sector" type="sectorname" description="Sector"/>
+					<param name="Reward" description="Reward type"/>
+					<param name="StoryID" type="number" compulsory="0" description="Text ID of the Story title" default="No title"/>
+                    <param name="Difficulty" type="number" compulsory="1" description="Difficulty level of mission"/>
+                    <param name="StartObject" type="objectname" compulsory="0" description="A pre defined starting point"/>
+                    <param name="Step" type="number" compulsory="0" description="The step to use if additional objectives are involved"/>
+                    <param name="Summary" type="boolean" compulsory="0" description="Used to specify summary objectives in a chain of missions"/>
+                </params>
+            <returns>
+                <return name="{param@Cue}.{param@ID} L0GI07_Progress" type="number" description="1 - Mission Completed"/>
+                <return name="{param@Cue}.{param@ID} L0GI07_Progress" type="number" description="2 - Out of time"/>
+                <return name="{param@Cue}.{param@ID} L0GI07_Progress" type="number" description="92 - Out of time, not started mission"/>
+                <return name="{param@Cue}.{param@ID} L0GI07_Progress" type="number" description="99 - Aborted"/>
+            </returns>
+        </documentation>
+        <action>
+            <do_all>				
+				<set_sector name="{param@Cue}.{param@ID} L0GI07_Sector" value="{param@Sector}"/>
+				<do_choose>
+					<do_when value="{param@Summary}" exact="1">
+						<create_briefing cue="{param@Cue}">
+				            <objectives>
+                                <objective step="{param@Step}">
+									<custom action="{35,2075}" text="{sector.name@{param@Cue}.{param@ID} L0GI07_Sector}"/>
+                                </objective>
+                            </objectives>
+                        </create_briefing>
+                        <cancel_cue cue="L0GI07 B"/>
+                    </do_when>
+                    <do_otherwise>
+                        <do_if value="{param.exists@Step}" exact="1">
+                            <set_value name="{param@Cue}.{param@ID} L0GI07_Step" exact="{param@Step}"/>
+                        </do_if>
+                        <do_if value="{value@{param@Cue}.{param@ID} L0GI07_Step}" min="1" negate="1">
+                            <set_value name="{param@Cue}.{param@ID} L0GI07_Step" exact="1"/>
+                        </do_if>
+                    </do_otherwise>
+                </do_choose>
+            </do_all>
+        </action>
+        <cues>
+			<cue name="L0GI07 B_CreateBriefing">
+				<condition>
+					<cue_is_complete cue="L0GI07 B"/>
+				</condition>
+				<action>
+					<do_all>
+						<do_choose>
+							<do_when value="{param.exists@PageID}*{param.exists@TextID}" exact="0">
+								<create_briefing cue="{param@Cue}"/>
+							</do_when>
+							<do_otherwise>
+								<create_briefing cue="{param@Cue}" text="{{param@PageID},{param@TextID}}" title="{9620,{value@{param@Cue}.{param@ID} L0Title}}"/>
+							</do_otherwise>
+						</do_choose>
+						<do_if value="{param.exists@Difficulty}" exact="1">
+							<create_briefing cue="{param@Cue}">
+								<mission level="{param@Difficulty}"/>
+							</create_briefing>
+						</do_if>
+					</do_all>
+				</action>
+				<cues>
+					<cue ref="L0GI07_UpdateObjective"/>
+				</cues>
+			</cue>
+        </cues>
+    </cue>
+
+	<cue name="L0GI07_UpdateObjective" library="1">
+		<action>
+			<do_all>
+				<do_choose>
+					<do_when value="{player.sector}" exact="{sector@{param@Cue}.{param@ID} L0GI07_Sector}">
+						<do_choose>
+							<do_when value="{object.exists@{param@Cue}.{param@ID} L0GI07_Waypoint}">
+								<create_briefing cue="{param@Cue}">
+									<objectives>
+										<objective step="{value@{param@Cue}.{param@ID} L0GI07_Step}">
+											<custom action="{35,2075}" text="{sector.name@{param@Cue}.{param@ID} L0GI07_Sector}" object="{object@{param@Cue}.{param@ID} L0GI07_Waypoint}"/>
+										</objective>
+									</objectives>
+								</create_briefing>
+								<set_objective cue="{param@Cue}">
+									<briefing cue="{param@Cue}" step="{value@{param@Cue}.{param@ID} L0GI07_Step}"/>
+									<custom action="{35,2075}" text="{sector.name@{param@Cue}.{param@ID} L0GI07_Sector}" object="{object@{param@Cue}.{param@ID} L0GI07_Waypoint}"/>
+								</set_objective>
+							</do_when>
+							<do_otherwise>
+								<create_briefing cue="{param@Cue}">
+									<objectives>
+										<objective step="{value@{param@Cue}.{param@ID} L0GI07_Step}">
+											<custom action="{35,2075}" text="{sector.name@{param@Cue}.{param@ID} L0GI07_Sector}">
+												<sector sector="{sector@{param@Cue}.{param@ID} L0GI07_Sector}"/>
+											</custom>
+										</objective>
+									</objectives>
+								</create_briefing>
+								<set_objective cue="{param@Cue}">
+									<briefing cue="{param@Cue}" step="{value@{param@Cue}.{param@ID} L0GI07_Step}"/>
+									<custom action="{35,2075}" text="{sector.name@{param@Cue}.{param@ID} L0GI07_Sector}">
+										<sector sector="{sector@{param@Cue}.{param@ID} L0GI07_Sector}"/>
+									</custom>
+								</set_objective>
+							</do_otherwise>
+						</do_choose>
+					</do_when>
+					<do_otherwise>
+						<create_briefing cue="{param@Cue}">
+							<objectives>
+								<objective step="{value@{param@Cue}.{param@ID} L0GI07_Step}">
+									<flyto>
+										<sector sector="{sector@{param@Cue}.{param@ID} L0GI07_Sector}"/>
+									</flyto>
+								</objective>
+							</objectives>
+						</create_briefing>
+						<set_objective cue="{param@Cue}">
+							<briefing cue="{param@Cue}" step="{value@{param@Cue}.{param@ID} L0GI07_Step}"/>
+							<flyto>
+								<sector sector="{sector@{param@Cue}.{param@ID} L0GI07_Sector}"/>
+							</flyto>
+						</set_objective>
+					</do_otherwise>
+				</do_choose>				
+			</do_all>
+		</action>
+		<cues>
+			<cue name="L0GI07_CompleteObjective">
+				<condition>
+					<check_all>
+						<cue_is_complete cue="L0GI07_UpdateObjective"/>
+						<check_value value="{param.exists@Complete Briefing}" exact="1"/>
+						<check_value value="{param@CompleteBriefing}" exact="1"/>
+					</check_all>
+				</condition>
+                <cues>
+                    <cue ref="LUM04">
+                        <params>
+                            <param name="Discipline" value="XXXT"/>
+                            <param name="RewardMult" value="2"/>
+							<!--
+                            <param name="StartTime" value="L0GI07 B.StartTime"/>
+                            <param name="Duration" value="{param@Cue}.{param@ID} L0GI07_Duration"/>
+							-->
+						</params>
+					</cue>
+				</cues>
+			</cue>
+		</cues>
+	</cue>
+
+    <cue name="L0GI07" library="1">
+        <documentation>
+            <content name="L0GI07 Scout Sector" reference="XXXT" type="L0"/>
+            <version date="06/12/2023" number="1.0" status="development"/>
+            <params>
+                <param name="Cue" compulsory="1" description="The cue where the briefing and objectives are stored"/>
+                <param name="ID" type="number" compulsory="1" description="The mission Id for dealing with mission chains"/>
+                <param name="OfferRace" compulsory="1" description="Race offering the mission"/>
+                <param name="EnemyRace" compulsory="1" description="Race of the enemy"/>
+                <param name="PageID" description="Page ID of mission description"/>
+                <param name="TextID" description="Text ID of mission description"/>
+                <param name="Reward" description="Reward type"/>
+                <param name="StoryID" compulsory="0" description="Text ID of the Story title" default="No title"/>
+                <param name="Difficulty" compulsory="1" description="Difficulty level of mission"/>
+                <param name="Step" compulsory="1" description="The starting Step of the mission"/>
+            </params>
+        </documentation>
+        <action>
+			<do_all>
+				<set_value name="{param@Cue}.{param@ID} L0GI07_Progress" exact="0"/>
+				<set_value name="{param@Cue}.{param@ID} L0GI07_Nodes" exact="{param@Difficulty}"/>
+				<do_if value="{param.exists@Nodes}" exact="1">
+					<do_if value="{param@Nodes}" min="1">
+						<set_value name="{param@Cue}.{param@ID} L0GI07_Nodes" exact="{param@Nodes}"/>
+					</do_if>
+				</do_if>
+				<do_if value="{param@Cue}.{param@ID} L0GI07_Nodes" exact="0">
+					<set_value name="{param@Cue}.{param@ID} L0GI07_Nodes" min="2" max="4"/>
+				</do_if>
+			</do_all>
+        </action>
+		<cues>
+			<cue name="L0GI07_CreateBriefing">
+				<cues>
+					<cue ref="L0GI07 B"/>
+				</cues>
+			</cue>
+			
+			<cue name="L0GI07_SetObjective">
+				<condition>
+					<cue_is_complete cue="L0GI07_CreateBriefing"/>
+				</condition>
+				<cues>
+					<cue ref="L0GI07_UpdateObjective"/>
+				</cues>
+			</cue>
+			
+			<cue name="L0GI07_StartMission" delay="1s">
+				<condition>
+					<check_all>
+						<cue_is_complete cue="L0GI07_CreateBriefing"/>
+						<check_value value="{value@{param@Cue}.{param@ID} L0GI07_Progress}" exact="0"/>
+					</check_all>
+				</condition>
+				<cues>
+					<cue name="L0GI07_CreateNextWaypoint" delay="1s" instantiate="static">
+						<condition>
+							<check_all>
+								<object_exists object="{param@Cue}.{param@ID} L0GI07_Waypoint" negate="1"/>
+								<check_value value="{value@{param@Cue}.{param@ID} L0GI07_Nodes}" min="1"/>
+							</check_all>
+						</condition>
+						<action>
+							<do_all>
+								<set_value name="this.tempX" min="-{sector.size.m@{param@Cue}.{param@ID} L0GI07_Sector}" max="{sector.size.m@{param@Cue}.{param@ID} L0GI07_Sector}"/>
+								<set_value name="this.tempY" min="-5000" max="5000"/>
+								<set_value name="this.tempZ" min="-{sector.size.m@{param@Cue}.{param@ID} L0GI07_Sector}" max="{sector.size.m@{param@Cue}.{param@ID} L0GI07_Sector}"/>
+								<create_special name="{param@Cue}.{param@ID} L0GI07_Waypoint" typename="SS_SPECIAL_INVMARKER">
+									<position x="{value@this.tempX}m" y="{value@this.tempY}m" z="{value@this.tempZ}m"/>
+									<sector sector="{sector@{param@Cue}.{param@ID} L0GI07_Sector}"/>
+								</create_special>
+								<reset_cue cue="L0GI07_SetObjective"/>
+							</do_all>
+						</action>
+					</cue>
+
+					<cue name="L0GI07_EnterSector" delay="1s">
+						<condition>
+							<check_all>
+								<object_changed_sector/>
+								<check_value value="{player.sector}" exact="{sector@{param@Cue}.{param@ID} L0GI07_Sector}"/>
+							</check_all>
+						</condition>
+						<action>
+							<reset_cue cue="L0GI07_SetObjective"/>
+						</action>
+						<cues>
+							<cue name="L0GI07_LeaveSector" delay="1s">
+								<condition>
+									<check_value value="{player.sector}" exact="{sector@{param@Cue}.{param@ID} L0GI07_Sector}" negate="1"/>
+								</condition>
+								<action>
+									<do_all>
+										<reset_cue cue="L0GI07_SetObjective"/>
+										<reset_cue cue="L0GI07_EnterSector"/>
+									</do_all>
+								</action>
+							</cue>
+
+							<cue name="L0GI07_CheckFinished" delay="2s">
+								<condition>
+									<check_all>
+										<object_exists object="{param@Cue}.{param@ID} L0GI07_Waypoint" negate="1"/>
+										<check_value value="{value@{param@Cue}.{param@ID} L0GI07_Nodes}" max="0"/>
+									</check_all>
+								</condition>
+								<action>
+									<do_all>
+										<set_value name="{param@Cue}.{param@ID} L0GI07_Progress" exact="1"/>
+										<cancel_cue cue="L0GI07_LeaveSector"/>
+										<cancel_cue cue="L0GI07_CreateNextWaypoint"/>
+										<cancel_cue cue="L0GI07_CheckNext"/>
+										<complete_cue cue="L0GI07"/>
+									</do_all>
+								</action>
+							</cue>
+
+							<cue name="L0GI07_CheckNext" delay="1s" instantiate="static">
+								<condition>
+									<check_all>
+										<check_value value="{player.sector}" exact="{sector@{param@Cue}.{param@ID} L0GI07_Sector}"/>
+										<object_exists object="{param@Cue}.{param@ID} L0GI07_Waypoint"/>
+										<check_distance value="{object.distance@{param@Cue}.{param@ID} L0GI07_Waypoint}" max="400m"/>
+									</check_all>
+								</condition>
+								<action>
+									<do_all>
+										<set_value name="{param@Cue}.{param@ID} L0GI07_Nodes" operation="subtract" exact="1"/>
+										<destroy_object object="{param@Cue}.{param@ID} L0GI07_Waypoint" explosion="0"/>
+										<remove_object object="{param@Cue}.{param@ID} L0GI07_Waypoint"/>
+									</do_all>
+								</action>
+							</cue>
+						</cues>
+					</cue>
+				</cues>
+			</cue>
+		</cues>
+    </cue>
+  </cues>
+</director>

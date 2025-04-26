@@ -1,0 +1,993 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<?xml-stylesheet href="director.xsl" type="text/xsl" ?>
+<director name="Lost Colonies Plot" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="director.xsd">
+	<documentation>
+		<author name="Cycrow" />
+		<content reference="guilds" name="Lost Colonies Plot" description="Guilds Plot - Lost Colonies"/>
+		<version number="0.1" date="17/08/24" />
+	</documentation>
+	<cues>
+		<cue name="Lost_Colonies">
+			<condition>
+				<cue_is_complete cue="Guilds_Start"/>
+			</condition>
+			<timing>
+				<time exact="2s"/>
+			</timing>
+			<action>
+				<do_all>
+					<!-- Global Values -->
+					<find_sector x="12" y="1" name="Lost_Colonies.OutpostSector" comment="Outpost sector (Saturn)"/>
+					<find_sector x="17" y="0" name="Lost_Colonies.TheVault" comment="First sector"/>
+					<find_sector x="14" y="6" name="Lost_Colonies.Harmony" comment="Harmony of Perpitutu - Link sector"/>
+					<find_sector x="14" y="7" name="Lost_Colonies.EoL" comment="Elysium of Light"/>
+				</do_all>
+			</action>
+			<cues>
+				<cue name="Lost_Colonies_Start">
+					<condition>
+						<check_all>							
+							<check_value value="{value@NO PLOTS}" exact="0"/>
+							<check_value value="{value@Race Military Terran Joined}" min="1"/>
+							<check_value value="{value@Terran Military.Level}" min="3"/>							
+						</check_all>
+					</condition>
+					<cues>
+						<cue name="Lost_Colonies_GetOutpost" delay="1s">
+							<timing>
+								<time min="60s" max="90s"/>
+							</timing>
+							<action>
+								<do_all>
+									<find_station class="dock" race="terran" name="Lost_Colonies.OutpostStation" silent="1" typename="SS_DOCK_ATF_MILITARY_1">
+										<sector sector="{sector@Lost_Colonies.OutpostSector}"/>
+										<jumps min="0" max="0"/>
+									</find_station>
+									<do_choose>
+										<do_when value="{object.exists@Lost_Colonies.OutpostStation}" exact="1">
+											<set_invincible object="Lost_Colonies.OutpostStation" invincible="1"/>
+											<set_value name="Lost_Colonies.Status" exact="1"/>
+										</do_when>
+										<do_otherwise>
+											<reset_cue cue="Lost_Colonies_GetOutpost"/>
+										</do_otherwise>
+									</do_choose>
+								</do_all>
+							</action>
+							<cues>								
+								<cue name="Lost_Colonies_Ready" delay="2s">
+									<condition>
+										<check_value value="{value@Lost_Colonies.Status}" exact="1"/>
+									</condition>
+									<timing>
+										<time min="30m" max="40m"/>
+									</timing>
+									<action>
+										<set_value name="Lost_Colonies.Status" exact="2"/>
+									</action>
+									<cues>
+										<cue name="Lost_Colonies_FirstContract" delay="1s">
+											<condition>
+												<check_all>
+													<cue_is_complete cue="Lost_Colonies_Ready"/>
+													<check_value value="{value@Lost_Colonies.Status}" exact="2"/>
+												</check_all>
+											</condition>
+											<action>
+												<do_all>
+													<create_actor name="Lost_Colonies.Leader" race="terran" voice="125" face="1133" invincible="1" character="{9620,1100003}" gender="male" object="Lost_Colonies.OutpostStation" location="crew" />
+													<create_offer actor="Lost_Colonies.Leader" cue="Lost_Colonies" discipline="XXXXP" conversation="L3GPL_03_01_01"/>
+												</do_all>
+											</action>
+											<cues>
+												<cue name="Lost_Colonies_Accept" delay="1s">
+													<condition>
+														<conversation_completed actor="Lost_Colonies.Leader" conversation="L3GPL_03_01_01" answer="accept"/>
+													</condition>
+													<action>
+														<do_all>
+															<remove_offer actor="Lost_Colonies.Leader" conversation="L3GPL_03_01_01" discipline="XXXXP"/>
+															<create_ship name="Lost_Colonies.LeaderShip" capturable="0" invincible="1" typename="SS_SH_USC_M3P" race="terran" dockobject="Lost_Colonies.OutpostStation" textid="90015">
+																<sector sector="{object.sector@Lost_Colonies.OutpostStation}"/>
+																<equipment loadout="maximum"/>
+																<command command="follow" commandobject="{player.ship}"/>
+															</create_ship>
+															<set_actor_location actor="Lost_Colonies.Leader" object="Lost_Colonies.LeaderShip" location="pilot"/>
+															<create_ship group="Lost_Colonies.Escorts" name="Lost_Colonies.Wingman" capturable="0" invincible="1" typename="SS_SH_USC_M3" race="terran" dockobject="Lost_Colonies.OutpostStation" textid="90017">
+																<sector sector="{object.sector@Lost_Colonies.OutpostStation}"/>
+																<equipment loadout="maximum"/>
+																<command command="follow" commandobject="Lost_Colonies.LeaderShip"/>
+															</create_ship>
+															<create_ship group="Lost_Colonies.Escorts" capturable="0" invincible="1" typename="SS_SH_USC_M4" race="terran" dockobject="Lost_Colonies.OutpostStation" textid="90017">
+																<sector sector="{object.sector@Lost_Colonies.OutpostStation}"/>
+																<equipment loadout="maximum"/>
+																<command command="follow" commandobject="Lost_Colonies.LeaderShip"/>
+															</create_ship>
+															<create_ship group="Lost_Colonies.Escorts" capturable="0" invincible="1" typename="SS_SH_USC_M4" race="terran" dockobject="Lost_Colonies.OutpostStation" textid="90017">
+																<sector sector="{object.sector@Lost_Colonies.OutpostStation}"/>
+																<equipment loadout="maximum"/>
+																<command command="follow" commandobject="Lost_Colonies.LeaderShip"/>
+															</create_ship>
+															<create_actor name="Lost_Colonies.WingmanActor" race="terran" gender="female" voice="126" invincible="1" object="Lost_Colonies.Wingman" location="pilot"/>
+															<create_briefing cue="Lost_Colonies" story="{9620,1100005}" title="{9620,1100005}" text="{9620,1100009}" background="terran_military.tga" race="{9620,1100001}" targetrace="xenon">
+																<mission discipline="XXXXP" level="easy"/>
+																<reward money="50000"/>
+																<requirements>
+																	<requirement type="equipment" value="SS_WARE_LIFESUPPORT"/>
+																</requirements>
+																<objectives>
+																	<objective step="1">
+																		<follow object="Lost_Colonies.LeaderShip"/>
+																	</objective>
+																</objectives>
+															</create_briefing>
+															<set_objective cue="Lost_Colonies" story="{9620,1100005}" title="{9620,1100005}" text="{9620,1100009}" race="{9620,1100001}" targetrace="xenon" noabort="1">																
+																<briefing cue="Lost_Colonies" step="1"/>
+																<mission discipline="XXXXP" level="easy"/>
+																<reward money="50000"/>
+																<follow object="Lost_Colonies.LeaderShip"/>
+															</set_objective>
+														</do_all>
+													</action>
+													<cues>
+														<cue name="Lost_Colonies_Idle" delay="1s">
+															<timing>
+																<time exact="10s"/>
+															</timing>
+															<action>
+																<set_command object="Lost_Colonies.LeaderShip" command="idle"/>
+															</action>
+														</cue>
+														<cue name="Lost_Colonies_JumpOut" delay="1s">
+															<timing>
+																<time min="25s" max="35s"/>
+															</timing>
+															<action>
+																<play_text actor="Lost_Colonies.Leader" textid="110007" priority="90"/>
+															</action>
+															<cues>
+																<cue name="Lost_Colonies_WarpOut">
+																	<condition>
+																		<cue_is_complete cue="Lost_Colonies_JumpOut"/>
+																	</condition>
+																	<timing>
+																		<time exact="7s"/>																	
+																	</timing>
+																	<action>
+																		<do_all>
+																			<do_all exact="{group.object.count@Lost_Colonies.Escorts}" counter="Count">
+																				<show_effect object="{group.object.{counter@Count}@Lost_Colonies.Escorts}" effect="46"/>
+																			</do_all>																			
+																			<show_effect object="Lost_Colonies.LeaderShip" effect="46"/>
+																		</do_all>
+																	</action>
+																</cue>
+																<cue name="Lost_Colonies_JumpEoL">
+																	<condition>
+																		<cue_is_complete cue="Lost_Colonies_JumpOut"/>
+																	</condition>
+																	<timing>
+																		<time exact="8s"/>
+																	</timing>
+																	<action>
+																		<do_all>
+																			<warp_object object="Lost_Colonies.LeaderShip" warp="1">
+																				<position x="-5km" y="0km" z="-16km"/>
+																				<sector sector="Lost_Colonies.EoL"/>																			
+																			</warp_object>	
+																			<warp_group group="Lost_Colonies.Escorts">
+																				<position x="-5km" y="0km" z="-16km" min="300m" max="600m"/>
+																				<sector sector="Lost_Colonies.EoL"/>																			
+																			</warp_group>
+																			
+																			<create_briefing cue="Lost_Colonies" story="{9620,1100005}" title="{9620,1100005}" text="{9620,1100009}" background="terran_military.tga" race="{9620,1100001}" targetrace="xenon">
+																				<mission discipline="XXXXP" level="easy"/>
+																				<reward money="50000"/>
+																				<requirements>
+																					<requirement type="equipment" value="SS_WARE_LIFESUPPORT"/>
+																				</requirements>
+																				<objectives>
+																					<objective step="2">
+																						<flyto>
+																							<sector sector="Lost_Colonies.EoL"/>
+																						</flyto>
+																					</objective>
+																				</objectives>
+																			</create_briefing>
+																			<set_objective cue="Lost_Colonies" story="{9620,1100005}" title="{9620,1100005}" text="{9620,1100009}" race="{9620,1100001}" targetrace="xenon" noabort="1">																
+																				<briefing cue="Lost_Colonies" step="2"/>
+																				<mission discipline="XXXXP" level="easy"/>
+																				<reward money="50000"/>
+																				<flyto>
+																					<sector sector="Lost_Colonies.EoL"/>
+																				</flyto>
+																			</set_objective>
+																			<set_command object="Lost_Colonies.LeaderShip" command="stay"/>
+																			<set_group_command group="Lost_Colonies.Escorts" command="follow" commandobject="{object@Lost_Colonies.LeaderShip}"/>
+																		</do_all>
+																	</action>
+																	<cues>
+																		<cue name="Lost_Colonies_Player_Arrive" delay="1s">
+																			<condition>
+																				<check_all>
+																					<cue_is_complete cue="Lost_Colonies_JumpEoL"/>
+																					<check_value value="{player.sector}" exact="{sector@Lost_Colonies.EoL}"/>
+																				</check_all>
+																			</condition>
+																			<timing>
+																				<time min="4s" max="7s"/>
+																			</timing>
+																			<action>
+																				<do_all>
+																					<create_briefing cue="Lost_Colonies" story="{9620,1100005}" title="{9620,1100005}" text="{9620,1100009}" background="terran_military.tga" race="{9620,1100001}" targetrace="xenon">
+																						<mission discipline="XXXXP" level="easy"/>
+																						<reward money="50000"/>
+																						<requirements>
+																							<requirement type="equipment" value="SS_WARE_LIFESUPPORT"/>
+																						</requirements>
+																						<objectives>
+																							<objective step="3">
+																								<follow object="Lost_Colonies.LeaderShip"/>
+																							</objective>
+																						</objectives>
+																					</create_briefing>
+																					<set_objective cue="Lost_Colonies" story="{9620,1100005}" title="{9620,1100005}" text="{9620,1100009}" race="{9620,1100001}" targetrace="xenon" noabort="1">																
+																						<briefing cue="Lost_Colonies" step="3"/>
+																						<mission discipline="XXXXP" level="easy"/>
+																						<reward money="50000"/>
+																						<follow object="Lost_Colonies.LeaderShip"/>
+																					</set_objective>
+																					<set_command command="moveposition" object="Lost_Colonies.LeaderShip">
+																						<position x="-3km" y="-1km" z="5km"/>
+																					</set_command>
+																					<play_text actor="Lost_Colonies.Leader" textid="110008" priority="90"/>
+																					<set_group_command group="Lost_Colonies.Escort" command="follow" commandobject="{object@Lost_Colonies.LeaderShip}"/>
+																				</do_all>
+																			</action>
+																			<cues>
+																				<cue name="Lost_Colonies_PatrolCentre" delay="1s">
+																					<condition>
+																						<check_all>
+																							<cue_is_complete cue="Lost_Colonies_Player_Arrive"/>
+																							<check_value value="{player.sector}" exact="{object.sector@Lost_Colonies.LeaderShip}"/>
+																							<object_position object="Lost_Colonies.LeaderShip" max="5km">
+																								<position x="-3km" y="-1km" z="5km"/>
+																							</object_position>
+																							<check_distance value="{object.distance@Lost_Colonies.LeaderShip}" max="5km"/>
+																						</check_all>
+																					</condition>
+																					<action>
+																						<do_all>
+																							<play_text priority="90">
+																								<line actor="Lost_Colonies.WingmanActor" textid="120000"/>
+																								<line actor="Lost_Colonies.Leader" textid="110009"/>
+																							</play_text>
+																							<set_command command="moveposition" object="Lost_Colonies.LeaderShip">
+																								<position x="-17km" y="1km" z="12km"/>
+																							</set_command>
+																						</do_all>
+																					</action>
+																					<cues>
+																						<cue name="Lost_Colonies_ApproachAttack" delay="1s">
+																							<condition>
+																								<check_all>
+																									<cue_is_complete cue="Lost_Colonies_PatrolCentre"/>
+																									<check_value value="{player.sector}" exact="{object.sector@Lost_Colonies.LeaderShip}"/>
+																									<object_position object="Lost_Colonies.LeaderShip" max="8km">
+																										<position x="-17km" y="1km" z="12km"/>
+																									</object_position>
+																									<check_distance value="{object.distance@Lost_Colonies.LeaderShip}" max="5km"/>
+																								</check_all>
+																							</condition>
+																							<action>
+																								<do_all>
+																									<play_text actor="Lost_Colonies.Wingman" textid="120001" priority="90"/>
+																									<play_cutscene file="LC_S1_1"/>
+																									<set_object name="Lost_Colonies.CutsceneLeader" value="{object@Lost_Colonies.LeaderShip}"/>
+																									<create_ship name="Lost_Colonies.PilotShip" typename="SS_SH_TR_M4" race="terran" racelogic="0" invincible="1">
+																										<position x="-24km" y="1km" z="17km"/>
+																										<sector sector="{player.sector}"/>
+																										<command command="stay"/>
+																									</create_ship>
+																									<create_ship group="Lost_Colonies.Terraformers" typename="SS_SH_TERRAFORMER3" race="xenon" racelogic="0">
+																										<position object="Lost_Colonies.PilotShip" min="500m" max="1km"/>
+																										<sector sector="{object.sector@Lost_Colonies.PilotShip}"/>
+																										<equipment loadout="maximum">
+																											<ware typename="SS_LASER_EMP_1" exact="4"/>
+																										</equipment>																												   
+																										<command command="attack" commandobject="{object@Lost_Colonies.PilotShip}"/>
+																									</create_ship>
+																									<create_ship group="Lost_Colonies.Terraformers" typename="SS_SH_TERRAFORMER4" race="xenon" racelogic="0">
+																										<position object="Lost_Colonies.PilotShip" min="500m" max="1km"/>
+																										<sector sector="{object.sector@Lost_Colonies.PilotShip}"/>
+																										<equipment loadout="maximum">
+																											<ware typename="SS_LASER_EMP_1" exact="4"/>
+																										</equipment>																												   
+																										<command command="attack" commandobject="{object@Lost_Colonies.PilotShip}"/>
+																									</create_ship>
+																									<create_ship group="Lost_Colonies.Terraformers" typename="SS_SH_TERRAFORMER4" race="xenon" racelogic="0">
+																										<position object="Lost_Colonies.PilotShip" min="500m" max="1km"/>
+																										<sector sector="{object.sector@Lost_Colonies.PilotShip}"/>
+																										<equipment loadout="maximum">
+																											<ware typename="SS_LASER_EMP_1" exact="4"/>
+																										</equipment>																												   
+																										<command command="attack" commandobject="{object@Lost_Colonies.PilotShip}"/>
+																									</create_ship>
+																									<set_attacked_response object="Lost_Colonies.PilotShip" response="ignore"/>
+																								</do_all>																								
+																							</action>
+																							<cues>
+																								<cue name="Lost_Colonies_DestroyShip">
+																									<timing>
+																										<time exact="10s"/>
+																									</timing>
+																									<action>
+																										<do_all>
+																											<abandon_ship name="Lost_Colonies.EjectedPilot" object="Lost_Colonies.PilotShip" />
+																											<create_actor name="Lost_Colonies.Pilot" object="Lost_Colonies.EjectedPilot" location="pilot" invincible="1" character="{object.pilot.name@Lost_Colonies.EjectedPilot}" race="terran"/>
+																											<set_pilot_data object="Lost_Colonies.Pilot" noeject="1"/>
+																											<set_invincible object="Lost_Colonies.EjectedPilot" invincible="1"/>
+																											<destroy_object object="Lost_Colonies.PilotShip" explosion="1"/>
+																											<play_text priority="90">
+																												<line actor="Lost_Colonies.Leader" textid="110010"/>
+																											</play_text>
+																										</do_all>
+																									</action>
+																									<cues>
+																										<cue name="Lost_Colonies_Pickup" delay="1s">
+																											<condition>
+																												<cue_is_complete cue="Lost_Colonies_DestroyShip"/>
+																											</condition>
+																											<timing>
+																												<time exact="5s"/>
+																											</timing>
+																											<action>
+																												<do_all>
+																													<create_briefing cue="Lost_Colonies" story="{9620,1100005}" title="{9620,1100005}" text="{9620,1100009}" background="terran_military.tga" race="{9620,1100001}" targetrace="xenon">
+																														<mission discipline="XXXXP" level="easy"/>
+																														<reward money="50000"/>
+																														<requirements>
+																															<requirement type="equipment" value="SS_WARE_LIFESUPPORT"/>
+																														</requirements>
+																														<objectives>
+																															<objective step="4">
+																																<custom icon="find" action="{35,2041}" object="Lost_Colonies.EjectedPilot" text="{object.pilot.name@Lost_Colonies.EjectedPilot}"/>
+																															</objective>
+																														</objectives>
+																													</create_briefing>
+																													<set_objective cue="Lost_Colonies" story="{9620,1100005}" title="{9620,1100005}" text="{9620,1100009}" race="{9620,1100001}" targetrace="xenon" noabort="1">																
+																														<briefing cue="Lost_Colonies" step="4"/>
+																														<mission discipline="XXXXP" level="easy"/>
+																														<reward money="50000"/>
+																														<custom icon="find" action="{35,2041}" object="Lost_Colonies.EjectedPilot" text="{object.pilot.name@Lost_Colonies.EjectedPilot}"/>
+																													</set_objective>
+																													<set_command command="moveposition" object="Lost_Colonies.LeaderShip">
+																														<position x="-3km" y="-1km" z="5km"/>
+																													</set_command>
+																													<destroy_group group="Lost_Colonies.Terraformers" warp="1"/>
+																												</do_all>
+																											</action>
+																											<cues>
+																												<cue name="Lost_Colonies_CollectPilot" delay="1s">
+																													<condition>
+																														<check_all>
+																															<object_collected param="{object@Lost_Colonies.EjectedPilot}"/>
+																															<check_value value="{actor.ship@Lost_Colonies.Pilot}" exact="{player.ship}"/>
+																														</check_all>
+																													</condition>
+																													<action>
+																														<do_all>
+																															<play_text priority="90">
+																																<line actor="Lost_Colonies.Leader" textid="110011"/>
+																															</play_text>																															
+																															<create_briefing cue="Lost_Colonies" story="{9620,1100005}" title="{9620,1100005}" text="{9620,1100009}" background="terran_military.tga" race="{9620,1100001}" targetrace="xenon">
+																																<mission discipline="XXXXP" level="easy"/>
+																																<reward money="50000"/>
+																																<requirements>
+																																	<requirement type="equipment" value="SS_WARE_LIFESUPPORT"/>
+																																</requirements>
+																																<objectives>
+																																	<objective step="5">
+																																		<dockat object="Lost_Colonies.OutpostStation"/>
+																																	</objective>
+																																</objectives>
+																															</create_briefing>
+																															<set_objective cue="Lost_Colonies" story="{9620,1100005}" title="{9620,1100005}" text="{9620,1100009}" race="{9620,1100001}" targetrace="xenon" noabort="1">																
+																																<briefing cue="Lost_Colonies" step="5"/>
+																																<mission discipline="XXXXP" level="easy"/>
+																																<reward money="50000"/>
+																																<dockat object="Lost_Colonies.OutpostStation"/>
+																															</set_objective>
+																														</do_all>
+																													</action>
+																													<cues>
+																														<cue name="Lost_Colonies_ReturnPilot" delay="1s">
+																															<condition>
+																																<object_docked param="{object@Lost_Colonies.OutpostStation}"/>
+																															</condition>
+																															<timing>
+																																<time exact="5s"/>
+																															</timing>
+																															<action>
+																																<do_all>
+																																	<play_text priority="90">
+																																		<line actor="Lost_Colonies.Leader" textid="110012"/>
+																																	</play_text>
+																																	<destroy_actor actor="Lost_Colonies.Pilot"/>
+																																	<destroy_actor actor="Lost_Colonies.Leader"/>
+																																	<destroy_actor actor="Lost_Colonies.WingmanActor"/>
+																																	<destroy_group group="Lost_Colonies.Escorts" warp="1"/>
+																																	<destroy_object object="Lost_Colonies.LeaderShip" warp="1"/>
+																																	<remove_briefing cue="Lost_Colonies"/>
+																																	<remove_objective cue="Lost_Colonies" status="complete"/>
+																																	<reward_player>
+																																		<money exact="50000" transactionpage="9620" transactionid="1100002"/>
+																																	</reward_player>
+																																	<start_script script="plugin.guilds.doexp">
+																																		<scriptargs>
+																																			<scriptvalue datatype="integer" datavalue="2000"/>
+																																			<scriptvalue datatype="string" datavalue="military.terran"/>
+																																			<scriptvalue datatype="integer" datavalue="2000"/>
+																																		</scriptargs>
+																																	</start_script>
+																																	<set_value name="Lost_Colonies.Status" exact="10"/>
+																																</do_all>
+																															</action>
+																														</cue>
+																													</cues>
+																												</cue>
+																											</cues>
+																										</cue>
+																									</cues>
+																								</cue>
+																							</cues>
+																						</cue>
+																					</cues>
+																				</cue>
+																			</cues>
+																		</cue>
+																	</cues>
+																</cue>
+															</cues>
+														</cue>
+													</cues>
+												</cue>
+											</cues>
+										</cue>
+									</cues>
+								</cue>							
+							</cues>
+						</cue>
+					</cues>
+				</cue>
+			
+				<cue name="Lost_Colonies_Mission2" delay="2s">
+					<condition>
+						<check_value value="{value@Lost_Colonies.Status}" exact="10"/>
+					</condition>
+					<timing>
+						<time min="30m" max="45m"/>
+					</timing>
+					<cues>
+						<cue name="Lost_Colonies_Mission2 Start" delay="1s">
+							<condition>
+								<check_all>
+									<cue_is_complete cue="Lost_Colonies_Mission2"/>
+									<check_value value="{value@Race Military Terran Joined}" min="1"/>
+									<check_value value="{value@Terran Military.Level}" min="3"/>
+								</check_all>
+							</condition>
+							<action>
+								<do_all>
+									<create_actor name="Lost_Colonies.Leader" race="terran" voice="125" face="1133" invincible="1" character="{9620,1100003}" gender="male" object="Lost_Colonies.OutpostStation" location="crew" />
+									<create_offer actor="Lost_Colonies.Leader" cue="Lost_Colonies" discipline="XXXXP" conversation="L3GPL_03_01_02"/>
+									<create_briefing cue="Lost_Colonies" story="{9620,1100005}" title="{9620,1100005}" text="{9620,1100009}" background="terran_military.tga" race="{9620,1100001}" targetrace="xenon">
+										<mission discipline="XXXXP" level="easy"/>
+										<reward money="50000"/>
+										<objectives>
+											<objective step="1">
+												<talkto actor="Lost_Colonies.Leader"/>
+											</objective>
+										</objectives>
+									</create_briefing>
+									<set_objective cue="Lost_Colonies" story="{9620,1100005}" title="{9620,1100005}" text="{9620,1100009}" race="{9620,1100001}" targetrace="xenon" noabort="1">
+										<briefing cue="Lost_Colonies" step="1"/>
+										<mission discipline="XXXXP" level="easy"/>
+										<reward money="50000"/>
+										<talkto actor="Lost_Colonies.Leader"/>
+									</set_objective>
+								</do_all>
+							</action>
+							<cues>
+								<cue name="Lost_Colonies_Mission2_Accept" delay="1s">
+									<condition>
+										<conversation_completed actor="Lost_Colonies.Leader" conversation="L3GPL_03_01_02" answer="accept"/>
+									</condition>
+									<action>
+										<do_all>
+											<remove_offer actor="Lost_Colonies.Leader" conversation="L3GPL_03_01_01" discipline="XXXXP"/>
+											<create_ship name="Lost_Colonies.LeaderShip" capturable="0" invincible="1" typename="SS_SH_USC_M3P" race="terran" dockobject="Lost_Colonies.OutpostStation" textid="90015">
+												<sector sector="{object.sector@Lost_Colonies.OutpostStation}"/>
+												<equipment loadout="maximum"/>
+												<command command="follow" commandobject="{player.ship}"/>
+											</create_ship>
+											<set_actor_location actor="Lost_Colonies.Leader" object="Lost_Colonies.LeaderShip" location="pilot"/>
+											<create_ship group="Lost_Colonies.Escorts" name="Lost_Colonies.Wingman" capturable="0" invincible="1" typename="SS_SH_USC_M3" race="terran" dockobject="Lost_Colonies.OutpostStation" textid="90017">
+												<sector sector="{object.sector@Lost_Colonies.OutpostStation}"/>
+												<equipment loadout="maximum"/>
+												<command command="follow" commandobject="Lost_Colonies.LeaderShip"/>
+											</create_ship>
+											<create_ship group="Lost_Colonies.Escorts" capturable="0" invincible="1" typename="SS_SH_USC_M4" race="terran" dockobject="Lost_Colonies.OutpostStation" textid="90017">
+												<sector sector="{object.sector@Lost_Colonies.OutpostStation}"/>
+												<equipment loadout="maximum"/>
+												<command command="follow" commandobject="Lost_Colonies.LeaderShip"/>
+											</create_ship>
+											<create_ship group="Lost_Colonies.Escorts" capturable="0" invincible="1" typename="SS_SH_USC_M4" race="terran" dockobject="Lost_Colonies.OutpostStation" textid="90017">
+												<sector sector="{object.sector@Lost_Colonies.OutpostStation}"/>
+												<equipment loadout="maximum"/>
+												<command command="follow" commandobject="Lost_Colonies.LeaderShip"/>
+											</create_ship>
+											<create_actor name="Lost_Colonies.WingmanActor" race="terran" gender="female" voice="126" invincible="1" object="Lost_Colonies.Wingman" location="pilot"/>
+											<create_briefing cue="Lost_Colonies" story="{9620,1100005}" title="{9620,1100005}" text="{9620,1100009}" background="terran_military.tga" race="{9620,1100001}" targetrace="xenon">
+												<mission discipline="XXXXP" level="easy"/>
+												<reward money="50000"/>
+												<objectives>
+													<objective step="2">
+														<follow object="Lost_Colonies.LeaderShip"/>
+													</objective>
+												</objectives>
+											</create_briefing>
+											<set_objective cue="Lost_Colonies" story="{9620,1100005}" title="{9620,1100005}" text="{9620,1100009}" race="{9620,1100001}" targetrace="xenon" noabort="1">
+												<briefing cue="Lost_Colonies" step="2"/>
+												<mission discipline="XXXXP" level="easy"/>
+												<reward money="50000"/>
+												<follow object="Lost_Colonies.LeaderShip"/>
+											</set_objective>
+										</do_all>
+									</action>
+									<cues>
+										<cue name="Lost_Colonies_Mission2_Idle" delay="1s">
+											<timing>
+												<time exact="10s"/>
+											</timing>
+											<action>
+												<set_command object="Lost_Colonies.LeaderShip" command="idle"/>
+											</action>
+										</cue>
+										<cue name="Lost_Colonies_Mission2_JumpOut" delay="1s">
+											<timing>
+												<time min="25s" max="35s"/>
+											</timing>
+											<action>
+												<play_text actor="Lost_Colonies.Leader" textid="110014" priority="90"/>
+											</action>
+											<cues>
+												<cue name="Lost_Colonies_Mission2_WarpOut">
+													<condition>
+														<cue_is_complete cue="Lost_Colonies_Mission2_JumpOut"/>
+													</condition>
+													<timing>
+														<time exact="7s"/>
+													</timing>
+													<action>
+														<do_all>
+															<do_all exact="{group.object.count@Lost_Colonies.Escorts}" counter="Count">
+																<show_effect object="{group.object.{counter@Count}@Lost_Colonies.Escorts}" effect="46"/>
+															</do_all>
+															<show_effect object="Lost_Colonies.LeaderShip" effect="46"/>
+														</do_all>
+													</action>
+												</cue>
+												<cue name="Lost_Colonies_Mission2_JumpEoL">
+													<condition>
+														<cue_is_complete cue="Lost_Colonies_Mission2_JumpOut"/>
+													</condition>
+													<timing>
+														<time exact="8s"/>
+													</timing>
+													<action>
+														<do_all>
+															<warp_object object="Lost_Colonies.LeaderShip" warp="1">
+																<position x="-5km" y="0km" z="-16km"/>
+																<sector sector="Lost_Colonies.EoL"/>
+															</warp_object>
+															<warp_group group="Lost_Colonies.Escorts">
+																<position x="-5km" y="0km" z="-16km" min="300m" max="600m"/>
+																<sector sector="Lost_Colonies.EoL"/>
+															</warp_group>
+
+															<create_briefing cue="Lost_Colonies" story="{9620,1100005}" title="{9620,1100005}" text="{9620,1100009}" background="terran_military.tga" race="{9620,1100001}" targetrace="xenon">
+																<mission discipline="XXXXP" level="easy"/>
+																<reward money="50000"/>
+																<objectives>
+																	<objective step="3">
+																		<flyto>
+																			<sector sector="Lost_Colonies.EoL"/>
+																		</flyto>
+																	</objective>
+																</objectives>
+															</create_briefing>
+															<set_objective cue="Lost_Colonies" story="{9620,1100005}" title="{9620,1100005}" text="{9620,1100009}" race="{9620,1100001}" targetrace="xenon" noabort="1">
+																<briefing cue="Lost_Colonies" step="3"/>
+																<mission discipline="XXXXP" level="easy"/>
+																<reward money="50000"/>
+																<flyto>
+																	<sector sector="Lost_Colonies.EoL"/>
+																</flyto>
+															</set_objective>
+															<set_command object="Lost_Colonies.LeaderShip" command="stay"/>
+															<set_group_command group="Lost_Colonies.Escorts" command="follow" commandobject="{object@Lost_Colonies.LeaderShip}"/>
+														</do_all>
+													</action>
+													<cues>
+														<cue name="Lost_Colonies_Mission2_Player_Arrive" delay="1s">
+															<condition>
+																<check_all>
+																	<cue_is_complete cue="Lost_Colonies_Mission2_JumpEoL"/>
+																	<check_value value="{player.sector}" exact="{sector@Lost_Colonies.EoL}"/>
+																</check_all>
+															</condition>
+															<timing>
+																<time min="4s" max="7s"/>
+															</timing>
+															<action>
+																<do_all>
+																	<play_text actor="Lost_Colonies.Leader" textid="110022" priority="90"/>
+																	<create_briefing cue="Lost_Colonies" story="{9620,1100005}" title="{9620,1100005}" text="{9620,1100009}" background="terran_military.tga" race="{9620,1100001}" targetrace="xenon">
+																		<mission discipline="XXXXP" level="easy"/>
+																		<reward money="50000"/>
+																		<objectives>
+																			<objective step="4">
+																				<follow object="Lost_Colonies.LeaderShip"/>
+																			</objective>
+																		</objectives>
+																	</create_briefing>
+																	<set_objective cue="Lost_Colonies" story="{9620,1100005}" title="{9620,1100005}" text="{9620,1100009}" race="{9620,1100001}" targetrace="xenon" noabort="1">
+																		<briefing cue="Lost_Colonies" step="4"/>
+																		<mission discipline="XXXXP" level="easy"/>
+																		<reward money="50000"/>
+																		<follow object="Lost_Colonies.LeaderShip"/>
+																	</set_objective>
+																	<set_command object="Lost_Colonies.LeaderShip" command="moveposition">
+																		<position x="15km" y="-5km" z="-10km"/>
+																	</set_command>
+																</do_all>
+															</action>
+															<cues>
+																<cue name="Lost_Colonies_Mission2_Point1" delay="1s">
+																	<condition>
+																		<check_all>
+																			<check_value value="{player.sector}" exact="{object.sector@Lost_Colonies.LeaderShip}"/>
+																			<object_position object="Lost_Colonies.LeaderShip" max="5km">
+																				<position x="15km" y="-1km" z="-10km"/>
+																			</object_position>
+																		</check_all>
+																	</condition>
+																	<action>
+																		<set_command object="Lost_Colonies.LeaderShip" command="moveposition">
+																			<position x="12km" y="-1km" z="11km"/>
+																		</set_command>
+																	</action>
+																	<cues>
+																		<cue name="Lost_Colonies_Mission2_Speak1" delay="1s">
+																			<condition>
+																				<check_all>
+																					<check_value value="{player.sector}" exact="{object.sector@Lost_Colonies.LeaderShip}"/>
+																					<cue_is_complete cue="Lost_Colonies_Mission2_Point1"/>
+																				</check_all>
+																			</condition>
+																			<timing>
+																				<time min="15s" max="20s"/>
+																			</timing>
+																			<action>
+																				<play_text priority="90">
+																					<line actor="Lost_Colonies.WingmanActor" textid="120002"/>
+																					<line actor="Lost_Colonies.Leader" textid="110015"/>
+																				</play_text>
+																			</action>
+																		</cue>
+																		<cue name="Lost_Colonies_Mission2_Point2" delay="1s">
+																			<condition>
+																				<check_all>
+																					<check_value value="{player.sector}" exact="{object.sector@Lost_Colonies.LeaderShip}"/>
+																					<object_position object="Lost_Colonies.LeaderShip" max="5km">
+																						<position x="12km" y="-1km" z="11km"/>
+																					</object_position>
+																				</check_all>
+																			</condition>
+																			<action>
+																				<do_all>
+																					<play_text priority="90">
+																						<line actor="Lost_Colonies.Leader" textid="110016"/>
+																					</play_text>
+																					<set_command object="Lost_Colonies.LeaderShip" command="movesector">
+																						<sector sector="Lost_Colonies.Harmony"/>
+																					</set_command>
+																				</do_all>
+																			</action>
+																			<cues>
+																				<cue name="Lost_Colonies_Mission2_NextSector" delay="1s">
+																					<condition>
+																						<check_all>
+																							<check_value value="{player.sector}" exact="{sector@Lost_Colonies.Harmony}"/>
+																							<check_value value="{object.sector@Lost_Colonies.LeaderShip}" exact="{sector@Lost_Colonies.Harmony}"/>
+																						</check_all>
+																					</condition>
+																					<timing>
+																						<time exact="6s"/>
+																					</timing>
+																					<action>
+																						<do_all>
+																							<set_command object="Lost_Colonies.LeaderShip" command="moveposition">
+																								<position x="-25km" y="-2km" z="-12km"/>
+																							</set_command>
+																							<play_text priority="90">
+																								<line actor="Lost_Colonies.Leader" textid="110023"/>
+																							</play_text>
+																						</do_all>
+																					</action>
+																					<cues>
+																						<cue name="Lost_Colonies_Mission2_Point3" delay="1s">
+																							<condition>
+																								<check_all>
+																									<check_value value="{player.sector}" exact="{object.sector@Lost_Colonies.LeaderShip}"/>
+																									<object_position object="Lost_Colonies.LeaderShip" max="5km">
+																										<position x="-25km" y="-2km" z="-12km"/>
+																									</object_position>
+																								</check_all>
+																							</condition>
+																							<action>
+																								<do_all>
+																									<set_command object="Lost_Colonies.LeaderShip" command="moveposition">
+																										<position x="-25km" y="-2km" z="15km"/>
+																									</set_command>
+																									<play_text priority="90">
+																										<line actor="Lost_Colonies.WingmanActor" textid="120003"/>
+																										<line actor="Lost_Colonies.Leader" textid="110017"/>
+																									</play_text>
+																								</do_all>
+																							</action>
+																							<cues>
+																								<cue name="Lost_Colonies_Mission2_Point4" delay="1s">
+																									<condition>
+																										<object_position object="Lost_Colonies.LeaderShip" max="5km">
+																											<position x="-25km" y="-2km" z="15km"/>
+																										</object_position>
+																									</condition>
+																									<action>
+																										<do_all>
+																											<play_text priority="90">
+																												<line actor="Lost_Colonies.WingmanActor" textid="120004"/>
+																											</play_text>
+																											<set_command object="Lost_Colonies.LeaderShip" command="moveposition">
+																												<position x="-35km" y="-2km" z="35km"/>
+																											</set_command>
+																										</do_all>
+																									</action>
+																									<cues>
+																										<cue name="Lost_Colonies_Mission2_WreckCutscene" delay="1s">
+																											<timing>
+																												<time min="5s" max="8s"/>
+																											</timing>
+																											<action>
+																												<do_all>
+																													<play_text priority="90">
+																														<line actor="Lost_Colonies.Leader" textid="110018"/>
+																													</play_text>
+																													<play_cutscene file="LC_S1_2"/>
+																													<create_special name="Lost_Colonies.Wreck" typename="SS_SPECIAL_SHIPWRECK_5">
+																														<position x="-35km" y="1km" z="40km" min="500m" max="1km"/>
+																														<sector sector="{object.sector@Lost_Colonies.LeaderShip}"/>
+																													</create_special>
+																													<set_object name="Lost_Colonies.CutsceneStart" value="{object@Lost_Colonies.LeaderShip}" />
+																													<create_briefing cue="Lost_Colonies" story="{9620,1100005}" title="{9620,1100005}" text="{9620,1100009}" background="terran_military.tga" race="{9620,1100001}" targetrace="xenon">
+																														<mission discipline="XXXXP" level="easy"/>
+																														<reward money="50000"/>
+																														<objectives>
+																															<objective step="5">
+																																<custom icon="flyto" action="{35,2088}" text="{9620,1100010}" object="Lost_Colonies.Wreck"/>
+																															</objective>
+																														</objectives>
+																													</create_briefing>
+																													<set_objective cue="Lost_Colonies" story="{9620,1100005}" title="{9620,1100005}" text="{9620,1100009}" race="{9620,1100001}" targetrace="xenon" noabort="1">
+																														<briefing cue="Lost_Colonies" step="5"/>
+																														<mission discipline="XXXXP" level="easy"/>
+																														<reward money="50000"/>
+																														<custom icon="flyto" action="{35,2088}" text="{9620,1100010}" object="Lost_Colonies.Wreck"/>
+																													</set_objective>
+																												</do_all>
+																											</action>
+																											<cues>
+																												<cue name="Lost_Colonies_Mission2_ApproachWreck" delay="1s">
+																													<condition>
+																														<check_all>
+																															<cue_is_complete cue="Lost_Colonies_Mission2_WreckCutscene"/>
+																															<check_distance value="{object.distance@Lost_Colonies.Wreck}" max="5km"/>
+																														</check_all>
+																													</condition>
+																													<action>
+																														<do_all>
+																															<create_briefing cue="Lost_Colonies" story="{9620,1100005}" title="{9620,1100005}" text="{9620,1100009}" background="terran_military.tga" race="{9620,1100001}" targetrace="xenon">
+																																<mission discipline="XXXXP" level="easy"/>
+																																<reward money="50000"/>
+																																<objectives>
+																																	<objective step="6">
+																																		<custom icon="find" action="{35,2026}" text="{9620,1100010}" object="Lost_Colonies.Wreck"/>
+																																	</objective>
+																																</objectives>
+																															</create_briefing>
+																															<set_objective cue="Lost_Colonies" story="{9620,1100005}" title="{9620,1100005}" text="{9620,1100009}" race="{9620,1100001}" targetrace="xenon" noabort="1">
+																																<briefing cue="Lost_Colonies" step="6"/>
+																																<mission discipline="XXXXP" level="easy"/>
+																																<reward money="50000"/>
+																																<custom icon="find" action="{35,2026}" text="{9620,1100010}" object="Lost_Colonies.Wreck"/>
+																															</set_objective>
+																														</do_all>
+																													</action>
+																													<cues>
+																														<cue ref="OBJ02">
+																															<params>
+																																<param name="Cue" value="Lost_Colonies" comment="The cue"/>
+																																<param name="Object" value="Lost_Colonies.Wreck" comment="The object to be scanned"/>
+																																<param name="Range" value="350" comment="How close the player must be (in metres)"/>
+																																<param name="Length" value="30" comment="How long the object must be scanned for (seconds)"/>
+																																<param name="Text" value="{3300,1201}"/>
+																															</params>
+																														</cue>
+																														<cue name="Lost_Colonies_Mission2_Scanned" delay="2s">
+																															<condition>
+																																<check_value value="{value@Lost_Colonies.OBJ02 Progress}" exact="1"/>
+																															</condition>
+																															<action>
+																																<do_all>
+																																	<play_text priority="90">
+																																		<line actor="Lost_Colonies.Leader" textid="110019"/>
+																																	</play_text>
+																																</do_all>
+																															</action>
+																															<cues>
+																																<cue name="Lost_Colonies_Mission2_FinishedScanned" delay="2s">
+																																	<timing>
+																																		<time min="4s" max="7s"/>
+																																	</timing>
+																																	<action>
+																																		<do_all>
+																																			<play_text priority="90">
+																																				<line actor="Lost_Colonies.Leader" textid="110020"/>
+																																			</play_text>
+																																			<create_briefing cue="Lost_Colonies" story="{9620,1100005}" title="{9620,1100005}" text="{9620,1100009}" background="terran_military.tga" race="{9620,1100001}" targetrace="xenon">
+																																				<mission discipline="XXXXP" level="easy"/>
+																																				<reward money="50000"/>
+																																				<objectives>
+																																					<objective step="7">
+																																						<dockat object="Lost_Colonies.OutpostStation"/>
+																																					</objective>
+																																				</objectives>
+																																			</create_briefing>
+																																			<set_objective cue="Lost_Colonies" story="{9620,1100005}" title="{9620,1100005}" text="{9620,1100009}" race="{9620,1100001}" targetrace="xenon" noabort="1">
+																																				<briefing cue="Lost_Colonies" step="7"/>
+																																				<mission discipline="XXXXP" level="easy"/>
+																																				<reward money="50000"/>
+																																				<dockat object="Lost_Colonies.OutpostStation"/>
+																																			</set_objective>
+																																		</do_all>
+																																	</action>
+																																	<cues>
+																																		<cue name="Lost_Colonies_Mission2_Return" delay="1s">
+																																			<condition>
+																																				<object_docked param="{object@Lost_Colonies.OutpostStation}"/>
+																																			</condition>
+																																			<timing>
+																																				<time exact="7s"/>
+																																			</timing>
+																																			<action>
+																																				<do_all>
+																																					<play_text priority="90">
+																																						<line actor="Lost_Colonies.Leader" textid="110021"/>
+																																					</play_text>
+																																					<destroy_actor actor="Lost_Colonies.Pilot"/>
+																																					<destroy_actor actor="Lost_Colonies.Leader"/>
+																																					<destroy_actor actor="Lost_Colonies.WingmanActor"/>
+																																					<destroy_group group="Lost_Colonies.Escorts" warp="1"/>
+																																					<destroy_object object="Lost_Colonies.LeaderShip" warp="1"/>
+																																					<destroy_object object="Lost_Colonies.Wreck" warp="1"/>
+																																					<remove_briefing cue="Lost_Colonies"/>
+																																					<remove_objective cue="Lost_Colonies" status="complete"/>
+																																					<reward_player>
+																																						<money exact="50000" transactionpage="9620" transactionid="1100002"/>
+																																					</reward_player>
+																																					<start_script script="plugin.guilds.doexp">
+																																						<scriptargs>
+																																							<scriptvalue datatype="integer" datavalue="4000"/>
+																																							<scriptvalue datatype="string" datavalue="military.terran"/>
+																																							<scriptvalue datatype="integer" datavalue="2000"/>
+																																						</scriptargs>
+																																					</start_script>
+																																					<set_value name="Lost_Colonies.Status" exact="20"/>
+																																				</do_all>
+																																			</action>
+																																		</cue>
+																																	</cues>
+																																</cue>																																
+																															</cues>
+																														</cue>
+																													</cues>
+																												</cue>
+																											</cues>
+																										</cue>
+																									</cues>
+																								</cue>
+																							</cues>
+																						</cue>
+																					</cues>
+																				</cue>
+																			</cues>
+																		</cue>
+																	</cues>
+																</cue>
+															</cues>
+														</cue>
+													</cues>
+												</cue>
+											</cues>
+										</cue>
+									</cues>
+								</cue>
+							</cues>
+						</cue>
+					</cues>
+				</cue>
+
+				<!--
+				<cue name="Lost_Colonies_Mission3" delay="2s">
+					<condition>
+						<check_value value="{value@Lost_Colonies.Status}" exact="20"/>
+					</condition>
+					<timing>
+						<time min="60m" max="75m"/>
+					</timing>
+					<cues>
+						<cue name="Lost_Colonies_Mission3 Start" delay="1s">
+							<condition>
+								<check_all>
+									<cue_is_complete cue="Lost_Colonies_Mission3"/>
+									<check_value value="{value@Race Military Terran Joined}" min="1"/>
+									<check_value value="{value@Terran Military.Level}" min="3"/>
+								</check_all>
+							</condition>
+							<action>
+								<do_all>
+									<create_actor name="Lost_Colonies.Leader" race="terran" voice="125" face="1133" invincible="1" character="{9620,1100003}" gender="male" object="Lost_Colonies.OutpostStation" location="crew" />
+									<create_offer actor="Lost_Colonies.Leader" cue="Lost_Colonies" discipline="XXXXP" conversation="L3GPL_03_01_03"/>
+									<create_briefing cue="Lost_Colonies" story="{9620,1100005}" title="{9620,1100005}" text="{9620,1100009}" background="terran_military.tga" race="{9620,1100001}" targetrace="xenon">
+										<mission discipline="XXXXP" level="easy"/>
+										<reward money="100000"/>
+										<objectives>
+											<objective step="1">
+												<talkto actor="Lost_Colonies.Leader"/>
+											</objective>
+										</objectives>
+									</create_briefing>
+									<set_objective cue="Lost_Colonies" story="{9620,1100005}" title="{9620,1100005}" text="{9620,1100009}" race="{9620,1100001}" targetrace="xenon" noabort="1">
+										<briefing cue="Lost_Colonies" step="1"/>
+										<mission discipline="XXXXP" level="easy"/>
+										<reward money="100000"/>
+										<talkto actor="Lost_Colonies.Leader"/>
+									</set_objective>
+								</do_all>
+							</action>
+							<cues>
+								<cue name="Lost_Colonies_Mission3_Accept" delay="1s">
+									<condition>
+										<conversation_completed actor="Lost_Colonies.Leader" conversation="L3GPL_03_01_03" answer="accept"/>
+									</condition>
+								</cue>
+							</cues>
+						</cue>
+					</cues>
+				</cue>
+				-->
+			</cues>
+		</cue>
+	</cues>
+</director>
