@@ -1,0 +1,688 @@
+<?xml version="1.0" standalone="yes" ?>
+<?xml-stylesheet href="x2script.xsl" type="text/xsl" ?>
+<script>
+<name>plugin.guilds.passenger.board</name>
+<version>1</version>
+<engineversion>65</engineversion>
+<description>Guilds: Board a passenger to a ship</description>
+<arguments>
+<argument index="1" name="a.ship" type="Var/Ship" desc="Ship" />
+<argument index="2" name="a.passenger" type="Value" desc="Passenger Data" />
+</arguments>
+<sourceplaintext>
+<![CDATA[
+  skip if $a.ship -> exists
+    return [FALSE]
+  skip if $a.passenger
+    return [FALSE]
+  
+  $cabin.type = $a.passenger['type']
+@ $cabin = [THIS] -> call script plugin.guilds.getcabin :  Ship=$a.ship  Cabin Type=$cabin.type
+  skip if $cabin
+    return [FALSE]
+  
+  $guilds.data = get global variable: name='guilds.data'
+  skip if $guilds.data
+    return [FALSE]
+  
+  $tGuild = $guilds.data['taxi']
+  skip if $tGuild
+    return [FALSE]
+  
+  $tPassengers = $tGuild['passengers']
+  $sector = $a.passenger['sector']
+  $tPassengers.Sector = $tPassengers[$sector]
+  
+  $local.passengers = $a.ship -> get local variable: name='loaded.passengers'
+  if not $local.passengers
+    $local.passengers = table alloc
+    $a.ship ->set local variable: name='loaded.passengers' value=$local.passengers
+  end
+  
+  $passenger.name = $a.passenger['name']
+  
+  if $cabin == Budget Cabin
+    $cabin.occupied = Budget Cabin (Occupied)
+  else if $cabin == Standard Cabin
+    $cabin.occupied = Standard Cabin (Occupied)
+  else if $cabin == Family Cabin
+    $cabin.occupied = Family Cabin (Occupied)
+  else if $cabin == Luxury Cabin
+    $cabin.occupied = Luxury Cabin (Occupied)
+  else if $cabin == Executive Cabin
+    $cabin.occupied = Executive Cabin (Occupied)
+  else
+    return [FALSE]
+  end
+  
+  $amt = $a.ship -> install -1 units of $cabin
+  skip if $amt
+    return [FALSE]
+  
+  $amt = $a.ship -> install 1 units of $cabin.occupied
+  if not $amt
+  end
+  
+  $local.passengers[$passenger.name] = $a.passenger
+  remove key $passenger.name from table $tPassengers.Sector
+  
+  $a.passenger['occupied'] = $cabin.occupied
+  $a.passenger['location'] = $a.ship
+  $a.passenger['status'] = 2
+  
+  if not $a.ship -> is script plugin.guilds.passenger.watch on stack of task=20000
+    $a.ship ->start task 20000 with script plugin.guilds.passenger.watch and prio 100: arg1=null arg2=null arg3=null arg4=null arg5=null
+  end
+  
+  return [TRUE]
+]]>
+</sourceplaintext>
+<sourcetext>
+<line indent=""><var>skip&#160;if&#160;</var><var>$a.ship&#160;-&gt;</var><text>&#160;exists</text></line>
+<line indent="&#160;"><text>return&#160;</text><var>[FALSE]</var></line>
+<line indent=""><var>skip&#160;if&#160;</var><var>$a.passenger</var></line>
+<line indent="&#160;"><text>return&#160;</text><var>[FALSE]</var></line>
+<line indent=""></line>
+<line indent=""><var>$cabin.type&#160;=&#160;</var><var>$a.passenger</var><text>[</text><var>'type'</var><text>]</text></line>
+<line interruptable="@" indent=""><var>$cabin&#160;=&#160;</var><var>[THIS]&#160;-&gt;</var><text>&#160;call&#160;script&#160;</text><call>plugin.guilds.getcabin</call><text>&#160;:&#160;</text><text>&#160;Ship=</text><var>$a.ship</var><text>&#160;</text><text>&#160;Cabin&#160;Type=</text><var>$cabin.type</var></line>
+<line indent=""><var>skip&#160;if&#160;</var><var>$cabin</var></line>
+<line indent="&#160;"><text>return&#160;</text><var>[FALSE]</var></line>
+<line indent=""></line>
+<line indent=""><var>$guilds.data&#160;=&#160;</var><text>get&#160;global&#160;variable:&#160;name=</text><var>'guilds.data'</var></line>
+<line indent=""><var>skip&#160;if&#160;</var><var>$guilds.data</var></line>
+<line indent="&#160;"><text>return&#160;</text><var>[FALSE]</var></line>
+<line indent=""></line>
+<line indent=""><var>$tGuild&#160;=&#160;</var><var>$guilds.data</var><text>[</text><var>'taxi'</var><text>]</text></line>
+<line indent=""><var>skip&#160;if&#160;</var><var>$tGuild</var></line>
+<line indent="&#160;"><text>return&#160;</text><var>[FALSE]</var></line>
+<line indent=""></line>
+<line indent=""><var>$tPassengers&#160;=&#160;</var><var>$tGuild</var><text>[</text><var>'passengers'</var><text>]</text></line>
+<line indent=""><var>$sector&#160;=&#160;</var><var>$a.passenger</var><text>[</text><var>'sector'</var><text>]</text></line>
+<line indent=""><var>$tPassengers.Sector&#160;=&#160;</var><var>$tPassengers</var><text>[</text><var>$sector</var><text>]</text></line>
+<line indent=""></line>
+<line indent=""><var>$local.passengers&#160;=&#160;</var><var>$a.ship&#160;-&gt;</var><text>&#160;get&#160;local&#160;variable:&#160;name=</text><var>'loaded.passengers'</var></line>
+<line indent=""><var>if&#160;not&#160;</var><var>$local.passengers</var></line>
+<line indent="&#160;"><var>$local.passengers&#160;=&#160;</var><text>table&#160;alloc</text></line>
+<line indent="&#160;"><var>$a.ship&#160;-&gt;</var><text>set&#160;local&#160;variable:&#160;name=</text><var>'loaded.passengers'</var><text>&#160;value=</text><var>$local.passengers</var></line>
+<line indent=""><text>end</text></line>
+<line indent=""></line>
+<line indent=""><var>$passenger.name&#160;=&#160;</var><var>$a.passenger</var><text>[</text><var>'name'</var><text>]</text></line>
+<line indent=""></line>
+<line indent=""><var>if&#160;</var><var>$cabin</var><text>&#160;</text><var>==</var><text>&#160;</text><var>Budget&#160;Cabin</var></line>
+<line indent="&#160;"><var>$cabin.occupied&#160;=&#160;</var><var>Budget&#160;Cabin&#160;(Occupied)</var></line>
+<line indent=""><var>else&#160;if&#160;</var><var>$cabin</var><text>&#160;</text><var>==</var><text>&#160;</text><var>Standard&#160;Cabin</var></line>
+<line indent="&#160;"><var>$cabin.occupied&#160;=&#160;</var><var>Standard&#160;Cabin&#160;(Occupied)</var></line>
+<line indent=""><var>else&#160;if&#160;</var><var>$cabin</var><text>&#160;</text><var>==</var><text>&#160;</text><var>Family&#160;Cabin</var></line>
+<line indent="&#160;"><var>$cabin.occupied&#160;=&#160;</var><var>Family&#160;Cabin&#160;(Occupied)</var></line>
+<line indent=""><var>else&#160;if&#160;</var><var>$cabin</var><text>&#160;</text><var>==</var><text>&#160;</text><var>Luxury&#160;Cabin</var></line>
+<line indent="&#160;"><var>$cabin.occupied&#160;=&#160;</var><var>Luxury&#160;Cabin&#160;(Occupied)</var></line>
+<line indent=""><var>else&#160;if&#160;</var><var>$cabin</var><text>&#160;</text><var>==</var><text>&#160;</text><var>Executive&#160;Cabin</var></line>
+<line indent="&#160;"><var>$cabin.occupied&#160;=&#160;</var><var>Executive&#160;Cabin&#160;(Occupied)</var></line>
+<line indent=""><text>else</text></line>
+<line indent="&#160;"><text>return&#160;</text><var>[FALSE]</var></line>
+<line indent=""><text>end</text></line>
+<line indent=""></line>
+<line indent=""><var>$amt&#160;=&#160;</var><var>$a.ship&#160;-&gt;</var><text>&#160;install&#160;</text><var>-1</var><text>&#160;units&#160;of&#160;</text><var>$cabin</var></line>
+<line indent=""><var>skip&#160;if&#160;</var><var>$amt</var></line>
+<line indent="&#160;"><text>return&#160;</text><var>[FALSE]</var></line>
+<line indent=""></line>
+<line indent=""><var>$amt&#160;=&#160;</var><var>$a.ship&#160;-&gt;</var><text>&#160;install&#160;</text><var>1</var><text>&#160;units&#160;of&#160;</text><var>$cabin.occupied</var></line>
+<line indent=""><var>if&#160;not&#160;</var><var>$amt</var></line>
+<line indent=""><text>end</text></line>
+<line indent=""></line>
+<line indent=""><var>$local.passengers</var><text>[</text><var>$passenger.name</var><text>]&#160;=&#160;</text><var>$a.passenger</var></line>
+<line indent=""><text>remove&#160;key&#160;</text><var>$passenger.name</var><text>&#160;from&#160;table&#160;</text><var>$tPassengers.Sector</var></line>
+<line indent=""></line>
+<line indent=""><var>$a.passenger</var><text>[</text><var>'occupied'</var><text>]&#160;=&#160;</text><var>$cabin.occupied</var></line>
+<line indent=""><var>$a.passenger</var><text>[</text><var>'location'</var><text>]&#160;=&#160;</text><var>$a.ship</var></line>
+<line indent=""><var>$a.passenger</var><text>[</text><var>'status'</var><text>]&#160;=&#160;</text><var>2</var></line>
+<line indent=""></line>
+<line indent=""><var>if&#160;not&#160;</var><var>$a.ship&#160;-&gt;</var><text>&#160;is&#160;script&#160;</text><call>plugin.guilds.passenger.watch</call><text>&#160;on&#160;stack&#160;of&#160;task=</text><var>20000</var></line>
+<line indent="&#160;"><var>$a.ship&#160;-&gt;</var><text>start&#160;task&#160;</text><var>20000</var><text>&#160;with&#160;script&#160;</text><call>plugin.guilds.passenger.watch</call><text>&#160;and&#160;prio&#160;</text><var>100</var><text>:&#160;arg1=</text><var>null</var><text>&#160;arg2=</text><var>null</var><text>&#160;arg3=</text><var>null</var><text>&#160;arg4=</text><var>null</var><text>&#160;arg5=</text><var>null</var></line>
+<line indent=""><text>end</text></line>
+<line indent=""></line>
+<line indent=""><text>return&#160;</text><var>[TRUE]</var></line>
+</sourcetext>
+<codearray>
+
+<sval type="array" size="10">
+  <sval type="string" val="plugin.guilds.passenger.board"/>
+  <sval type="int" val="65"/>
+  <sval type="string" val="Guilds: Board a passenger to a ship"/>
+  <sval type="int" val="1"/>
+  <sval type="int" val="0"/>
+  <sval type="array" size="13">
+    <sval type="string" val="a.ship"/>
+    <sval type="string" val="a.passenger"/>
+    <sval type="string" val="cabin.type"/>
+    <sval type="string" val="cabin"/>
+    <sval type="string" val="guilds.data"/>
+    <sval type="string" val="tGuild"/>
+    <sval type="string" val="tPassengers"/>
+    <sval type="string" val="sector"/>
+    <sval type="string" val="tPassengers.Sector"/>
+    <sval type="string" val="local.passengers"/>
+    <sval type="string" val="passenger.name"/>
+    <sval type="string" val="cabin.occupied"/>
+    <sval type="string" val="amt"/>
+  </sval>
+  <sval type="array" size="51">
+    <sval type="array" size="4">
+      <sval type="int" val="706"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-536870393"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="9"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-536869881"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="9"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="type"/>
+    </sval>
+    <sval type="array" size="10">
+      <sval type="int" val="102"/>
+      <sval type="string" val="plugin.guilds.getcabin"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-536868857"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="9"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="158"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="guilds.data"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-536868089"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="9"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="taxi"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-536867321"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="9"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="passengers"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="sector"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="156"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="loaded.passengers"/>
+      <sval type="int" val="9"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-536865532"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="1733"/>
+      <sval type="int" val="9"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="155"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="loaded.passengers"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="9"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="name"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610606333"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1048731"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1048732"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="38"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610605563"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1048733"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1048734"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="38"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610604795"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1048735"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1048736"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="38"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610604027"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1048737"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1048738"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="38"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610603259"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1048739"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1048740"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="38"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="9"/>
+    </sval>
+    <sval type="array" size="8">
+      <sval type="int" val="647"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="12"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-536860409"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="12"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="9"/>
+    </sval>
+    <sval type="array" size="8">
+      <sval type="int" val="647"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="12"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="11"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-536859900"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="12"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="130"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="1"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="1735"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="130"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="occupied"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="11"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="130"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="location"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="130"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="status"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="1072"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-536858108"/>
+      <sval type="string" val="plugin.guilds.passenger.watch"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="20000"/>
+    </sval>
+    <sval type="array" size="18">
+      <sval type="int" val="1017"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="string" val="plugin.guilds.passenger.watch"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="20000"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="100"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+    </sval>
+  </sval>
+  <sval type="array" size="2">
+    <sval type="array" size="2">
+      <sval type="int" val="21"/>
+      <sval type="string" val="Ship"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="9"/>
+      <sval type="string" val="Passenger Data"/>
+    </sval>
+  </sval>
+  <sval type="array" size="18">
+    <sval type="array" size="2">
+      <sval type="int" val="4"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="8"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="11"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="14"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="17"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="21"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="21"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="22"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="37"/>
+      <sval type="int" val="5"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="38"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="38"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="41"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="43"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="43"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="45"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="48"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="50"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="50"/>
+      <sval type="int" val="2"/>
+    </sval>
+  </sval>
+  <sval type="int" val="0"/>
+</sval>
+
+</codearray>
+<nosignature>1988</nosignature>
+</script>

@@ -1,0 +1,815 @@
+<?xml version="1.0" standalone="yes" ?>
+<?xml-stylesheet href="x2script.xsl" type="text/xsl" ?>
+<script>
+<name>plugin.guilds.wbrowser.menu</name>
+<version>1</version>
+<engineversion>71</engineversion>
+<description>Guilds: Weapons Browser</description>
+<arguments>
+<argument index="1" name="a.obj" type="Value" desc="Object" />
+<argument index="2" name="a.event" type="Value" desc="Event" />
+<argument index="3" name="a.data" type="Value" desc="Data" />
+</arguments>
+<sourceplaintext>
+<![CDATA[
+  $DATA = get global variable: name='wbrowser.data'
+  gosub sub.GetData
+  
+  if $a.event == 'open'
+    START $a.obj ->open menu script: script=plugin.guilds.wbrowser.menu, value=$a.data
+    
+  else if $a.event == [MEvent.Start]
+  * create the data array to draw the menu from
+    $DATA = table alloc
+  * create the row data to display
+@   $Row.Data = [THIS] -> call script plugin.guilds.wbrowser.columise :  Only Known=[TRUE]
+    $DATA['row.data'] = $Row.Data
+  * crate the column/page data
+@   $Column.Data = [THIS] -> call script plugin.guilds.wbrowser.data : 
+    $DATA['column.data'] = $Column.Data
+  * set the default values
+    $DATA['sort'] = 'name'
+    $DATA['sort.invert'] = [FALSE]
+    $DATA['page'] = 0
+  * setup the filters
+    $array.filters = create new array, arguments='races', null, null, null, null
+    $DATA['filter.array'] = $array.filters
+  * set the order of pages
+    $array.pages = create new array, arguments='general', 'damage', null, null, null
+    $DATA['pages'] = $array.pages
+  * save the data to be used later
+    set global variable: name='wbrowser.data' value=$DATA
+    
+  * finally, build the menu
+    gosub sub.BuildMenu
+    return $input
+    
+    
+  * Item has been selected
+  else if $a.event == [MEvent.Select]
+    
+    
+  * Clear all unneeded data
+  else if $a.event == [MEvent.Finished]
+    set global variable: name='wbrowser.data' value=null
+    
+  * Page all other events to the menu control script to maniplate the data array
+  else
+@   $ret = [THIS] -> call script lib.guilds.menucontrol.tables :  Object=$a.obj  Event=$a.event  Values Data=$a.data  Menu Data=$DATA  Menu Name='guilds.wbrowser'  Table Name='laser.heading'
+  * return value is [TRUE] to redraw the menu array
+    if $ret == [TRUE]
+      gosub sub.BuildMenu
+      return $menu
+    else
+      return $ret
+    end
+  end
+  
+  return null
+  
+  
+  sub.GetData:
+  if $DATA
+    $Column.Data = $DATA['column.data']
+    $Row.Data = $DATA['row.data']
+    $columns = $DATA['columns']
+  end
+  endsub
+  
+  
+  sub.BuildMenu:
+  
+  $Draw.Data = $Column.Data['lasers']
+  $menu = create custom menu array
+  set menu option: $menu, icon=63
+  set menu option: $menu, widthtype=[MenuWidth.Huge]
+  set menu option: $menu, remove main header=[TRUE]
+  
+  $array.filters = $DATA['filter.array']
+@ $menu = [THIS] -> call script lib.guilds.drawtable :  Menu Array=$menu  Data Table=$DATA  Row Data Type='lasers'  Table Name='laser.heading'  Add Sorting=[TRUE]  List of filters=$array.filters  Return Script=null
+  
+  $read.text = read text: page=9620 id=3300
+  $player = get player name
+  $input = create input: id='guilds.wbrowser' menu=$menu title=$read.text description=$player callback=[Callback.Switch]
+  endsub
+  
+  
+  return null
+]]>
+</sourceplaintext>
+<sourcetext>
+<line indent=""><var>$DATA&#160;=&#160;</var><text>get&#160;global&#160;variable:&#160;name=</text><var>'wbrowser.data'</var></line>
+<line indent=""><text>gosub&#160;</text><var>sub.GetData</var></line>
+<line indent=""></line>
+<line indent=""><var>if&#160;</var><var>$a.event</var><text>&#160;</text><var>==</var><text>&#160;</text><var>'open'</var></line>
+<line indent="&#160;"><var>START&#160;</var><var>$a.obj&#160;-&gt;</var><text>open&#160;menu&#160;script:&#160;script=</text><call>plugin.guilds.wbrowser.menu</call><text>,&#160;value=</text><var>$a.data</var></line>
+<line indent="&#160;"></line>
+<line indent=""><var>else&#160;if&#160;</var><var>$a.event</var><text>&#160;</text><var>==</var><text>&#160;</text><var>[MEvent.Start]</var></line>
+<line indent=""><comment><text>*&#160;</text><var>create&#160;the&#160;data&#160;array&#160;to&#160;draw&#160;the&#160;menu&#160;from</var></comment></line>
+<line indent="&#160;"><var>$DATA&#160;=&#160;</var><text>table&#160;alloc</text></line>
+<line indent=""><comment><text>*&#160;</text><var>create&#160;the&#160;row&#160;data&#160;to&#160;display</var></comment></line>
+<line interruptable="@" indent="&#160;"><var>$Row.Data&#160;=&#160;</var><var>[THIS]&#160;-&gt;</var><text>&#160;call&#160;script&#160;</text><call>plugin.guilds.wbrowser.columise</call><text>&#160;:&#160;</text><text>&#160;Only&#160;Known=</text><var>[TRUE]</var></line>
+<line indent="&#160;"><var>$DATA</var><text>[</text><var>'row.data'</var><text>]&#160;=&#160;</text><var>$Row.Data</var></line>
+<line indent=""><comment><text>*&#160;</text><var>crate&#160;the&#160;column/page&#160;data</var></comment></line>
+<line interruptable="@" indent="&#160;"><var>$Column.Data&#160;=&#160;</var><var>[THIS]&#160;-&gt;</var><text>&#160;call&#160;script&#160;</text><call>plugin.guilds.wbrowser.data</call><text>&#160;:&#160;</text></line>
+<line indent="&#160;"><var>$DATA</var><text>[</text><var>'column.data'</var><text>]&#160;=&#160;</text><var>$Column.Data</var></line>
+<line indent=""><comment><text>*&#160;</text><var>set&#160;the&#160;default&#160;values</var></comment></line>
+<line indent="&#160;"><var>$DATA</var><text>[</text><var>'sort'</var><text>]&#160;=&#160;</text><var>'name'</var></line>
+<line indent="&#160;"><var>$DATA</var><text>[</text><var>'sort.invert'</var><text>]&#160;=&#160;</text><var>[FALSE]</var></line>
+<line indent="&#160;"><var>$DATA</var><text>[</text><var>'page'</var><text>]&#160;=&#160;</text><var>0</var></line>
+<line indent=""><comment><text>*&#160;</text><var>setup&#160;the&#160;filters</var></comment></line>
+<line indent="&#160;"><var>$array.filters&#160;=&#160;</var><text>create&#160;new&#160;array,&#160;arguments=</text><var>'races'</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var></line>
+<line indent="&#160;"><var>$DATA</var><text>[</text><var>'filter.array'</var><text>]&#160;=&#160;</text><var>$array.filters</var></line>
+<line indent=""><comment><text>*&#160;</text><var>set&#160;the&#160;order&#160;of&#160;pages</var></comment></line>
+<line indent="&#160;"><var>$array.pages&#160;=&#160;</var><text>create&#160;new&#160;array,&#160;arguments=</text><var>'general'</var><text>,&#160;</text><var>'damage'</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var></line>
+<line indent="&#160;"><var>$DATA</var><text>[</text><var>'pages'</var><text>]&#160;=&#160;</text><var>$array.pages</var></line>
+<line indent=""><comment><text>*&#160;</text><var>save&#160;the&#160;data&#160;to&#160;be&#160;used&#160;later</var></comment></line>
+<line indent="&#160;"><text>set&#160;global&#160;variable:&#160;name=</text><var>'wbrowser.data'</var><text>&#160;value=</text><var>$DATA</var></line>
+<line indent="&#160;"></line>
+<line indent=""><comment><text>*&#160;</text><var>finally,&#160;build&#160;the&#160;menu</var></comment></line>
+<line indent="&#160;"><text>gosub&#160;</text><var>sub.BuildMenu</var></line>
+<line indent="&#160;"><text>return&#160;</text><var>$input</var></line>
+<line indent="&#160;"></line>
+<line indent="&#160;"></line>
+<line indent=""><comment><text>*&#160;</text><var>Item&#160;has&#160;been&#160;selected</var></comment></line>
+<line indent=""><var>else&#160;if&#160;</var><var>$a.event</var><text>&#160;</text><var>==</var><text>&#160;</text><var>[MEvent.Select]</var></line>
+<line indent="&#160;"></line>
+<line indent="&#160;"></line>
+<line indent=""><comment><text>*&#160;</text><var>Clear&#160;all&#160;unneeded&#160;data</var></comment></line>
+<line indent=""><var>else&#160;if&#160;</var><var>$a.event</var><text>&#160;</text><var>==</var><text>&#160;</text><var>[MEvent.Finished]</var></line>
+<line indent="&#160;"><text>set&#160;global&#160;variable:&#160;name=</text><var>'wbrowser.data'</var><text>&#160;value=</text><var>null</var></line>
+<line indent="&#160;"></line>
+<line indent=""><comment><text>*&#160;</text><var>Page&#160;all&#160;other&#160;events&#160;to&#160;the&#160;menu&#160;control&#160;script&#160;to&#160;maniplate&#160;the&#160;data&#160;array</var></comment></line>
+<line indent=""><text>else</text></line>
+<line interruptable="@" indent="&#160;"><var>$ret&#160;=&#160;</var><var>[THIS]&#160;-&gt;</var><text>&#160;call&#160;script&#160;</text><call>lib.guilds.menucontrol.tables</call><text>&#160;:&#160;</text><text>&#160;Object=</text><var>$a.obj</var><text>&#160;</text><text>&#160;Event=</text><var>$a.event</var><text>&#160;</text><text>&#160;Values&#160;Data=</text><var>$a.data</var><text>&#160;</text><text>&#160;Menu&#160;Data=</text><var>$DATA</var><text>&#160;</text><text>&#160;Menu&#160;Name=</text><var>'guilds.wbrowser'</var><text>&#160;</text><text>&#160;Table&#160;Name=</text><var>'laser.heading'</var></line>
+<line indent=""><comment><text>*&#160;</text><var>return&#160;value&#160;is&#160;[TRUE]&#160;to&#160;redraw&#160;the&#160;menu&#160;array</var></comment></line>
+<line indent="&#160;"><var>if&#160;</var><var>$ret</var><text>&#160;</text><var>==</var><text>&#160;</text><var>[TRUE]</var></line>
+<line indent="&#160;&#160;"><text>gosub&#160;</text><var>sub.BuildMenu</var></line>
+<line indent="&#160;&#160;"><text>return&#160;</text><var>$menu</var></line>
+<line indent="&#160;"><text>else</text></line>
+<line indent="&#160;&#160;"><text>return&#160;</text><var>$ret</var></line>
+<line indent="&#160;"><text>end</text></line>
+<line indent=""><text>end</text></line>
+<line indent=""></line>
+<line indent=""><text>return&#160;</text><var>null</var></line>
+<line indent=""></line>
+<line indent=""></line>
+<line indent=""><var>sub.GetData</var><text>:</text></line>
+<line indent=""><var>if&#160;</var><var>$DATA</var></line>
+<line indent="&#160;"><var>$Column.Data&#160;=&#160;</var><var>$DATA</var><text>[</text><var>'column.data'</var><text>]</text></line>
+<line indent="&#160;"><var>$Row.Data&#160;=&#160;</var><var>$DATA</var><text>[</text><var>'row.data'</var><text>]</text></line>
+<line indent="&#160;"><var>$columns&#160;=&#160;</var><var>$DATA</var><text>[</text><var>'columns'</var><text>]</text></line>
+<line indent=""><text>end</text></line>
+<line indent=""><text>endsub</text></line>
+<line indent=""></line>
+<line indent=""></line>
+<line indent=""><var>sub.BuildMenu</var><text>:</text></line>
+<line indent=""></line>
+<line indent=""><var>$Draw.Data&#160;=&#160;</var><var>$Column.Data</var><text>[</text><var>'lasers'</var><text>]</text></line>
+<line indent=""><var>$menu&#160;=&#160;</var><text>create&#160;custom&#160;menu&#160;array</text></line>
+<line indent=""><text>set&#160;menu&#160;option:&#160;</text><var>$menu</var><text>,&#160;icon=</text><var>63</var></line>
+<line indent=""><text>set&#160;menu&#160;option:&#160;</text><var>$menu</var><text>,&#160;widthtype=</text><var>[MenuWidth.Huge]</var></line>
+<line indent=""><text>set&#160;menu&#160;option:&#160;</text><var>$menu</var><text>,&#160;remove&#160;main&#160;header=</text><var>[TRUE]</var></line>
+<line indent=""></line>
+<line indent=""><var>$array.filters&#160;=&#160;</var><var>$DATA</var><text>[</text><var>'filter.array'</var><text>]</text></line>
+<line interruptable="@" indent=""><var>$menu&#160;=&#160;</var><var>[THIS]&#160;-&gt;</var><text>&#160;call&#160;script&#160;</text><call>lib.guilds.drawtable</call><text>&#160;:&#160;</text><text>&#160;Menu&#160;Array=</text><var>$menu</var><text>&#160;</text><text>&#160;Data&#160;Table=</text><var>$DATA</var><text>&#160;</text><text>&#160;Row&#160;Data&#160;Type=</text><var>'lasers'</var><text>&#160;</text><text>&#160;Table&#160;Name=</text><var>'laser.heading'</var><text>&#160;</text><text>&#160;Add&#160;Sorting=</text><var>[TRUE]</var><text>&#160;</text><text>&#160;List&#160;of&#160;filters=</text><var>$array.filters</var><text>&#160;</text><text>&#160;Return&#160;Script=</text><var>null</var></line>
+<line indent=""></line>
+<line indent=""><var>$read.text&#160;=&#160;</var><text>read&#160;text:&#160;page=</text><var>9620</var><text>&#160;id=</text><var>3300</var></line>
+<line indent=""><var>$player&#160;=&#160;</var><text>get&#160;player&#160;name</text></line>
+<line indent=""><var>$input&#160;=&#160;</var><text>create&#160;input:&#160;id=</text><var>'guilds.wbrowser'</var><text>&#160;menu=</text><var>$menu</var><text>&#160;title=</text><var>$read.text</var><text>&#160;description=</text><var>$player</var><text>&#160;callback=</text><var>[Callback.Switch]</var></line>
+<line indent=""><text>endsub</text></line>
+<line indent=""></line>
+<line indent=""></line>
+<line indent=""><text>return&#160;</text><var>null</var></line>
+</sourcetext>
+<codearray>
+
+<sval type="array" size="10">
+  <sval type="string" val="plugin.guilds.wbrowser.menu"/>
+  <sval type="int" val="71"/>
+  <sval type="string" val="Guilds: Weapons Browser"/>
+  <sval type="int" val="1"/>
+  <sval type="int" val="0"/>
+  <sval type="array" size="15">
+    <sval type="string" val="a.obj"/>
+    <sval type="string" val="a.event"/>
+    <sval type="string" val="a.data"/>
+    <sval type="string" val="DATA"/>
+    <sval type="string" val="Row.Data"/>
+    <sval type="string" val="Column.Data"/>
+    <sval type="string" val="array.filters"/>
+    <sval type="string" val="array.pages"/>
+    <sval type="string" val="input"/>
+    <sval type="string" val="ret"/>
+    <sval type="string" val="menu"/>
+    <sval type="string" val="columns"/>
+    <sval type="string" val="Draw.Data"/>
+    <sval type="string" val="read.text"/>
+    <sval type="string" val="player"/>
+  </sval>
+  <sval type="array" size="53">
+    <sval type="array" size="4">
+      <sval type="int" val="158"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="wbrowser.data"/>
+      <sval type="int" val="3"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="1167"/>
+      <sval type="int" val="34"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610611453"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="open"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="1700"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2147483646"/>
+      <sval type="string" val="plugin.guilds.wbrowser.menu"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="33"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610607099"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="430"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="1733"/>
+      <sval type="int" val="3"/>
+    </sval>
+    <sval type="array" size="8">
+      <sval type="int" val="102"/>
+      <sval type="string" val="plugin.guilds.wbrowser.columise"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="130"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="row.data"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="102"/>
+      <sval type="string" val="plugin.guilds.wbrowser.data"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="130"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="column.data"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="5"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="130"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="sort"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="name"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="130"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="sort.invert"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="9"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="130"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="page"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="12">
+      <sval type="int" val="1415"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="races"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="130"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="filter.array"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="6"/>
+    </sval>
+    <sval type="array" size="12">
+      <sval type="int" val="1415"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="general"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="damage"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="130"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="pages"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="157"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="wbrowser.data"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="1167"/>
+      <sval type="int" val="40"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="8"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="33"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610606587"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="432"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="33"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610605819"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="431"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="157"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="wbrowser.data"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="33"/>
+    </sval>
+    <sval type="array" size="18">
+      <sval type="int" val="102"/>
+      <sval type="string" val="lib.guilds.menucontrol.tables"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="guilds.wbrowser"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="laser.heading"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610604541"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="1167"/>
+      <sval type="int" val="40"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="33"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="9"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="101"/>
+      <sval type="string" val="sub.GetData"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610602749"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="column.data"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="row.data"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="columns"/>
+    </sval>
+    <sval type="array" size="1">
+      <sval type="int" val="1168"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="101"/>
+      <sval type="string" val="sub.BuildMenu"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="12"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="lasers"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="1445"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="1776"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="63"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="1666"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="602"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="2558"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="filter.array"/>
+    </sval>
+    <sval type="array" size="20">
+      <sval type="int" val="102"/>
+      <sval type="string" val="lib.guilds.drawtable"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="lasers"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="laser.heading"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="126"/>
+      <sval type="int" val="13"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="9620"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="3300"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="1070"/>
+      <sval type="int" val="14"/>
+    </sval>
+    <sval type="array" size="12">
+      <sval type="int" val="1649"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="guilds.wbrowser"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="13"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="582"/>
+    </sval>
+    <sval type="array" size="1">
+      <sval type="int" val="1168"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+  </sval>
+  <sval type="array" size="3">
+    <sval type="array" size="2">
+      <sval type="int" val="9"/>
+      <sval type="string" val="Object"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="9"/>
+      <sval type="string" val="Event"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="9"/>
+      <sval type="string" val="Data"/>
+    </sval>
+  </sval>
+  <sval type="array" size="35">
+    <sval type="array" size="2">
+      <sval type="int" val="2"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="4"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="6"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="create the data array to draw the menu from"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="7"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="create the row data to display"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="9"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="crate the column/page data"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="11"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="set the default values"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="14"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="setup the filters"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="16"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="set the order of pages"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="18"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="save the data to be used later"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="19"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="19"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="finally, build the menu"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="21"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="21"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="21"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Item has been selected"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="23"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="23"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="23"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Clear all unneeded data"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="26"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="26"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Page all other events to the menu control script to maniplate the data array"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="27"/>
+      <sval type="int" val="5"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="28"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="return value is [TRUE] to redraw the menu array"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="32"/>
+      <sval type="int" val="5"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="33"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="33"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="33"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="34"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="34"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="39"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="40"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="40"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="41"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="46"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="48"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="52"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="52"/>
+      <sval type="int" val="2"/>
+    </sval>
+  </sval>
+  <sval type="int" val="0"/>
+</sval>
+
+</codearray>
+<nosignature>8454</nosignature>
+</script>

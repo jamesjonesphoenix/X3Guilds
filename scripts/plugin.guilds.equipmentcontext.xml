@@ -1,0 +1,768 @@
+<?xml version="1.0" standalone="yes" ?>
+<?xml-stylesheet href="x2script.xsl" type="text/xsl" ?>
+<script>
+<name>plugin.guilds.equipmentcontext</name>
+<version>2</version>
+<engineversion>72</engineversion>
+<description>Guilds: Use Equipment via context menu</description>
+<arguments>
+<argument index="1" name="a.obj" type="Value" desc="Object" />
+<argument index="2" name="a.event" type="Value" desc="Event" />
+<argument index="3" name="a.data" type="Value" desc="Data" />
+</arguments>
+<sourceplaintext>
+<![CDATA[
+  if $a.event == [MEvent.IsHidden]
+    if $a.data == 'guild.cargohack'
+      if [PLAYERSHIP] -> get amount of ware Cargo Bay Hacker in cargo bay
+        if [PLAYERSHIP] -> is in same sector as $a.obj
+          if [PLAYERSHIP] -> get amount of ware Freight Scanner in cargo bay
+            if [PLAYERSHIP] -> get amount of ware Transporter Device in cargo bay
+              return [FALSE]
+            end
+          end
+        end
+      end
+    else if $a.data == 'guild.overtune.on'
+      $owner = $a.obj -> get true owner
+      if $owner == Player
+        if $a.obj -> get amount of ware This device channels energy from your laser generators into your thrusters, enabling your ship to achieve higher speeds. in cargo bay
+          return [FALSE]
+        else if $a.obj -> get amount of ware Overtuned Drive Core (Inactive) in cargo bay
+          return [FALSE]
+        end
+      end
+    else if $a.data == 'guild.overtune.off'
+      $owner = $a.obj -> get true owner
+      if $owner == Player
+        if $a.obj -> get amount of ware Overtuned Drive Core in cargo bay
+          return [FALSE]
+        end
+      end
+    end
+    return [TRUE]
+    
+  else if $a.event == [MEvent.IsDisabled]
+    $is.disabled = [FALSE]
+    if $a.data == 'guild.cargohack'
+@     $ret = [PLAYERSHIP] -> call script lib.cbh.req :  target=$a.obj  Check for wares?=[TRUE]
+      if $ret != 1
+        $is.disabled = [TRUE]
+      end
+    end
+    return $is.disabled
+    
+  else if $a.event == 'run'
+    if $a.data == 'guild.cargohack'
+@     START [NULL] -> call script plugin.cbh.transfer :  target=$a.obj  reopen the menu?=[FALSE]
+      return [TRUE]
+    else if $a.data == 'guild.overtune.on'
+      if $a.obj -> get amount of ware This device channels energy from your laser generators into your thrusters, enabling your ship to achieve higher speeds. in cargo bay
+        $speak = create new array, size=4, elements=[Page.MiscVoice], 1358, [Page.MiscVoice], 1357, null, null, null, null
+        START speak array: $speak prio=90
+        = $a.obj -> install -1 units of This device channels energy from your laser generators into your thrusters, enabling your ship to achieve higher speeds.
+        = $a.obj -> install -1 units of Overtuned Drive Core (Inactive)
+      else
+        = $a.obj -> install 1 units of Overtuned Drive Core
+        = $a.obj -> install -1 units of This device channels energy from your laser generators into your thrusters, enabling your ship to achieve higher speeds.
+        = $a.obj -> install -1 units of Overtuned Drive Core (Inactive)
+        play sample [Sound.Success]
+      end
+      return [TRUE]
+    else if $a.data == 'guild.overtune.off'
+      play sample [Sound.Success]
+      = $a.obj -> install -1 units of Overtuned Drive Core
+      = $a.obj -> install 1 units of Overtuned Drive Core (Inactive)
+      return [TRUE]
+    end
+  end
+  
+  return null
+]]>
+</sourceplaintext>
+<sourcetext>
+<line indent=""><var>if&#160;</var><var>$a.event</var><text>&#160;</text><var>==</var><text>&#160;</text><var>[MEvent.IsHidden]</var></line>
+<line indent="&#160;"><var>if&#160;</var><var>$a.data</var><text>&#160;</text><var>==</var><text>&#160;</text><var>'guild.cargohack'</var></line>
+<line indent="&#160;&#160;"><var>if&#160;</var><var>[PLAYERSHIP]&#160;-&gt;</var><text>&#160;get&#160;amount&#160;of&#160;ware&#160;</text><var>Cargo&#160;Bay&#160;Hacker</var><text>&#160;in&#160;cargo&#160;bay</text></line>
+<line indent="&#160;&#160;&#160;"><var>if&#160;</var><var>[PLAYERSHIP]&#160;-&gt;</var><text>&#160;is&#160;in&#160;same&#160;sector&#160;as&#160;</text><var>$a.obj</var></line>
+<line indent="&#160;&#160;&#160;&#160;"><var>if&#160;</var><var>[PLAYERSHIP]&#160;-&gt;</var><text>&#160;get&#160;amount&#160;of&#160;ware&#160;</text><var>Freight&#160;Scanner</var><text>&#160;in&#160;cargo&#160;bay</text></line>
+<line indent="&#160;&#160;&#160;&#160;&#160;"><var>if&#160;</var><var>[PLAYERSHIP]&#160;-&gt;</var><text>&#160;get&#160;amount&#160;of&#160;ware&#160;</text><var>Transporter&#160;Device</var><text>&#160;in&#160;cargo&#160;bay</text></line>
+<line indent="&#160;&#160;&#160;&#160;&#160;&#160;"><text>return&#160;</text><var>[FALSE]</var></line>
+<line indent="&#160;&#160;&#160;&#160;&#160;"><text>end</text></line>
+<line indent="&#160;&#160;&#160;&#160;"><text>end</text></line>
+<line indent="&#160;&#160;&#160;"><text>end</text></line>
+<line indent="&#160;&#160;"><text>end</text></line>
+<line indent="&#160;"><var>else&#160;if&#160;</var><var>$a.data</var><text>&#160;</text><var>==</var><text>&#160;</text><var>'guild.overtune.on'</var></line>
+<line indent="&#160;&#160;"><var>$owner&#160;=&#160;</var><var>$a.obj&#160;-&gt;</var><text>&#160;get&#160;true&#160;owner</text></line>
+<line indent="&#160;&#160;"><var>if&#160;</var><var>$owner</var><text>&#160;</text><var>==</var><text>&#160;</text><var>Player</var></line>
+<line indent="&#160;&#160;&#160;"><var>if&#160;</var><var>$a.obj&#160;-&gt;</var><text>&#160;get&#160;amount&#160;of&#160;ware&#160;</text><var>This&#160;device&#160;channels&#160;energy&#160;from&#160;your&#160;laser&#160;generators&#160;into&#160;your&#160;thrusters,&#160;enabling&#160;your&#160;ship&#160;to&#160;achieve&#160;higher&#160;speeds.</var><text>&#160;in&#160;cargo&#160;bay</text></line>
+<line indent="&#160;&#160;&#160;&#160;"><text>return&#160;</text><var>[FALSE]</var></line>
+<line indent="&#160;&#160;&#160;"><var>else&#160;if&#160;</var><var>$a.obj&#160;-&gt;</var><text>&#160;get&#160;amount&#160;of&#160;ware&#160;</text><var>Overtuned&#160;Drive&#160;Core&#160;(Inactive)</var><text>&#160;in&#160;cargo&#160;bay</text></line>
+<line indent="&#160;&#160;&#160;&#160;"><text>return&#160;</text><var>[FALSE]</var></line>
+<line indent="&#160;&#160;&#160;"><text>end</text></line>
+<line indent="&#160;&#160;"><text>end</text></line>
+<line indent="&#160;"><var>else&#160;if&#160;</var><var>$a.data</var><text>&#160;</text><var>==</var><text>&#160;</text><var>'guild.overtune.off'</var></line>
+<line indent="&#160;&#160;"><var>$owner&#160;=&#160;</var><var>$a.obj&#160;-&gt;</var><text>&#160;get&#160;true&#160;owner</text></line>
+<line indent="&#160;&#160;"><var>if&#160;</var><var>$owner</var><text>&#160;</text><var>==</var><text>&#160;</text><var>Player</var></line>
+<line indent="&#160;&#160;&#160;"><var>if&#160;</var><var>$a.obj&#160;-&gt;</var><text>&#160;get&#160;amount&#160;of&#160;ware&#160;</text><var>Overtuned&#160;Drive&#160;Core</var><text>&#160;in&#160;cargo&#160;bay</text></line>
+<line indent="&#160;&#160;&#160;&#160;"><text>return&#160;</text><var>[FALSE]</var></line>
+<line indent="&#160;&#160;&#160;"><text>end</text></line>
+<line indent="&#160;&#160;"><text>end</text></line>
+<line indent="&#160;"><text>end</text></line>
+<line indent="&#160;"><text>return&#160;</text><var>[TRUE]</var></line>
+<line indent="&#160;"></line>
+<line indent=""><var>else&#160;if&#160;</var><var>$a.event</var><text>&#160;</text><var>==</var><text>&#160;</text><var>[MEvent.IsDisabled]</var></line>
+<line indent="&#160;"><var>$is.disabled&#160;=&#160;</var><var>[FALSE]</var></line>
+<line indent="&#160;"><var>if&#160;</var><var>$a.data</var><text>&#160;</text><var>==</var><text>&#160;</text><var>'guild.cargohack'</var></line>
+<line interruptable="@" indent="&#160;&#160;"><var>$ret&#160;=&#160;</var><var>[PLAYERSHIP]&#160;-&gt;</var><text>&#160;call&#160;script&#160;</text><call>lib.cbh.req</call><text>&#160;:&#160;</text><text>&#160;target=</text><var>$a.obj</var><text>&#160;</text><text>&#160;Check&#160;for&#160;wares?=</text><var>[TRUE]</var></line>
+<line indent="&#160;&#160;"><var>if&#160;</var><var>$ret</var><text>&#160;</text><var>!=</var><text>&#160;</text><var>1</var></line>
+<line indent="&#160;&#160;&#160;"><var>$is.disabled&#160;=&#160;</var><var>[TRUE]</var></line>
+<line indent="&#160;&#160;"><text>end</text></line>
+<line indent="&#160;"><text>end</text></line>
+<line indent="&#160;"><text>return&#160;</text><var>$is.disabled</var></line>
+<line indent="&#160;"></line>
+<line indent=""><var>else&#160;if&#160;</var><var>$a.event</var><text>&#160;</text><var>==</var><text>&#160;</text><var>'run'</var></line>
+<line indent="&#160;"><var>if&#160;</var><var>$a.data</var><text>&#160;</text><var>==</var><text>&#160;</text><var>'guild.cargohack'</var></line>
+<line interruptable="@" indent="&#160;&#160;"><var>START&#160;</var><var>[NULL]&#160;-&gt;</var><text>&#160;call&#160;script&#160;</text><call>plugin.cbh.transfer</call><text>&#160;:&#160;</text><text>&#160;target=</text><var>$a.obj</var><text>&#160;</text><text>&#160;reopen&#160;the&#160;menu?=</text><var>[FALSE]</var></line>
+<line indent="&#160;&#160;"><text>return&#160;</text><var>[TRUE]</var></line>
+<line indent="&#160;"><var>else&#160;if&#160;</var><var>$a.data</var><text>&#160;</text><var>==</var><text>&#160;</text><var>'guild.overtune.on'</var></line>
+<line indent="&#160;&#160;"><var>if&#160;</var><var>$a.obj&#160;-&gt;</var><text>&#160;get&#160;amount&#160;of&#160;ware&#160;</text><var>This&#160;device&#160;channels&#160;energy&#160;from&#160;your&#160;laser&#160;generators&#160;into&#160;your&#160;thrusters,&#160;enabling&#160;your&#160;ship&#160;to&#160;achieve&#160;higher&#160;speeds.</var><text>&#160;in&#160;cargo&#160;bay</text></line>
+<line indent="&#160;&#160;&#160;"><var>$speak&#160;=&#160;</var><text>create&#160;new&#160;array,&#160;size=</text><var>4</var><text>,&#160;elements=</text><var>[Page.MiscVoice]</var><text>,&#160;</text><var>1358</var><text>,&#160;</text><var>[Page.MiscVoice]</var><text>,&#160;</text><var>1357</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var><text>,&#160;</text><var>null</var></line>
+<line indent="&#160;&#160;&#160;"><var>START&#160;</var><text>speak&#160;array:&#160;</text><var>$speak</var><text>&#160;prio=</text><var>90</var></line>
+<line indent="&#160;&#160;&#160;"><var>=&#160;</var><var>$a.obj&#160;-&gt;</var><text>&#160;install&#160;</text><var>-1</var><text>&#160;units&#160;of&#160;</text><var>This&#160;device&#160;channels&#160;energy&#160;from&#160;your&#160;laser&#160;generators&#160;into&#160;your&#160;thrusters,&#160;enabling&#160;your&#160;ship&#160;to&#160;achieve&#160;higher&#160;speeds.</var></line>
+<line indent="&#160;&#160;&#160;"><var>=&#160;</var><var>$a.obj&#160;-&gt;</var><text>&#160;install&#160;</text><var>-1</var><text>&#160;units&#160;of&#160;</text><var>Overtuned&#160;Drive&#160;Core&#160;(Inactive)</var></line>
+<line indent="&#160;&#160;"><text>else</text></line>
+<line indent="&#160;&#160;&#160;"><var>=&#160;</var><var>$a.obj&#160;-&gt;</var><text>&#160;install&#160;</text><var>1</var><text>&#160;units&#160;of&#160;</text><var>Overtuned&#160;Drive&#160;Core</var></line>
+<line indent="&#160;&#160;&#160;"><var>=&#160;</var><var>$a.obj&#160;-&gt;</var><text>&#160;install&#160;</text><var>-1</var><text>&#160;units&#160;of&#160;</text><var>This&#160;device&#160;channels&#160;energy&#160;from&#160;your&#160;laser&#160;generators&#160;into&#160;your&#160;thrusters,&#160;enabling&#160;your&#160;ship&#160;to&#160;achieve&#160;higher&#160;speeds.</var></line>
+<line indent="&#160;&#160;&#160;"><var>=&#160;</var><var>$a.obj&#160;-&gt;</var><text>&#160;install&#160;</text><var>-1</var><text>&#160;units&#160;of&#160;</text><var>Overtuned&#160;Drive&#160;Core&#160;(Inactive)</var></line>
+<line indent="&#160;&#160;&#160;"><text>play&#160;sample&#160;</text><var>[Sound.Success]</var></line>
+<line indent="&#160;&#160;"><text>end</text></line>
+<line indent="&#160;&#160;"><text>return&#160;</text><var>[TRUE]</var></line>
+<line indent="&#160;"><var>else&#160;if&#160;</var><var>$a.data</var><text>&#160;</text><var>==</var><text>&#160;</text><var>'guild.overtune.off'</var></line>
+<line indent="&#160;&#160;"><text>play&#160;sample&#160;</text><var>[Sound.Success]</var></line>
+<line indent="&#160;&#160;"><var>=&#160;</var><var>$a.obj&#160;-&gt;</var><text>&#160;install&#160;</text><var>-1</var><text>&#160;units&#160;of&#160;</text><var>Overtuned&#160;Drive&#160;Core</var></line>
+<line indent="&#160;&#160;"><var>=&#160;</var><var>$a.obj&#160;-&gt;</var><text>&#160;install&#160;</text><var>1</var><text>&#160;units&#160;of&#160;</text><var>Overtuned&#160;Drive&#160;Core&#160;(Inactive)</var></line>
+<line indent="&#160;&#160;"><text>return&#160;</text><var>[TRUE]</var></line>
+<line indent="&#160;"><text>end</text></line>
+<line indent=""><text>end</text></line>
+<line indent=""></line>
+<line indent=""><text>return&#160;</text><var>null</var></line>
+</sourcetext>
+<codearray>
+
+<sval type="array" size="10">
+  <sval type="string" val="plugin.guilds.equipmentcontext"/>
+  <sval type="int" val="72"/>
+  <sval type="string" val="Guilds: Use Equipment via context menu"/>
+  <sval type="int" val="2"/>
+  <sval type="int" val="0"/>
+  <sval type="array" size="7">
+    <sval type="string" val="a.obj"/>
+    <sval type="string" val="a.event"/>
+    <sval type="string" val="a.data"/>
+    <sval type="string" val="owner"/>
+    <sval type="string" val="is.disabled"/>
+    <sval type="string" val="ret"/>
+    <sval type="string" val="speak"/>
+  </sval>
+  <sval type="array" size="56">
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610606589"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="605"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610610685"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="guild.cargohack"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="618"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1610610941"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1048694"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="733"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1610610941"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="618"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1610610941"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1048589"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="618"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1610610941"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1048610"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="9"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="22"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610608379"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="guild.overtune.on"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="1187"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610608637"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="618"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-1610609149"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1048774"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="9"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="16"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="618"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-1610608635"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1048773"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="9"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="22"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610607099"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="guild.overtune.off"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="1187"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610607101"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="618"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-1610607101"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1048772"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="9"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="55"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610604539"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="603"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610605053"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="guild.cargohack"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="10">
+      <sval type="int" val="102"/>
+      <sval type="string" val="lib.cbh.req"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610605053"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="55"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610598651"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="run"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610603261"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="guild.cargohack"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="10">
+      <sval type="int" val="102"/>
+      <sval type="string" val="plugin.cbh.transfer"/>
+      <sval type="int" val="-2147483646"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="12"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="9"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="55"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610599931"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="guild.overtune.on"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="618"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-1610601469"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1048774"/>
+    </sval>
+    <sval type="array" size="20">
+      <sval type="int" val="2195"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1105"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1358"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1105"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1357"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="1510"/>
+      <sval type="int" val="-2147483646"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="90"/>
+    </sval>
+    <sval type="array" size="8">
+      <sval type="int" val="647"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2147483647"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1048774"/>
+    </sval>
+    <sval type="array" size="8">
+      <sval type="int" val="647"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2147483647"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1048773"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="48"/>
+    </sval>
+    <sval type="array" size="8">
+      <sval type="int" val="647"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2147483647"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1048772"/>
+    </sval>
+    <sval type="array" size="8">
+      <sval type="int" val="647"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2147483647"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1048774"/>
+    </sval>
+    <sval type="array" size="8">
+      <sval type="int" val="647"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2147483647"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1048773"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="200"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="530"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="55"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610598651"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="5"/>
+      <sval type="string" val="guild.overtune.off"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="200"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="530"/>
+    </sval>
+    <sval type="array" size="8">
+      <sval type="int" val="647"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2147483647"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1048772"/>
+    </sval>
+    <sval type="array" size="8">
+      <sval type="int" val="647"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2147483647"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1048773"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+  </sval>
+  <sval type="array" size="3">
+    <sval type="array" size="2">
+      <sval type="int" val="9"/>
+      <sval type="string" val="Object"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="9"/>
+      <sval type="string" val="Event"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="9"/>
+      <sval type="string" val="Data"/>
+    </sval>
+  </sval>
+  <sval type="array" size="18">
+    <sval type="array" size="2">
+      <sval type="int" val="7"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="7"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="7"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="7"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="16"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="16"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="22"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="22"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="22"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="23"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="30"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="30"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="31"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="44"/>
+      <sval type="int" val="5"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="48"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="55"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="55"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="55"/>
+      <sval type="int" val="2"/>
+    </sval>
+  </sval>
+  <sval type="int" val="0"/>
+</sval>
+
+</codearray>
+<nosignature>1484</nosignature>
+</script>
