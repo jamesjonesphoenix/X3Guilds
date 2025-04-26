@@ -1,0 +1,1215 @@
+<?xml version="1.0" standalone="yes" ?>
+<?xml-stylesheet href="x2script.xsl" type="text/xsl" ?>
+<script>
+<name>!lib.ship.plotroute</name>
+<version>4</version>
+<engineversion>71</engineversion>
+<description>Library: Plot a route</description>
+<arguments>
+<argument index="1" name="a.destination" type="Value" desc="Destination" />
+<argument index="2" name="a.ignoreJump" type="Var/Boolean" desc="Ignore Jumping" />
+<argument index="3" name="a.weights" type="Value" desc="Weights Table" />
+<argument index="4" name="a.alwaysJump" type="Var/Boolean" desc="Always Jump" />
+<argument index="5" name="a.ignoreFuel" type="Var/Boolean" desc="Ignore Fuel" />
+<argument index="6" name="a.flags" type="Value" desc="Jump Flags" />
+</arguments>
+<sourceplaintext>
+<![CDATA[
+  * Plots the best route based on sector weights
+  * adjusts the route to jump to the further possible gate
+  * ===============================
+  * a.destintion - The destination, could be a sector, any object, or a position
+  * a.ignoreJump - Should ignore jumping? even if autojump is enabled
+  * a.weights - The weights table for each sector (which to avoid/block)
+  * a.alwaysJump - Should always jump, even if autojump not enabled
+  * a.ignoreFuel - Ignore checking energy needed (always jump as far as possible)
+  * a.flags - Jump flags to override some checks (ie device/energy checks)
+  * ===============================
+  
+  * Compute the best route based on race weigths
+  * Any race set to avoid or block has a higher weight
+  $dest = $a.destination
+  do if is datatype[ $a.destination ] == DATATYPE_ARRAY
+    $dest = $a.destination[3]
+  $route = [THIS] ->compute best route: target=$dest, weights table=$a.weights, allow hyperspeed=[FALSE]
+  
+  * No route? sector must be unreachable (IE behind a HSAP)
+  skip if $route
+    return null
+  skip if size of array $route
+    return null
+  
+  $sectors = array alloc: size=0
+  
+  $should.jump = [FALSE]
+  $min.jump = 0
+  
+  * Check if we can jump to the closest gate
+  $has.jumpdrive = [THIS] -> get amount of ware Jumpdrive in cargo bay
+  do if $a.flags & [JumpFlg.NoDeviceCheck]
+    $has.jumpdrive = [TRUE]
+  do if $a.flags & [JumpFlg.NoEnergyCheck]
+    $a.ignoreFuel = [TRUE]
+  do if [THIS] -> get amount of ware Advanced Jumpdrive in cargo bay
+    $has.jumpdrive = [TRUE]
+  
+  * if ignoring jump, we should always fly
+  if not $a.ignoreJump
+  * only do jump calculation if device is installed (or overridden by flags)
+    if $has.jumpdrive
+  * if always jumping, then ignore min distance and autojump settings
+      if $a.alwaysJump
+        $should.jump = [TRUE]
+      else if [THIS] -> is autojump activated
+        $should.jump = [TRUE]
+        $min.jump = [THIS] -> get autojump minimum jumps
+      end
+    end
+  end
+  
+  if [OWNER] == Player
+    $find.flags = [Find.JumpableGate] | [Find.JumpBeacons] | [Find.Known]
+    $find.flags.near = [Find.JumpableGate] | [Find.JumpBeacons] | [Find.Nearest] | [Find.Known]
+  else
+    $find.flags = [Find.JumpableGate] | [Find.JumpBeacons]
+    $find.flags.near = [Find.JumpableGate] | [Find.JumpBeacons] | [Find.Nearest]
+  end
+  
+  $got.energy = [THIS] -> get true amount of ware Energy Cells in cargo bay
+  * If ignoring fuel, then set energy to maximum
+  do if $a.ignoreFuel OR $a.flags & [JumpFlg.NoEnergyCheck]
+    $got.energy = 2147483647
+  do if [THIS] -> get amount of ware Advanced Jumpdrive in cargo bay
+    $got.energy = 2147483647
+  do if [THIS] -> get amount of ware Jumpdrive Energy Generator in cargo bay
+    $got.energy = 2147483647
+  
+  $i = size of array $route
+  dec $i = 
+  $previous = $route[$i]
+  do if $previous == $dest
+    $previous = $a.destination
+  
+  * Now check the route backwards to find the furthest point we can jump to
+  while $i
+    dec $i = 
+    $dest = $route[$i]
+    
+    do if $dest -> is of class Gate
+      $dest = $dest -> get gate destination: return sector=[FALSE]
+    $dest.sector = $dest -> get sector
+    
+    $jumps = get jumps from sector [SECTOR] to sector $dest.sector
+    if $should.jump AND $jumps >= $min.jump
+      $needed.energy = [THIS] ->get needed jump energy: jumps=$jumps
+      if $got.energy >= $needed.energy OR $a.ignoreFuel
+        if is datatype[ $previous ] == DATATYPE_ARRAY
+          $gate = find gate: flags=$find.flags.near, refobj=null, max dist=null, refpos=$previous object check=[THIS]
+        else if $previous -> is of class Sector
+          $gate = find gate: flags=$find.flags, refobj=$previous, max dist=null, refpos=null object check=[THIS]
+        else if $previous -> exists
+          $pos.array = $previous -> get position as array
+          $prev.sector = $previous -> get sector
+          append $prev.sector to array $pos.array
+          $gate = find gate: flags=$find.flags.near, refobj=null, max dist=null, refpos=$pos.array object check=[THIS]
+        else
+          $gate = find gate: flags=$find.flags, refobj=$dest.sector, max dist=null, refpos=null object check=[THIS]
+        end
+        
+        if $gate -> exists
+          append $gate to array $sectors
+          break
+        end
+      end
+    end
+    
+    $previous = $route[$i]
+    append $previous to array $sectors
+  end
+  
+  $sectors = reverse array $sectors
+  return $sectors
+]]>
+</sourceplaintext>
+<sourcetext>
+<line indent=""><comment><text>*&#160;</text><var>Plots&#160;the&#160;best&#160;route&#160;based&#160;on&#160;sector&#160;weights</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>adjusts&#160;the&#160;route&#160;to&#160;jump&#160;to&#160;the&#160;further&#160;possible&#160;gate</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>===============================</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>a.destintion&#160;-&#160;The&#160;destination,&#160;could&#160;be&#160;a&#160;sector,&#160;any&#160;object,&#160;or&#160;a&#160;position</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>a.ignoreJump&#160;-&#160;Should&#160;ignore&#160;jumping?&#160;even&#160;if&#160;autojump&#160;is&#160;enabled</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>a.weights&#160;-&#160;The&#160;weights&#160;table&#160;for&#160;each&#160;sector&#160;(which&#160;to&#160;avoid/block)</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>a.alwaysJump&#160;-&#160;Should&#160;always&#160;jump,&#160;even&#160;if&#160;autojump&#160;not&#160;enabled</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>a.ignoreFuel&#160;-&#160;Ignore&#160;checking&#160;energy&#160;needed&#160;(always&#160;jump&#160;as&#160;far&#160;as&#160;possible)</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>a.flags&#160;-&#160;Jump&#160;flags&#160;to&#160;override&#160;some&#160;checks&#160;(ie&#160;device/energy&#160;checks)</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>===============================</var></comment></line>
+<line indent=""></line>
+<line indent=""><comment><text>*&#160;</text><var>Compute&#160;the&#160;best&#160;route&#160;based&#160;on&#160;race&#160;weigths</var></comment></line>
+<line indent=""><comment><text>*&#160;</text><var>Any&#160;race&#160;set&#160;to&#160;avoid&#160;or&#160;block&#160;has&#160;a&#160;higher&#160;weight</var></comment></line>
+<line indent=""><var>$dest&#160;=&#160;</var><var>$a.destination</var></line>
+<line indent=""><var>do&#160;if&#160;</var><text>is&#160;datatype[&#160;</text><var>$a.destination</var><text>&#160;]&#160;==&#160;</text><var>DATATYPE_ARRAY</var></line>
+<line indent="&#160;"><var>$dest&#160;=&#160;</var><var>$a.destination</var><text>[</text><var>3</var><text>]</text></line>
+<line indent=""><var>$route&#160;=&#160;</var><var>[THIS]&#160;-&gt;</var><text>compute&#160;best&#160;route:&#160;target=</text><var>$dest</var><text>,&#160;weights&#160;table=</text><var>$a.weights</var><text>,&#160;allow&#160;hyperspeed=</text><var>[FALSE]</var></line>
+<line indent=""></line>
+<line indent=""><comment><text>*&#160;</text><var>No&#160;route?&#160;sector&#160;must&#160;be&#160;unreachable&#160;(IE&#160;behind&#160;a&#160;HSAP)</var></comment></line>
+<line indent=""><var>skip&#160;if&#160;</var><var>$route</var></line>
+<line indent="&#160;"><text>return&#160;</text><var>null</var></line>
+<line indent=""><var>skip&#160;if&#160;</var><text>size&#160;of&#160;array&#160;</text><var>$route</var></line>
+<line indent="&#160;"><text>return&#160;</text><var>null</var></line>
+<line indent=""></line>
+<line indent=""><var>$sectors&#160;=&#160;</var><text>array&#160;alloc:&#160;size=</text><var>0</var></line>
+<line indent=""></line>
+<line indent=""><var>$should.jump&#160;=&#160;</var><var>[FALSE]</var></line>
+<line indent=""><var>$min.jump&#160;=&#160;</var><var>0</var></line>
+<line indent=""></line>
+<line indent=""><comment><text>*&#160;</text><var>Check&#160;if&#160;we&#160;can&#160;jump&#160;to&#160;the&#160;closest&#160;gate</var></comment></line>
+<line indent=""><var>$has.jumpdrive&#160;=&#160;</var><var>[THIS]&#160;-&gt;</var><text>&#160;get&#160;amount&#160;of&#160;ware&#160;</text><var>Jumpdrive</var><text>&#160;in&#160;cargo&#160;bay</text></line>
+<line indent=""><var>do&#160;if&#160;</var><var>$a.flags</var><text>&#160;</text><var>&amp;</var><text>&#160;</text><var>[JumpFlg.NoDeviceCheck]</var></line>
+<line indent="&#160;"><var>$has.jumpdrive&#160;=&#160;</var><var>[TRUE]</var></line>
+<line indent=""><var>do&#160;if&#160;</var><var>$a.flags</var><text>&#160;</text><var>&amp;</var><text>&#160;</text><var>[JumpFlg.NoEnergyCheck]</var></line>
+<line indent="&#160;"><var>$a.ignoreFuel&#160;=&#160;</var><var>[TRUE]</var></line>
+<line indent=""><var>do&#160;if&#160;</var><var>[THIS]&#160;-&gt;</var><text>&#160;get&#160;amount&#160;of&#160;ware&#160;</text><var>Advanced&#160;Jumpdrive</var><text>&#160;in&#160;cargo&#160;bay</text></line>
+<line indent="&#160;"><var>$has.jumpdrive&#160;=&#160;</var><var>[TRUE]</var></line>
+<line indent=""></line>
+<line indent=""><comment><text>*&#160;</text><var>if&#160;ignoring&#160;jump,&#160;we&#160;should&#160;always&#160;fly</var></comment></line>
+<line indent=""><var>if&#160;not&#160;</var><var>$a.ignoreJump</var></line>
+<line indent=""><comment><text>*&#160;</text><var>only&#160;do&#160;jump&#160;calculation&#160;if&#160;device&#160;is&#160;installed&#160;(or&#160;overridden&#160;by&#160;flags)</var></comment></line>
+<line indent="&#160;"><var>if&#160;</var><var>$has.jumpdrive</var></line>
+<line indent=""><comment><text>*&#160;</text><var>if&#160;always&#160;jumping,&#160;then&#160;ignore&#160;min&#160;distance&#160;and&#160;autojump&#160;settings</var></comment></line>
+<line indent="&#160;&#160;"><var>if&#160;</var><var>$a.alwaysJump</var></line>
+<line indent="&#160;&#160;&#160;"><var>$should.jump&#160;=&#160;</var><var>[TRUE]</var></line>
+<line indent="&#160;&#160;"><var>else&#160;if&#160;</var><var>[THIS]&#160;-&gt;</var><text>&#160;is&#160;autojump&#160;activated</text></line>
+<line indent="&#160;&#160;&#160;"><var>$should.jump&#160;=&#160;</var><var>[TRUE]</var></line>
+<line indent="&#160;&#160;&#160;"><var>$min.jump&#160;=&#160;</var><var>[THIS]&#160;-&gt;</var><text>&#160;get&#160;autojump&#160;minimum&#160;jumps</text></line>
+<line indent="&#160;&#160;"><text>end</text></line>
+<line indent="&#160;"><text>end</text></line>
+<line indent=""><text>end</text></line>
+<line indent=""></line>
+<line indent=""><var>if&#160;</var><var>[OWNER]</var><text>&#160;</text><var>==</var><text>&#160;</text><var>Player</var></line>
+<line indent="&#160;"><var>$find.flags&#160;=&#160;</var><var>[Find.JumpableGate]</var><text>&#160;</text><var>|</var><text>&#160;</text><var>[Find.JumpBeacons]</var><text>&#160;</text><var>|</var><text>&#160;</text><var>[Find.Known]</var></line>
+<line indent="&#160;"><var>$find.flags.near&#160;=&#160;</var><var>[Find.JumpableGate]</var><text>&#160;</text><var>|</var><text>&#160;</text><var>[Find.JumpBeacons]</var><text>&#160;</text><var>|</var><text>&#160;</text><var>[Find.Nearest]</var><text>&#160;</text><var>|</var><text>&#160;</text><var>[Find.Known]</var></line>
+<line indent=""><text>else</text></line>
+<line indent="&#160;"><var>$find.flags&#160;=&#160;</var><var>[Find.JumpableGate]</var><text>&#160;</text><var>|</var><text>&#160;</text><var>[Find.JumpBeacons]</var></line>
+<line indent="&#160;"><var>$find.flags.near&#160;=&#160;</var><var>[Find.JumpableGate]</var><text>&#160;</text><var>|</var><text>&#160;</text><var>[Find.JumpBeacons]</var><text>&#160;</text><var>|</var><text>&#160;</text><var>[Find.Nearest]</var></line>
+<line indent=""><text>end</text></line>
+<line indent=""></line>
+<line indent=""><var>$got.energy&#160;=&#160;</var><var>[THIS]&#160;-&gt;</var><text>&#160;get&#160;true&#160;amount&#160;of&#160;ware&#160;</text><var>Energy&#160;Cells</var><text>&#160;in&#160;cargo&#160;bay</text></line>
+<line indent=""><comment><text>*&#160;</text><var>If&#160;ignoring&#160;fuel,&#160;then&#160;set&#160;energy&#160;to&#160;maximum</var></comment></line>
+<line indent=""><var>do&#160;if&#160;</var><var>$a.ignoreFuel</var><text>&#160;</text><var>OR</var><text>&#160;</text><var>$a.flags</var><text>&#160;</text><var>&amp;</var><text>&#160;</text><var>[JumpFlg.NoEnergyCheck]</var></line>
+<line indent="&#160;"><var>$got.energy&#160;=&#160;</var><var>2147483647</var></line>
+<line indent=""><var>do&#160;if&#160;</var><var>[THIS]&#160;-&gt;</var><text>&#160;get&#160;amount&#160;of&#160;ware&#160;</text><var>Advanced&#160;Jumpdrive</var><text>&#160;in&#160;cargo&#160;bay</text></line>
+<line indent="&#160;"><var>$got.energy&#160;=&#160;</var><var>2147483647</var></line>
+<line indent=""><var>do&#160;if&#160;</var><var>[THIS]&#160;-&gt;</var><text>&#160;get&#160;amount&#160;of&#160;ware&#160;</text><var>Jumpdrive&#160;Energy&#160;Generator</var><text>&#160;in&#160;cargo&#160;bay</text></line>
+<line indent="&#160;"><var>$got.energy&#160;=&#160;</var><var>2147483647</var></line>
+<line indent=""></line>
+<line indent=""><var>$i&#160;=&#160;</var><text>size&#160;of&#160;array&#160;</text><var>$route</var></line>
+<line indent=""><text>dec&#160;</text><var>$i&#160;=&#160;</var></line>
+<line indent=""><var>$previous&#160;=&#160;</var><var>$route</var><text>[</text><var>$i</var><text>]</text></line>
+<line indent=""><var>do&#160;if&#160;</var><var>$previous</var><text>&#160;</text><var>==</var><text>&#160;</text><var>$dest</var></line>
+<line indent="&#160;"><var>$previous&#160;=&#160;</var><var>$a.destination</var></line>
+<line indent=""></line>
+<line indent=""><comment><text>*&#160;</text><var>Now&#160;check&#160;the&#160;route&#160;backwards&#160;to&#160;find&#160;the&#160;furthest&#160;point&#160;we&#160;can&#160;jump&#160;to</var></comment></line>
+<line indent=""><var>while&#160;</var><var>$i</var></line>
+<line indent="&#160;"><text>dec&#160;</text><var>$i&#160;=&#160;</var></line>
+<line indent="&#160;"><var>$dest&#160;=&#160;</var><var>$route</var><text>[</text><var>$i</var><text>]</text></line>
+<line indent="&#160;"></line>
+<line indent="&#160;"><var>do&#160;if&#160;</var><var>$dest&#160;-&gt;</var><text>&#160;is&#160;of&#160;class&#160;</text><var>Gate</var></line>
+<line indent="&#160;&#160;"><var>$dest&#160;=&#160;</var><var>$dest&#160;-&gt;</var><text>&#160;get&#160;gate&#160;destination:&#160;return&#160;sector=</text><var>[FALSE]</var></line>
+<line indent="&#160;"><var>$dest.sector&#160;=&#160;</var><var>$dest&#160;-&gt;</var><text>&#160;get&#160;sector</text></line>
+<line indent="&#160;"></line>
+<line indent="&#160;"><var>$jumps&#160;=&#160;</var><text>get&#160;jumps&#160;from&#160;sector&#160;</text><var>[SECTOR]</var><text>&#160;to&#160;sector&#160;</text><var>$dest.sector</var></line>
+<line indent="&#160;"><var>if&#160;</var><var>$should.jump</var><text>&#160;</text><var>AND</var><text>&#160;</text><var>$jumps</var><text>&#160;</text><var>&gt;=</var><text>&#160;</text><var>$min.jump</var></line>
+<line indent="&#160;&#160;"><var>$needed.energy&#160;=&#160;</var><var>[THIS]&#160;-&gt;</var><text>get&#160;needed&#160;jump&#160;energy:&#160;jumps=</text><var>$jumps</var></line>
+<line indent="&#160;&#160;"><var>if&#160;</var><var>$got.energy</var><text>&#160;</text><var>&gt;=</var><text>&#160;</text><var>$needed.energy</var><text>&#160;</text><var>OR</var><text>&#160;</text><var>$a.ignoreFuel</var></line>
+<line indent="&#160;&#160;&#160;"><var>if&#160;</var><text>is&#160;datatype[&#160;</text><var>$previous</var><text>&#160;]&#160;==&#160;</text><var>DATATYPE_ARRAY</var></line>
+<line indent="&#160;&#160;&#160;&#160;"><var>$gate&#160;=&#160;</var><text>find&#160;gate:&#160;flags=</text><var>$find.flags.near</var><text>,&#160;refobj=</text><var>null</var><text>,&#160;max&#160;dist=</text><var>null</var><text>,&#160;refpos=</text><var>$previous</var><text>&#160;object&#160;check=</text><var>[THIS]</var></line>
+<line indent="&#160;&#160;&#160;"><var>else&#160;if&#160;</var><var>$previous&#160;-&gt;</var><text>&#160;is&#160;of&#160;class&#160;</text><var>Sector</var></line>
+<line indent="&#160;&#160;&#160;&#160;"><var>$gate&#160;=&#160;</var><text>find&#160;gate:&#160;flags=</text><var>$find.flags</var><text>,&#160;refobj=</text><var>$previous</var><text>,&#160;max&#160;dist=</text><var>null</var><text>,&#160;refpos=</text><var>null</var><text>&#160;object&#160;check=</text><var>[THIS]</var></line>
+<line indent="&#160;&#160;&#160;"><var>else&#160;if&#160;</var><var>$previous&#160;-&gt;</var><text>&#160;exists</text></line>
+<line indent="&#160;&#160;&#160;&#160;"><var>$pos.array&#160;=&#160;</var><var>$previous&#160;-&gt;</var><text>&#160;get&#160;position&#160;as&#160;array</text></line>
+<line indent="&#160;&#160;&#160;&#160;"><var>$prev.sector&#160;=&#160;</var><var>$previous&#160;-&gt;</var><text>&#160;get&#160;sector</text></line>
+<line indent="&#160;&#160;&#160;&#160;"><text>append&#160;</text><var>$prev.sector</var><text>&#160;to&#160;array&#160;</text><var>$pos.array</var></line>
+<line indent="&#160;&#160;&#160;&#160;"><var>$gate&#160;=&#160;</var><text>find&#160;gate:&#160;flags=</text><var>$find.flags.near</var><text>,&#160;refobj=</text><var>null</var><text>,&#160;max&#160;dist=</text><var>null</var><text>,&#160;refpos=</text><var>$pos.array</var><text>&#160;object&#160;check=</text><var>[THIS]</var></line>
+<line indent="&#160;&#160;&#160;"><text>else</text></line>
+<line indent="&#160;&#160;&#160;&#160;"><var>$gate&#160;=&#160;</var><text>find&#160;gate:&#160;flags=</text><var>$find.flags</var><text>,&#160;refobj=</text><var>$dest.sector</var><text>,&#160;max&#160;dist=</text><var>null</var><text>,&#160;refpos=</text><var>null</var><text>&#160;object&#160;check=</text><var>[THIS]</var></line>
+<line indent="&#160;&#160;&#160;"><text>end</text></line>
+<line indent="&#160;&#160;&#160;"></line>
+<line indent="&#160;&#160;&#160;"><var>if&#160;</var><var>$gate&#160;-&gt;</var><text>&#160;exists</text></line>
+<line indent="&#160;&#160;&#160;&#160;"><text>append&#160;</text><var>$gate</var><text>&#160;to&#160;array&#160;</text><var>$sectors</var></line>
+<line indent="&#160;&#160;&#160;&#160;"><text>break</text></line>
+<line indent="&#160;&#160;&#160;"><text>end</text></line>
+<line indent="&#160;&#160;"><text>end</text></line>
+<line indent="&#160;"><text>end</text></line>
+<line indent="&#160;"></line>
+<line indent="&#160;"><var>$previous&#160;=&#160;</var><var>$route</var><text>[</text><var>$i</var><text>]</text></line>
+<line indent="&#160;"><text>append&#160;</text><var>$previous</var><text>&#160;to&#160;array&#160;</text><var>$sectors</var></line>
+<line indent=""><text>end</text></line>
+<line indent=""></line>
+<line indent=""><var>$sectors&#160;=&#160;</var><text>reverse&#160;array&#160;</text><var>$sectors</var></line>
+<line indent=""><text>return&#160;</text><var>$sectors</var></line>
+</sourcetext>
+<codearray>
+
+<sval type="array" size="10">
+  <sval type="string" val="!lib.ship.plotroute"/>
+  <sval type="int" val="71"/>
+  <sval type="string" val="Library: Plot a route"/>
+  <sval type="int" val="4"/>
+  <sval type="int" val="0"/>
+  <sval type="array" size="23">
+    <sval type="string" val="a.destination"/>
+    <sval type="string" val="a.ignoreJump"/>
+    <sval type="string" val="a.weights"/>
+    <sval type="string" val="a.alwaysJump"/>
+    <sval type="string" val="a.ignoreFuel"/>
+    <sval type="string" val="a.flags"/>
+    <sval type="string" val="dest"/>
+    <sval type="string" val="route"/>
+    <sval type="string" val="sectors"/>
+    <sval type="string" val="should.jump"/>
+    <sval type="string" val="min.jump"/>
+    <sval type="string" val="has.jumpdrive"/>
+    <sval type="string" val="find.flags"/>
+    <sval type="string" val="find.flags.near"/>
+    <sval type="string" val="got.energy"/>
+    <sval type="string" val="i"/>
+    <sval type="string" val="previous"/>
+    <sval type="string" val="dest.sector"/>
+    <sval type="string" val="jumps"/>
+    <sval type="string" val="needed.energy"/>
+    <sval type="string" val="gate"/>
+    <sval type="string" val="pos.array"/>
+    <sval type="string" val="prev.sector"/>
+  </sval>
+  <sval type="array" size="75">
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="125"/>
+      <sval type="int" val="-1610611960"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="20"/>
+      <sval type="int" val="21"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="3"/>
+    </sval>
+    <sval type="array" size="10">
+      <sval type="int" val="2277"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="2"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="9"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-536869369"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="131"/>
+      <sval type="int" val="-536868857"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="128"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="0"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="618"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1048611"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610609144"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="802"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610608632"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="803"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="618"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1610608120"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1048762"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-536864252"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610606077"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610606845"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="26"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="1362"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1610606075"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="1364"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="10"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610605053"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="19">
+      <sval type="int" val="104"/>
+      <sval type="int" val="12"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="134"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="138"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="123"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="-2"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="-4"/>
+    </sval>
+    <sval type="array" size="25">
+      <sval type="int" val="104"/>
+      <sval type="int" val="13"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="134"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="138"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="106"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="123"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="-2"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="-4"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="-6"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="32"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="12"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="134"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="138"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="19">
+      <sval type="int" val="104"/>
+      <sval type="int" val="13"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="134"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="138"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="106"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="-2"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="-4"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="619"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="720896"/>
+    </sval>
+    <sval type="array" size="19">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610603768"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="803"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="-2"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="-3"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="2147483647"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="618"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1610603256"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1048762"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="2147483647"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="618"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1610602744"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="1048763"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="2147483647"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="131"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="143"/>
+      <sval type="int" val="15"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="16"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="15"/>
+    </sval>
+    <sval type="array" size="13">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610601464"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="16"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="3"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="-2"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="16"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="7">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610594039"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="-1"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="143"/>
+      <sval type="int" val="15"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="15"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="705"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="-1610600184"/>
+      <sval type="int" val="12"/>
+      <sval type="int" val="2014"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="1057"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="9"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="703"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="17"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="711"/>
+      <sval type="int" val="18"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="6"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="17"/>
+    </sval>
+    <sval type="array" size="19">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610594813"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="18"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="9"/>
+      <sval type="int" val="-2"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="-3"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="2188"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+      <sval type="int" val="19"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="18"/>
+    </sval>
+    <sval type="array" size="19">
+      <sval type="int" val="104"/>
+      <sval type="int" val="-1610594813"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="14"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="19"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="5"/>
+      <sval type="int" val="-1"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="-2"/>
+      <sval type="int" val="10"/>
+      <sval type="int" val="-4"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="125"/>
+      <sval type="int" val="-1610598141"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="16"/>
+      <sval type="int" val="20"/>
+      <sval type="int" val="21"/>
+    </sval>
+    <sval type="array" size="12">
+      <sval type="int" val="1586"/>
+      <sval type="int" val="20"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="13"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="16"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="67"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="705"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="16"/>
+      <sval type="int" val="-1610597371"/>
+      <sval type="int" val="12"/>
+      <sval type="int" val="2001"/>
+    </sval>
+    <sval type="array" size="12">
+      <sval type="int" val="1586"/>
+      <sval type="int" val="20"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="12"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="16"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="67"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="706"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="16"/>
+      <sval type="int" val="-1610595835"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="795"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="16"/>
+      <sval type="int" val="21"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="703"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="16"/>
+      <sval type="int" val="22"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="135"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="21"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="22"/>
+    </sval>
+    <sval type="array" size="12">
+      <sval type="int" val="1586"/>
+      <sval type="int" val="20"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="13"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="21"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="67"/>
+    </sval>
+    <sval type="array" size="12">
+      <sval type="int" val="1586"/>
+      <sval type="int" val="20"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="12"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="17"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="0"/>
+      <sval type="int" val="131075"/>
+      <sval type="int" val="1"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="706"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="20"/>
+      <sval type="int" val="-1610594813"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="135"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="20"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="73"/>
+    </sval>
+    <sval type="array" size="6">
+      <sval type="int" val="129"/>
+      <sval type="int" val="16"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="7"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="15"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="135"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="16"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="44"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="1443"/>
+      <sval type="int" val="8"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="8"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="103"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="8"/>
+    </sval>
+  </sval>
+  <sval type="array" size="6">
+    <sval type="array" size="2">
+      <sval type="int" val="9"/>
+      <sval type="string" val="Destination"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="63"/>
+      <sval type="string" val="Ignore Jumping"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="9"/>
+      <sval type="string" val="Weights Table"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="63"/>
+      <sval type="string" val="Always Jump"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="63"/>
+      <sval type="string" val="Ignore Fuel"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="9"/>
+      <sval type="string" val="Jump Flags"/>
+    </sval>
+  </sval>
+  <sval type="array" size="46">
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Plots the best route based on sector weights"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="adjusts the route to jump to the further possible gate"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="==============================="/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="a.destintion - The destination, could be a sector, any object, or a position"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="a.ignoreJump - Should ignore jumping? even if autojump is enabled"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="a.weights - The weights table for each sector (which to avoid/block)"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="a.alwaysJump - Should always jump, even if autojump not enabled"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="a.ignoreFuel - Ignore checking energy needed (always jump as far as possible)"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="a.flags - Jump flags to override some checks (ie device/energy checks)"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="==============================="/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="0"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Compute the best route based on race weigths"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="0"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Any race set to avoid or block has a higher weight"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="4"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="4"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="No route? sector must be unreachable (IE behind a HSAP)"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="8"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="9"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="11"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="11"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Check if we can jump to the closest gate"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="18"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="18"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="if ignoring jump, we should always fly"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="19"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="only do jump calculation if device is installed (or overridden by flags)"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="20"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="if always jumping, then ignore min distance and autojump settings"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="26"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="26"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="26"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="26"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="30"/>
+      <sval type="int" val="5"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="32"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="32"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="33"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="If ignoring fuel, then set energy to maximum"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="39"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="44"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="3">
+      <sval type="int" val="44"/>
+      <sval type="int" val="1"/>
+      <sval type="string" val="Now check the route backwards to find the furthest point we can jump to"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="47"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="50"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="66"/>
+      <sval type="int" val="5"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="67"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="67"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="70"/>
+      <sval type="int" val="7"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="70"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="70"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="70"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="70"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="73"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="73"/>
+      <sval type="int" val="2"/>
+    </sval>
+  </sval>
+  <sval type="int" val="0"/>
+</sval>
+
+</codearray>
+<nosignature>7321</nosignature>
+</script>
