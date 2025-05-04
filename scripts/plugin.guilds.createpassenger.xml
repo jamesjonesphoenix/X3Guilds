@@ -198,7 +198,7 @@
     $new.passenger['visited'] = $table
     $rnd = random value from 10 to 31 - 1
     $new.passenger['max.visit'] = $rnd
-    $pay = random value from 10000 to 20000 - 1
+    $pay = random value from 20000 to 35000 - 1
     $pay = $pay * $rnd
     
   * Tourist
@@ -206,7 +206,7 @@
     $travel.type = 3
     $rnd = random value from 5 to 11 - 1
     $xp = random value from 50 to 100 - 1
-    $pay = random value from 12000 to 25000 - 1
+    $pay = random value from 15000 to 30000 - 1
     $min = 5
     gosub sub.GetSectors
     
@@ -219,6 +219,7 @@
       skip if size of table $tSectors
         break
     end
+    
     $min.dest = 2
     $new.passenger['destination'] = $destination
     $rnd = size of table $destination
@@ -227,7 +228,7 @@
   * Multiple Destination
   else if $rnd >= 40
     $travel.type = 2
-    $pay = random value from 15000 to 25000 - 1
+    $pay = random value from 18000 to 32000 - 1
     $rnd = random value from 3 to 6 - 1
     $min = 5
     gosub sub.GetSectors
@@ -254,7 +255,7 @@
   * Single Destination
   else
     $xp = random value from 30 to 50 - 1
-    $pay = random value from 25000 to 50000 - 1
+    $pay = random value from 30000 to 65000 - 1
     $travel.type = 1
     $min.dest = 1
     $min = 8
@@ -287,7 +288,7 @@
   end
   
   $new.passenger['travel.type'] = $travel.type
-  $pay = $pay * $type
+  $pay = ( $pay * $type ) + ( $type * 50000 )
   $new.passenger['pay'] = $pay
   $xp = $xp * $type
   $new.passenger['xp'] = $xp
@@ -316,6 +317,9 @@
     dec $i = 
     $tmp = $aSectors[$i]
     $tmp.owner = $tmp -> get owner race
+    do if $tmp.owner -> is aggressive race
+      continue
+    
     skip if $passenger.races[$sector.owner]
       continue
     
@@ -335,18 +339,29 @@
       $table.random = table alloc
       $s = get next key: table=$table key=null
       while $s
-        if $s -> is of class Trading Dock
-          $station = $s
-          endsub
-        end
         $s.owner = $s -> get owner race
-        if $passenger.races[$s.owner]
-          $table.random[$s] = [TRUE]
+        if not $s.owner -> is aggressive race
+          if $s -> is of class Trading Dock
+            $station = $s
+            endsub
+          end
+          if $passenger.races[$s.owner]
+            $table.random[$s] = [TRUE]
+          end
         end
         $s = get next key: table=$table key=$s
       end
       if size of table $table.random
         $station = get random key: table=$table.random
+        remove key $station from table $table.random
+        $s.owner = $station -> get owner race
+        while $s.owner -> is aggressive race
+          $station = get random key: table=$table.random
+          $s.owner = $station -> get owner race
+          remove key $station from table $table.random
+          skip if size of table $table.random
+            break
+        end
         endsub
       end
     end
@@ -356,13 +371,24 @@
       $s = get next key: table=$table key=null
       while $s
         $s.owner = $s -> get owner race
-        if $passenger.races[$s.owner]
-          $table.random[$s] = [TRUE]
+        if not $s.owner -> is aggressive race
+          if $passenger.races[$s.owner]
+            $table.random[$s] = [TRUE]
+          end
         end
         $s = get next key: table=$table key=$s
       end
       if size of table $table.random
         $station = get random key: table=$table.random
+        remove key $station from table $table.random
+        $s.owner = $station -> get owner race
+        while $s.owner -> is aggressive race
+          $station = get random key: table=$table.random
+          $s.owner = $station -> get owner race
+          remove key $station from table $table.random
+          skip if size of table $table.random
+            break
+        end
         endsub
       end
     end
@@ -561,7 +587,7 @@
 <line indent="&#160;"><var>$new.passenger</var><text>[</text><var>'visited'</var><text>]&#160;=&#160;</text><var>$table</var></line>
 <line indent="&#160;"><var>$rnd&#160;=&#160;</var><text>random&#160;value&#160;from&#160;</text><var>10</var><text>&#160;to&#160;</text><var>31</var><text>&#160;-&#160;1</text></line>
 <line indent="&#160;"><var>$new.passenger</var><text>[</text><var>'max.visit'</var><text>]&#160;=&#160;</text><var>$rnd</var></line>
-<line indent="&#160;"><var>$pay&#160;=&#160;</var><text>random&#160;value&#160;from&#160;</text><var>10000</var><text>&#160;to&#160;</text><var>20000</var><text>&#160;-&#160;1</text></line>
+<line indent="&#160;"><var>$pay&#160;=&#160;</var><text>random&#160;value&#160;from&#160;</text><var>20000</var><text>&#160;to&#160;</text><var>35000</var><text>&#160;-&#160;1</text></line>
 <line indent="&#160;"><var>$pay&#160;=&#160;</var><var>$pay</var><text>&#160;</text><var>*</var><text>&#160;</text><var>$rnd</var></line>
 <line indent="&#160;"></line>
 <line indent=""><comment><text>*&#160;</text><var>Tourist</var></comment></line>
@@ -569,7 +595,7 @@
 <line indent="&#160;"><var>$travel.type&#160;=&#160;</var><var>3</var></line>
 <line indent="&#160;"><var>$rnd&#160;=&#160;</var><text>random&#160;value&#160;from&#160;</text><var>5</var><text>&#160;to&#160;</text><var>11</var><text>&#160;-&#160;1</text></line>
 <line indent="&#160;"><var>$xp&#160;=&#160;</var><text>random&#160;value&#160;from&#160;</text><var>50</var><text>&#160;to&#160;</text><var>100</var><text>&#160;-&#160;1</text></line>
-<line indent="&#160;"><var>$pay&#160;=&#160;</var><text>random&#160;value&#160;from&#160;</text><var>12000</var><text>&#160;to&#160;</text><var>25000</var><text>&#160;-&#160;1</text></line>
+<line indent="&#160;"><var>$pay&#160;=&#160;</var><text>random&#160;value&#160;from&#160;</text><var>15000</var><text>&#160;to&#160;</text><var>30000</var><text>&#160;-&#160;1</text></line>
 <line indent="&#160;"><var>$min&#160;=&#160;</var><var>5</var></line>
 <line indent="&#160;"><text>gosub&#160;</text><var>sub.GetSectors</var></line>
 <line indent="&#160;"></line>
@@ -582,6 +608,7 @@
 <line indent="&#160;&#160;"><var>skip&#160;if&#160;</var><text>size&#160;of&#160;table&#160;</text><var>$tSectors</var></line>
 <line indent="&#160;&#160;&#160;"><text>break</text></line>
 <line indent="&#160;"><text>end</text></line>
+<line indent="&#160;"></line>
 <line indent="&#160;"><var>$min.dest&#160;=&#160;</var><var>2</var></line>
 <line indent="&#160;"><var>$new.passenger</var><text>[</text><var>'destination'</var><text>]&#160;=&#160;</text><var>$destination</var></line>
 <line indent="&#160;"><var>$rnd&#160;=&#160;</var><text>size&#160;of&#160;table&#160;</text><var>$destination</var></line>
@@ -590,7 +617,7 @@
 <line indent=""><comment><text>*&#160;</text><var>Multiple&#160;Destination</var></comment></line>
 <line indent=""><var>else&#160;if&#160;</var><var>$rnd</var><text>&#160;</text><var>&gt;=</var><text>&#160;</text><var>40</var></line>
 <line indent="&#160;"><var>$travel.type&#160;=&#160;</var><var>2</var></line>
-<line indent="&#160;"><var>$pay&#160;=&#160;</var><text>random&#160;value&#160;from&#160;</text><var>15000</var><text>&#160;to&#160;</text><var>25000</var><text>&#160;-&#160;1</text></line>
+<line indent="&#160;"><var>$pay&#160;=&#160;</var><text>random&#160;value&#160;from&#160;</text><var>18000</var><text>&#160;to&#160;</text><var>32000</var><text>&#160;-&#160;1</text></line>
 <line indent="&#160;"><var>$rnd&#160;=&#160;</var><text>random&#160;value&#160;from&#160;</text><var>3</var><text>&#160;to&#160;</text><var>6</var><text>&#160;-&#160;1</text></line>
 <line indent="&#160;"><var>$min&#160;=&#160;</var><var>5</var></line>
 <line indent="&#160;"><text>gosub&#160;</text><var>sub.GetSectors</var></line>
@@ -617,7 +644,7 @@
 <line indent=""><comment><text>*&#160;</text><var>Single&#160;Destination</var></comment></line>
 <line indent=""><text>else</text></line>
 <line indent="&#160;"><var>$xp&#160;=&#160;</var><text>random&#160;value&#160;from&#160;</text><var>30</var><text>&#160;to&#160;</text><var>50</var><text>&#160;-&#160;1</text></line>
-<line indent="&#160;"><var>$pay&#160;=&#160;</var><text>random&#160;value&#160;from&#160;</text><var>25000</var><text>&#160;to&#160;</text><var>50000</var><text>&#160;-&#160;1</text></line>
+<line indent="&#160;"><var>$pay&#160;=&#160;</var><text>random&#160;value&#160;from&#160;</text><var>30000</var><text>&#160;to&#160;</text><var>65000</var><text>&#160;-&#160;1</text></line>
 <line indent="&#160;"><var>$travel.type&#160;=&#160;</var><var>1</var></line>
 <line indent="&#160;"><var>$min.dest&#160;=&#160;</var><var>1</var></line>
 <line indent="&#160;"><var>$min&#160;=&#160;</var><var>8</var></line>
@@ -650,7 +677,7 @@
 <line indent=""><text>end</text></line>
 <line indent=""></line>
 <line indent=""><var>$new.passenger</var><text>[</text><var>'travel.type'</var><text>]&#160;=&#160;</text><var>$travel.type</var></line>
-<line indent=""><var>$pay&#160;=&#160;</var><var>$pay</var><text>&#160;</text><var>*</var><text>&#160;</text><var>$type</var></line>
+<line indent=""><var>$pay&#160;=&#160;</var><var>(</var><text>&#160;</text><var>$pay</var><text>&#160;</text><var>*</var><text>&#160;</text><var>$type</var><text>&#160;</text><var>)</var><text>&#160;</text><var>+</var><text>&#160;</text><var>(</var><text>&#160;</text><var>$type</var><text>&#160;</text><var>*</var><text>&#160;</text><var>50000</var><text>&#160;</text><var>)</var></line>
 <line indent=""><var>$new.passenger</var><text>[</text><var>'pay'</var><text>]&#160;=&#160;</text><var>$pay</var></line>
 <line indent=""><var>$xp&#160;=&#160;</var><var>$xp</var><text>&#160;</text><var>*</var><text>&#160;</text><var>$type</var></line>
 <line indent=""><var>$new.passenger</var><text>[</text><var>'xp'</var><text>]&#160;=&#160;</text><var>$xp</var></line>
@@ -679,6 +706,9 @@
 <line indent="&#160;"><text>dec&#160;</text><var>$i&#160;=&#160;</var></line>
 <line indent="&#160;"><var>$tmp&#160;=&#160;</var><var>$aSectors</var><text>[</text><var>$i</var><text>]</text></line>
 <line indent="&#160;"><var>$tmp.owner&#160;=&#160;</var><var>$tmp&#160;-&gt;</var><text>&#160;get&#160;owner&#160;race</text></line>
+<line indent="&#160;"><var>do&#160;if&#160;</var><var>$tmp.owner&#160;-&gt;</var><text>&#160;is&#160;aggressive&#160;race</text></line>
+<line indent="&#160;&#160;"><text>continue</text></line>
+<line indent="&#160;"></line>
 <line indent="&#160;"><var>skip&#160;if&#160;</var><var>$passenger.races</var><text>[</text><var>$sector.owner</var><text>]</text></line>
 <line indent="&#160;&#160;"><text>continue</text></line>
 <line indent="&#160;"></line>
@@ -698,18 +728,29 @@
 <line indent="&#160;&#160;"><var>$table.random&#160;=&#160;</var><text>table&#160;alloc</text></line>
 <line indent="&#160;&#160;"><var>$s&#160;=&#160;</var><text>get&#160;next&#160;key:&#160;table=</text><var>$table</var><text>&#160;key=</text><var>null</var></line>
 <line indent="&#160;&#160;"><var>while&#160;</var><var>$s</var></line>
-<line indent="&#160;&#160;&#160;"><var>if&#160;</var><var>$s&#160;-&gt;</var><text>&#160;is&#160;of&#160;class&#160;</text><var>Trading&#160;Dock</var></line>
-<line indent="&#160;&#160;&#160;&#160;"><var>$station&#160;=&#160;</var><var>$s</var></line>
-<line indent="&#160;&#160;&#160;&#160;"><text>endsub</text></line>
-<line indent="&#160;&#160;&#160;"><text>end</text></line>
 <line indent="&#160;&#160;&#160;"><var>$s.owner&#160;=&#160;</var><var>$s&#160;-&gt;</var><text>&#160;get&#160;owner&#160;race</text></line>
-<line indent="&#160;&#160;&#160;"><var>if&#160;</var><var>$passenger.races</var><text>[</text><var>$s.owner</var><text>]</text></line>
-<line indent="&#160;&#160;&#160;&#160;"><var>$table.random</var><text>[</text><var>$s</var><text>]&#160;=&#160;</text><var>[TRUE]</var></line>
+<line indent="&#160;&#160;&#160;"><var>if&#160;not&#160;</var><var>$s.owner&#160;-&gt;</var><text>&#160;is&#160;aggressive&#160;race</text></line>
+<line indent="&#160;&#160;&#160;&#160;"><var>if&#160;</var><var>$s&#160;-&gt;</var><text>&#160;is&#160;of&#160;class&#160;</text><var>Trading&#160;Dock</var></line>
+<line indent="&#160;&#160;&#160;&#160;&#160;"><var>$station&#160;=&#160;</var><var>$s</var></line>
+<line indent="&#160;&#160;&#160;&#160;&#160;"><text>endsub</text></line>
+<line indent="&#160;&#160;&#160;&#160;"><text>end</text></line>
+<line indent="&#160;&#160;&#160;&#160;"><var>if&#160;</var><var>$passenger.races</var><text>[</text><var>$s.owner</var><text>]</text></line>
+<line indent="&#160;&#160;&#160;&#160;&#160;"><var>$table.random</var><text>[</text><var>$s</var><text>]&#160;=&#160;</text><var>[TRUE]</var></line>
+<line indent="&#160;&#160;&#160;&#160;"><text>end</text></line>
 <line indent="&#160;&#160;&#160;"><text>end</text></line>
 <line indent="&#160;&#160;&#160;"><var>$s&#160;=&#160;</var><text>get&#160;next&#160;key:&#160;table=</text><var>$table</var><text>&#160;key=</text><var>$s</var></line>
 <line indent="&#160;&#160;"><text>end</text></line>
 <line indent="&#160;&#160;"><var>if&#160;</var><text>size&#160;of&#160;table&#160;</text><var>$table.random</var></line>
 <line indent="&#160;&#160;&#160;"><var>$station&#160;=&#160;</var><text>get&#160;random&#160;key:&#160;table=</text><var>$table.random</var></line>
+<line indent="&#160;&#160;&#160;"><text>remove&#160;key&#160;</text><var>$station</var><text>&#160;from&#160;table&#160;</text><var>$table.random</var></line>
+<line indent="&#160;&#160;&#160;"><var>$s.owner&#160;=&#160;</var><var>$station&#160;-&gt;</var><text>&#160;get&#160;owner&#160;race</text></line>
+<line indent="&#160;&#160;&#160;"><var>while&#160;</var><var>$s.owner&#160;-&gt;</var><text>&#160;is&#160;aggressive&#160;race</text></line>
+<line indent="&#160;&#160;&#160;&#160;"><var>$station&#160;=&#160;</var><text>get&#160;random&#160;key:&#160;table=</text><var>$table.random</var></line>
+<line indent="&#160;&#160;&#160;&#160;"><var>$s.owner&#160;=&#160;</var><var>$station&#160;-&gt;</var><text>&#160;get&#160;owner&#160;race</text></line>
+<line indent="&#160;&#160;&#160;&#160;"><text>remove&#160;key&#160;</text><var>$station</var><text>&#160;from&#160;table&#160;</text><var>$table.random</var></line>
+<line indent="&#160;&#160;&#160;&#160;"><var>skip&#160;if&#160;</var><text>size&#160;of&#160;table&#160;</text><var>$table.random</var></line>
+<line indent="&#160;&#160;&#160;&#160;&#160;"><text>break</text></line>
+<line indent="&#160;&#160;&#160;"><text>end</text></line>
 <line indent="&#160;&#160;&#160;"><text>endsub</text></line>
 <line indent="&#160;&#160;"><text>end</text></line>
 <line indent="&#160;"><text>end</text></line>
@@ -719,13 +760,24 @@
 <line indent="&#160;&#160;"><var>$s&#160;=&#160;</var><text>get&#160;next&#160;key:&#160;table=</text><var>$table</var><text>&#160;key=</text><var>null</var></line>
 <line indent="&#160;&#160;"><var>while&#160;</var><var>$s</var></line>
 <line indent="&#160;&#160;&#160;"><var>$s.owner&#160;=&#160;</var><var>$s&#160;-&gt;</var><text>&#160;get&#160;owner&#160;race</text></line>
-<line indent="&#160;&#160;&#160;"><var>if&#160;</var><var>$passenger.races</var><text>[</text><var>$s.owner</var><text>]</text></line>
-<line indent="&#160;&#160;&#160;&#160;"><var>$table.random</var><text>[</text><var>$s</var><text>]&#160;=&#160;</text><var>[TRUE]</var></line>
+<line indent="&#160;&#160;&#160;"><var>if&#160;not&#160;</var><var>$s.owner&#160;-&gt;</var><text>&#160;is&#160;aggressive&#160;race</text></line>
+<line indent="&#160;&#160;&#160;&#160;"><var>if&#160;</var><var>$passenger.races</var><text>[</text><var>$s.owner</var><text>]</text></line>
+<line indent="&#160;&#160;&#160;&#160;&#160;"><var>$table.random</var><text>[</text><var>$s</var><text>]&#160;=&#160;</text><var>[TRUE]</var></line>
+<line indent="&#160;&#160;&#160;&#160;"><text>end</text></line>
 <line indent="&#160;&#160;&#160;"><text>end</text></line>
 <line indent="&#160;&#160;&#160;"><var>$s&#160;=&#160;</var><text>get&#160;next&#160;key:&#160;table=</text><var>$table</var><text>&#160;key=</text><var>$s</var></line>
 <line indent="&#160;&#160;"><text>end</text></line>
 <line indent="&#160;&#160;"><var>if&#160;</var><text>size&#160;of&#160;table&#160;</text><var>$table.random</var></line>
 <line indent="&#160;&#160;&#160;"><var>$station&#160;=&#160;</var><text>get&#160;random&#160;key:&#160;table=</text><var>$table.random</var></line>
+<line indent="&#160;&#160;&#160;"><text>remove&#160;key&#160;</text><var>$station</var><text>&#160;from&#160;table&#160;</text><var>$table.random</var></line>
+<line indent="&#160;&#160;&#160;"><var>$s.owner&#160;=&#160;</var><var>$station&#160;-&gt;</var><text>&#160;get&#160;owner&#160;race</text></line>
+<line indent="&#160;&#160;&#160;"><var>while&#160;</var><var>$s.owner&#160;-&gt;</var><text>&#160;is&#160;aggressive&#160;race</text></line>
+<line indent="&#160;&#160;&#160;&#160;"><var>$station&#160;=&#160;</var><text>get&#160;random&#160;key:&#160;table=</text><var>$table.random</var></line>
+<line indent="&#160;&#160;&#160;&#160;"><var>$s.owner&#160;=&#160;</var><var>$station&#160;-&gt;</var><text>&#160;get&#160;owner&#160;race</text></line>
+<line indent="&#160;&#160;&#160;&#160;"><text>remove&#160;key&#160;</text><var>$station</var><text>&#160;from&#160;table&#160;</text><var>$table.random</var></line>
+<line indent="&#160;&#160;&#160;&#160;"><var>skip&#160;if&#160;</var><text>size&#160;of&#160;table&#160;</text><var>$table.random</var></line>
+<line indent="&#160;&#160;&#160;&#160;&#160;"><text>break</text></line>
+<line indent="&#160;&#160;&#160;"><text>end</text></line>
 <line indent="&#160;&#160;&#160;"><text>endsub</text></line>
 <line indent="&#160;&#160;"><text>end</text></line>
 <line indent="&#160;"><text>end</text></line>
@@ -795,7 +847,7 @@
     <sval type="string" val="s"/>
     <sval type="string" val="s.owner"/>
   </sval>
-  <sval type="array" size="281">
+  <sval type="array" size="303">
     <sval type="array" size="4">
       <sval type="int" val="158"/>
       <sval type="int" val="5"/>
@@ -1983,9 +2035,9 @@
       <sval type="int" val="110"/>
       <sval type="int" val="38"/>
       <sval type="int" val="4"/>
-      <sval type="int" val="10000"/>
-      <sval type="int" val="4"/>
       <sval type="int" val="20000"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="35000"/>
     </sval>
     <sval type="array" size="13">
       <sval type="int" val="104"/>
@@ -2050,9 +2102,9 @@
       <sval type="int" val="110"/>
       <sval type="int" val="38"/>
       <sval type="int" val="4"/>
-      <sval type="int" val="12000"/>
+      <sval type="int" val="15000"/>
       <sval type="int" val="4"/>
-      <sval type="int" val="25000"/>
+      <sval type="int" val="30000"/>
     </sval>
     <sval type="array" size="7">
       <sval type="int" val="104"/>
@@ -2191,9 +2243,9 @@
       <sval type="int" val="110"/>
       <sval type="int" val="38"/>
       <sval type="int" val="4"/>
-      <sval type="int" val="15000"/>
+      <sval type="int" val="18000"/>
       <sval type="int" val="4"/>
-      <sval type="int" val="25000"/>
+      <sval type="int" val="32000"/>
     </sval>
     <sval type="array" size="6">
       <sval type="int" val="110"/>
@@ -2252,7 +2304,7 @@
     </sval>
     <sval type="array" size="2">
       <sval type="int" val="1167"/>
-      <sval type="int" val="247"/>
+      <sval type="int" val="249"/>
     </sval>
     <sval type="array" size="7">
       <sval type="int" val="104"/>
@@ -2345,9 +2397,9 @@
       <sval type="int" val="110"/>
       <sval type="int" val="38"/>
       <sval type="int" val="4"/>
-      <sval type="int" val="25000"/>
+      <sval type="int" val="30000"/>
       <sval type="int" val="4"/>
-      <sval type="int" val="50000"/>
+      <sval type="int" val="65000"/>
     </sval>
     <sval type="array" size="7">
       <sval type="int" val="104"/>
@@ -2401,7 +2453,7 @@
     </sval>
     <sval type="array" size="2">
       <sval type="int" val="1167"/>
-      <sval type="int" val="247"/>
+      <sval type="int" val="249"/>
     </sval>
     <sval type="array" size="7">
       <sval type="int" val="104"/>
@@ -2532,20 +2584,36 @@
       <sval type="int" val="131074"/>
       <sval type="int" val="35"/>
     </sval>
-    <sval type="array" size="13">
+    <sval type="array" size="29">
       <sval type="int" val="104"/>
       <sval type="int" val="38"/>
-      <sval type="int" val="3"/>
+      <sval type="int" val="7"/>
       <sval type="int" val="131074"/>
       <sval type="int" val="38"/>
       <sval type="int" val="131074"/>
       <sval type="int" val="31"/>
       <sval type="int" val="15"/>
       <sval type="int" val="13"/>
-      <sval type="int" val="3"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="31"/>
+      <sval type="int" val="4"/>
+      <sval type="int" val="50000"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="13"/>
+      <sval type="int" val="15"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="16"/>
       <sval type="int" val="-1"/>
       <sval type="int" val="13"/>
       <sval type="int" val="-2"/>
+      <sval type="int" val="17"/>
+      <sval type="int" val="11"/>
+      <sval type="int" val="16"/>
+      <sval type="int" val="-4"/>
+      <sval type="int" val="13"/>
+      <sval type="int" val="-5"/>
+      <sval type="int" val="17"/>
     </sval>
     <sval type="array" size="7">
       <sval type="int" val="130"/>
@@ -2687,7 +2755,7 @@
     </sval>
     <sval type="array" size="7">
       <sval type="int" val="104"/>
-      <sval type="int" val="-1610549751"/>
+      <sval type="int" val="-1610549239"/>
       <sval type="int" val="1"/>
       <sval type="int" val="131074"/>
       <sval type="int" val="16"/>
@@ -2712,9 +2780,19 @@
       <sval type="int" val="40"/>
       <sval type="int" val="45"/>
     </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="3173"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="45"/>
+      <sval type="int" val="-1610550776"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="236"/>
+    </sval>
     <sval type="array" size="6">
       <sval type="int" val="129"/>
-      <sval type="int" val="-536808953"/>
+      <sval type="int" val="-536808441"/>
       <sval type="int" val="131074"/>
       <sval type="int" val="9"/>
       <sval type="int" val="131074"/>
@@ -2734,7 +2812,7 @@
     </sval>
     <sval type="array" size="13">
       <sval type="int" val="104"/>
-      <sval type="int" val="-1610550013"/>
+      <sval type="int" val="-1610549501"/>
       <sval type="int" val="3"/>
       <sval type="int" val="131074"/>
       <sval type="int" val="46"/>
@@ -2780,7 +2858,7 @@
       <sval type="int" val="706"/>
       <sval type="int" val="131074"/>
       <sval type="int" val="40"/>
-      <sval type="int" val="-1610541309"/>
+      <sval type="int" val="-1610535677"/>
     </sval>
     <sval type="array" size="4">
       <sval type="int" val="2619"/>
@@ -2790,7 +2868,7 @@
     </sval>
     <sval type="array" size="7">
       <sval type="int" val="104"/>
-      <sval type="int" val="-1610544637"/>
+      <sval type="int" val="-1610541565"/>
       <sval type="int" val="1"/>
       <sval type="int" val="131074"/>
       <sval type="int" val="37"/>
@@ -2811,18 +2889,30 @@
     </sval>
     <sval type="array" size="7">
       <sval type="int" val="104"/>
-      <sval type="int" val="-1610545399"/>
+      <sval type="int" val="-1610544631"/>
       <sval type="int" val="1"/>
       <sval type="int" val="131074"/>
       <sval type="int" val="48"/>
       <sval type="int" val="1"/>
       <sval type="int" val="-1"/>
     </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="701"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="48"/>
+      <sval type="int" val="49"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="3173"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="49"/>
+      <sval type="int" val="-536803324"/>
+    </sval>
     <sval type="array" size="6">
       <sval type="int" val="705"/>
       <sval type="int" val="131074"/>
       <sval type="int" val="48"/>
-      <sval type="int" val="-1610546685"/>
+      <sval type="int" val="-1610545661"/>
       <sval type="int" val="12"/>
       <sval type="int" val="2074"/>
     </sval>
@@ -2838,15 +2928,9 @@
     <sval type="array" size="1">
       <sval type="int" val="1168"/>
     </sval>
-    <sval type="array" size="4">
-      <sval type="int" val="701"/>
-      <sval type="int" val="131074"/>
-      <sval type="int" val="48"/>
-      <sval type="int" val="49"/>
-    </sval>
     <sval type="array" size="6">
       <sval type="int" val="129"/>
-      <sval type="int" val="-1610545917"/>
+      <sval type="int" val="-1610545149"/>
       <sval type="int" val="131074"/>
       <sval type="int" val="9"/>
       <sval type="int" val="131074"/>
@@ -2871,11 +2955,11 @@
     </sval>
     <sval type="array" size="2">
       <sval type="int" val="112"/>
-      <sval type="int" val="254"/>
+      <sval type="int" val="256"/>
     </sval>
     <sval type="array" size="4">
       <sval type="int" val="1734"/>
-      <sval type="int" val="-1610544637"/>
+      <sval type="int" val="-1610541565"/>
       <sval type="int" val="131074"/>
       <sval type="int" val="47"/>
     </sval>
@@ -2884,6 +2968,58 @@
       <sval type="int" val="42"/>
       <sval type="int" val="131074"/>
       <sval type="int" val="47"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="1735"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="47"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="42"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="701"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="42"/>
+      <sval type="int" val="49"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="3173"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="49"/>
+      <sval type="int" val="-1610541815"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="2083"/>
+      <sval type="int" val="42"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="47"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="701"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="42"/>
+      <sval type="int" val="49"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="1735"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="47"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="42"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="1734"/>
+      <sval type="int" val="-536800249"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="47"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="277"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="270"/>
     </sval>
     <sval type="array" size="1">
       <sval type="int" val="1168"/>
@@ -2896,7 +3032,7 @@
     </sval>
     <sval type="array" size="7">
       <sval type="int" val="104"/>
-      <sval type="int" val="-1610541309"/>
+      <sval type="int" val="-1610535677"/>
       <sval type="int" val="1"/>
       <sval type="int" val="131074"/>
       <sval type="int" val="37"/>
@@ -2917,7 +3053,7 @@
     </sval>
     <sval type="array" size="7">
       <sval type="int" val="104"/>
-      <sval type="int" val="-1610542071"/>
+      <sval type="int" val="-1610538743"/>
       <sval type="int" val="1"/>
       <sval type="int" val="131074"/>
       <sval type="int" val="48"/>
@@ -2930,9 +3066,15 @@
       <sval type="int" val="48"/>
       <sval type="int" val="49"/>
     </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="3173"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="49"/>
+      <sval type="int" val="-536797436"/>
+    </sval>
     <sval type="array" size="6">
       <sval type="int" val="129"/>
-      <sval type="int" val="-1610542589"/>
+      <sval type="int" val="-1610539261"/>
       <sval type="int" val="131074"/>
       <sval type="int" val="9"/>
       <sval type="int" val="131074"/>
@@ -2957,11 +3099,11 @@
     </sval>
     <sval type="array" size="2">
       <sval type="int" val="112"/>
-      <sval type="int" val="270"/>
+      <sval type="int" val="282"/>
     </sval>
     <sval type="array" size="4">
       <sval type="int" val="1734"/>
-      <sval type="int" val="-1610541309"/>
+      <sval type="int" val="-1610535677"/>
       <sval type="int" val="131074"/>
       <sval type="int" val="47"/>
     </sval>
@@ -2970,6 +3112,58 @@
       <sval type="int" val="42"/>
       <sval type="int" val="131074"/>
       <sval type="int" val="47"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="1735"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="47"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="42"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="701"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="42"/>
+      <sval type="int" val="49"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="3173"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="49"/>
+      <sval type="int" val="-1610535927"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="2083"/>
+      <sval type="int" val="42"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="47"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="701"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="42"/>
+      <sval type="int" val="49"/>
+    </sval>
+    <sval type="array" size="5">
+      <sval type="int" val="1735"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="47"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="42"/>
+    </sval>
+    <sval type="array" size="4">
+      <sval type="int" val="1734"/>
+      <sval type="int" val="-536794361"/>
+      <sval type="int" val="131074"/>
+      <sval type="int" val="47"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="300"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="112"/>
+      <sval type="int" val="293"/>
     </sval>
     <sval type="array" size="1">
       <sval type="int" val="1168"/>
@@ -2993,7 +3187,7 @@
       <sval type="string" val="Ignore Time"/>
     </sval>
   </sval>
-  <sval type="array" size="111">
+  <sval type="array" size="120">
     <sval type="array" size="2">
       <sval type="int" val="0"/>
       <sval type="int" val="2"/>
@@ -3256,6 +3450,10 @@
       <sval type="int" val="4"/>
     </sval>
     <sval type="array" size="2">
+      <sval type="int" val="165"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
       <sval type="int" val="169"/>
       <sval type="int" val="2"/>
     </sval>
@@ -3382,67 +3580,99 @@
       <sval type="int" val="2"/>
     </sval>
     <sval type="array" size="2">
-      <sval type="int" val="245"/>
-      <sval type="int" val="4"/>
+      <sval type="int" val="244"/>
+      <sval type="int" val="6"/>
     </sval>
     <sval type="array" size="2">
-      <sval type="int" val="246"/>
-      <sval type="int" val="4"/>
-    </sval>
-    <sval type="array" size="2">
-      <sval type="int" val="247"/>
+      <sval type="int" val="244"/>
       <sval type="int" val="2"/>
     </sval>
     <sval type="array" size="2">
       <sval type="int" val="247"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="248"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="249"/>
       <sval type="int" val="2"/>
     </sval>
     <sval type="array" size="2">
-      <sval type="int" val="258"/>
+      <sval type="int" val="249"/>
+      <sval type="int" val="2"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="262"/>
       <sval type="int" val="4"/>
     </sval>
     <sval type="array" size="2">
-      <sval type="int" val="261"/>
+      <sval type="int" val="264"/>
       <sval type="int" val="4"/>
     </sval>
     <sval type="array" size="2">
-      <sval type="int" val="263"/>
+      <sval type="int" val="264"/>
       <sval type="int" val="4"/>
     </sval>
     <sval type="array" size="2">
       <sval type="int" val="266"/>
-      <sval type="int" val="4"/>
-    </sval>
-    <sval type="array" size="2">
-      <sval type="int" val="266"/>
-      <sval type="int" val="4"/>
-    </sval>
-    <sval type="array" size="2">
-      <sval type="int" val="274"/>
       <sval type="int" val="4"/>
     </sval>
     <sval type="array" size="2">
       <sval type="int" val="276"/>
+      <sval type="int" val="7"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="277"/>
       <sval type="int" val="4"/>
     </sval>
     <sval type="array" size="2">
-      <sval type="int" val="279"/>
+      <sval type="int" val="278"/>
       <sval type="int" val="4"/>
     </sval>
     <sval type="array" size="2">
-      <sval type="int" val="279"/>
+      <sval type="int" val="278"/>
       <sval type="int" val="4"/>
     </sval>
     <sval type="array" size="2">
-      <sval type="int" val="279"/>
+      <sval type="int" val="287"/>
       <sval type="int" val="4"/>
     </sval>
     <sval type="array" size="2">
-      <sval type="int" val="280"/>
+      <sval type="int" val="287"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="289"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="299"/>
+      <sval type="int" val="7"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="300"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="301"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="301"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="301"/>
+      <sval type="int" val="4"/>
+    </sval>
+    <sval type="array" size="2">
+      <sval type="int" val="302"/>
       <sval type="int" val="2"/>
     </sval>
     <sval type="array" size="2">
-      <sval type="int" val="280"/>
+      <sval type="int" val="302"/>
       <sval type="int" val="2"/>
     </sval>
   </sval>
@@ -3450,5 +3680,5 @@
 </sval>
 
 </codearray>
-<nosignature>8936</nosignature>
+<nosignature>6864</nosignature>
 </script>
