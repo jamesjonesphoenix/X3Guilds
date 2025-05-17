@@ -15,6 +15,11 @@ catpck -a ../cutscenes/Reunion_*.xml ../09.cat::addon2/cutscenes/
 catpck -a ../director/images/* ../09.cat::addon2/director/images/
 catpck -a ../director/OBS.xml ../09.cat::addon2/director/
 catpck -a ../director/SRST.xml ../09.cat::addon2/director/
+catpck -a "../director/0.35 Defend Object.xml" ../09.cat::addon2/director/
+catpck -a ../director/2.1*.xml ../09.cat::addon2/director/
+catpck -a "../director/3.01 *.xml" ../09.cat::addon2/director/
+catpck -a "../director/3.10 *.xml" ../09.cat::addon2/director/
+catpck -a "../director/u.6 *.xml" ../09.cat::addon2/director/
 catpck -a ../t/0002* ../09.cat::addon2/t/
 catpck -a ../t/conversations.xml ../09.cat::addon2/t/
 catpck -a ../t/conversations_guilds.xml ../09.cat::addon2/t/
