@@ -9,7 +9,7 @@ The Guilds mod for X3 Farnham's Legacy
 # Voice Files
 
 To produce the voice files, you can run the build script in mov/working/<br/>
-Check the Readme for more info, [a relative link](mov/working/README.md)
+Check the [Readme](mov/working/README.md) for more info.
 
 # Packaging
 
