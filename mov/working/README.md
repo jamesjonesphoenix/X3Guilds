@@ -6,8 +6,9 @@
 
 # For other languages
 
-Copy the voice xml (and dat) files into working directory (ie 00044.xml).
-000??.xml from X3FL and 000??.xml from Reunion, rename the Reunion one to 000??_reunion.xml
+Copy the voice xml (and dat) files into working directory (ie 00044.xml).<br/>
+000??.xml from X3FL and 000??.xml from Reunion, rename the Reunion one to 000??_reunion.xml<br/>
+The english versions of these files already exist in the correct place<br/>
 
 # Building
 
@@ -36,3 +37,8 @@ run the build.bat file from working directory with the language id (ie build.bat
 967: Dogun<br/>
 990: Argon Police (Chase Scene)<br/>
 992: Yaki Leader (Turret Mission)<br/>
+
+# Linux
+
+For linux, the voice file needs to be encoded with Obb Vorbis instead of Windows Media.<br/>
+The 00344_output.oga file is generated as part of the build scripts, this needs to be used instead, renaming to 00344.dat<br/>
