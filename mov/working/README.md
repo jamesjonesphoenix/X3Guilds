@@ -23,5 +23,16 @@ run the build.bat file from working directory with the language id (ie build.bat
 
 # Reunion Plot Voice Pages
 
-966: Ion Battler
-967: Dogun
+169: Ban Danna<br/>
+176: Julian<br/>
+191: Gamma Flight Leader<br/>
+192: Gamma Patrol: Kiman<br/>
+193: Gamma Patrol: Loka<br/>
+194: Gamma Patrol: Nia<br/>
+196: Argon Police (Chase Scene)<br/>
+961: Saya Kho<br/>
+962: Noah<br/>
+966: Ion Battler<br/>
+967: Dogun<br/>
+990: Argon Police (Chase Scene)<br/>
+992: Yaki Leader (Turret Mission)<br/>
