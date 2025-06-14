@@ -1,0 +1,635 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<?xml-stylesheet href="director.xsl" type="text/xsl" ?>
+<director name="test" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="director.xsd">
+    <documentation>
+        <author alias="Cycrow"/>
+        <content reference="Guild Mission, Level 0, Smuggle" name="Multi Smuggle Mission" description="Mission to smuggle goods to multiple destination" />
+        <version number="1.0" date="07/06/2025" status="development"/>
+    </documentation>
+    <cues>
+        <cue name="L0GI08 B" library="1">
+            <documentation>
+                <content name="L0GI08 Smuggle" reference="XXXT" type="briefing"/>
+                <version number="1.0" date="07/06/2025" status="development"/>
+                <params>
+                    <param name="Cue" type="cuename" compulsory="1" description="The cue where the briefing and objectives are stored"/>
+                    <param name="ID" type="number" compulsory="1" description="The mission Id for dealing with mission chains"/>
+                    <param name="OfferRace" type="number" compulsory="1" description="Race offering the mission"/>
+                    <param name="Lv1Guide" type="actorname" compulsory="1" description="The person offering the mission"/>
+                    <param name="PageID" type="number" description="Page ID of mission description"/>
+                    <param name="TextID" type="number" description="Text ID of mission description"/>
+                    <param name="Reward" description="Reward type"/>
+                    <param name="StoryID" type="number" compulsory="0" description="Text ID of the Story title" default="No title"/>
+                    <param name="Difficulty" type="number" compulsory="1" description="Difficulty level of mission"/>
+					<param name="StartSector" type="sectorname" compulsory="1" description="Starting sector"/>
+					<param name="StationCount" type="number" compulsory="0" description="Number of stations to visit per sector"/>
+					<param name="SectorRange" type="number" compulsory="0" description="The range to find additional sectors from the start sector"/>
+					<param name="Summary" type="boolean" compulsory="0" description="Used to specify summary objectives in a chain of missions"/>
+                </params>
+            <returns>
+                <return name="{param@Cue}.{param@ID} L0GI08_Progress" type="number" description="1 - Mission Completed"/>
+                <return name="{param@Cue}.{param@ID} L0GI08_Progress" type="number" description="2 - Out of time"/>
+                <return name="{param@Cue}.{param@ID} L0GI08_Progress" type="number" description="3 - Caught - Forced to eject cargo"/>
+                <return name="{param@Cue}.{param@ID} L0GI08_Progress" type="number" description="99 - Aborted"/>
+            </returns>
+        </documentation>
+        <action>
+            <do_all>
+				<set_value name="{param@Cue}.{param@ID} L0GI08_Progress" exact="0"/>
+				<set_object name="{param@Cue}.{param@ID} L0GI08_Start" value="{actor.station@{param@Lv1Guide}}"/>
+				<do_choose>
+					<do_when value="{param.exists@StationCount}" exact="1">
+						<set_value name="{param@Cue}.{param@ID} L0GI08_StationCount" exact="{param@StationCount}"/>
+					</do_when>
+					<do_otherwise>
+						<set_value name="{param@Cue}.{param@ID} L0GI08_StationCount" min="2+{param@Difficulty}" max="3+{param@Difficulty}"/>
+					</do_otherwise>
+				</do_choose>
+				<do_if value="{value@{param@Cue}.{param@ID} L0GI08_StationCount}" max="1">
+					<set_value name="{param@Cue}.{param@ID} L0GI08_StationCount" min="2+{param@Difficulty}" max="3+{param@Difficulty}"/>
+				</do_if>
+
+				<do_choose>
+                    <do_when value="{param@Summary}" exact="1">
+                        <create_briefing cue="{param@Cue}">
+				            <objectives>
+                                <objective step="{param@Step}">
+                                    <custom action="{9620,500001}" text="{value.formatted@{param@Cue}.{param@ID} L0GI08_StationCount}"/>
+                                </objective>
+                            </objectives>
+                        </create_briefing>
+                        <cancel_cue cue="L0GI08 B"/>
+                    </do_when>
+                    <do_otherwise>
+                        <do_if value="{param.exists@Step}" exact="1">
+                            <set_value name="{param@Cue}.{param@ID} L0GI08_Step" exact="{param@Step}"/>
+                        </do_if>
+                        <do_if value="{value@{param@Cue}.{param@ID} L0GI08_Step}" min="1" negate="1">
+                            <set_value name="{param@Cue}.{param@ID} L0GI08_Step" exact="1"/>
+                        </do_if>
+                    </do_otherwise>
+                </do_choose>
+            </do_all>
+        </action>
+        <cues>
+		    <cue name="L0GI08 B_CreateDestinations">
+			    <action>
+				    <do_all>
+						<remove_group group="{param@Cue}.{param@ID} L0GI08_Destinations"/>
+						<find_station group="{param@Cue}.{param@ID} L0GI08_DestStations" race="{sector.race@{param@StartSector}}" multiple="1">
+							<sector sector="{param@StartSector}"/>
+							<jumps max="{param@SectorRange}"/>
+						</find_station>
+						<do_if value="{group.object.count@{param@Cue}.{param@ID} L0GI08_DestStations}" max="{value@{param@Cue}.{param@ID} L0GI08_StationCount}-1">
+							<find_station group="{param@Cue}.{param@ID} L0GI08_DestStations" race="{sector.race@{param@StartSector}}" multiple="1">
+								<sector sector="{param@StartSector}"/>
+								<jumps exact="{param@SectorRange}+1"/>
+							</find_station>
+						</do_if>
+						<do_if value="{group.object.count@{param@Cue}.{param@ID} L0GI08_DestStations}" max="{value@{param@Cue}.{param@ID} L0GI08_StationCount}-1">
+							<set_value name="{param@Cue}.{param@ID} L0GI08_StationCount" exact="{group.object.count@{param@Cue}.{param@ID} L0GI08_DestStations}"/>
+						</do_if>
+						<do_all counter="Count" exact="{value@{param@Cue}.{param@ID} L0GI08_StationCount}">
+							<set_value name="this.random" min="1" max="{group.object.count@{param@Cue}.{param@ID} L0GI08_DestStations}"/>
+							<set_object name="{param@Cue}.{param@ID} L0GI08_Dest_{counter@Count}" value="{group.object.{value@this.random}@{param@Cue}.{param@ID} L0GI08_DestStations}"/>
+							<add_object_to_group group="{param@Cue}.{param@ID} L0GI08_Destinations" object="{param@Cue}.{param@ID} L0GI08_Dest_{counter@Count}"/>
+							<remove_object_from_group group="{param@Cue}.{param@ID} L0GI08_DestStations" object="{group.object.{value@this.random}@{param@Cue}.{param@ID} L0GI08_DestStations}"/>
+						</do_all>
+					</do_all>				  
+			    </action>
+			    <cues>
+		            <cue name="L0GI08 B_Create Briefing" version="1">
+                    <condition>
+		                <check_value value="{group.object.count@{param@Cue}.{param@ID} L0GI08_Destinations}" exact="{value@{param@Cue}.{param@ID} L0GI08_StationCount}"/>
+                    </condition>
+                    <action>
+                        <do_all>
+				            <!--set timer-->
+				            <set_value name="this.startTime" min="({object.distance@{param@Cue}.{param@ID} L0GI08_Start}/(100*500))*4" max="({object.distance@{param@Cue}.{param@ID} L0GI08_Start}/(100*500))*6" comment="Set time between 4 and 6 times the time needed"/>
+							<set_value name="this.TotalDistance" exact="50000000" comment="additional 100km allowance"/>
+							<do_all counter="count" exact="{group.object.count@{param@Cue}.{param@ID} L0GI08_Destinations}">
+								<set_object name="this.Temp" value="{group.object.{counter@count}@{param@Cue}.{param@ID} L0GI08_Destinations}" />
+								<set_value name="this.TotalDistance" exact="{object.sector.distance@this.Temp}" operation="add"/>
+							</do_all>
+
+							<set_value name="this.ShipSpeed" min="40" max="60"/>
+							<do_if value="{param.exists@Difficulty}" exact="1">
+								<set_value name="this.ShipSpeed" operation="multiply" exact="{param@Difficulty}" comment="Set ship speed based on difficulty"/>
+							</do_if>
+							<set_value name="{param@Cue}.{param@ID} L0GI08_Time" exact="({value@this.TotalDistance}/({value@this.ShipSpeed}*500))" comment="Set time best on total distance and ship speed"/>
+							<set_value name="{param@Cue}.{param@ID} L0GI08_Time" operation="add" exact="600" comment="additional 10 mins"/>
+                            <do_if value="{value@this.startTime}" min="{value@{param@Cue}.{param@ID} L0GI08_Time}+1">
+                                <set_value name="{param@Cue}.{param@ID} L0GI08_Time" exact="{value@this.startTime}"/>
+                            </do_if>
+							<!-- minimum time incase its too low -->
+                            <do_if value="{value@{param@Cue}.{param@ID} L0GI08_Time}" max="300*{group.object.count@{param@Cue}.{param@ID} L0GI08_Destinations}">
+                                <set_value name="{param@Cue}.{param@ID} L0GI08_Time" min="300*{group.object.count@{param@Cue}.{param@ID} L0GI08_Destinations}" max="420*{group.object.count@{param@Cue}.{param@ID} L0GI08_Destinations}"/>
+                            </do_if>
+							<set_value name="{param@Cue}.{param@ID} L0GI08_Title" min="501001" max="{9620,501000}" profile="decreasing"/>
+							<set_value name="this.value" exact="({param.exists@PageID}*{param@PageID})+({param.exists@TextID}*{param@TextID})"/>
+							<do_choose>
+								<do_when value="{value@this.value}" min="2">
+									<set_value name="{param@Cue}.{param@ID} L0GI08_TextID" exact="{param@TextID}"/>
+									<set_value name="{param@Cue}.{param@ID} L0GI08_PageID" exact="{param@PageID}"/>
+								</do_when>
+								<do_otherwise>
+									<set_value name="{param@Cue}.{param@ID} L0GI08_PageID" exact="9620"/>
+									<set_value name="{param@Cue}.{param@ID} L0GI08_TextID" min="501101" max="{9620,501100}" profile="decreasing"/>
+								</do_otherwise>
+							</do_choose>
+							<set_value name="{param@Cue}.{param@ID} L0GI08_WareSize" exact="{lookup.type.cargospace@SS_WARE_DPACKAGE}*{group.object.count@{param@Cue}.{param@ID} L0GI08_Destinations}"/>
+							<!--create briefing-->
+                            <do_choose>
+                                <!--this first do_when only prevents an error in .dmp, is same as do_otherwise-->
+                                <do_when value="{player.dockobject.exists}" exact="0">
+                                    <create_briefing cue="{param@Cue}" text="{{value@{param@Cue}.{param@ID} L0GI08_PageID},{value@{param@Cue}.{param@ID} L0GI08_TextID}}" title="{9620,{value@{param@Cue}.{param@ID} L0GI08_Title}}">
+										<objectives>
+                                            <objective step="{value@{param@Cue}.{param@ID} L0GI08_Step}">
+                                                <dockat object="{param@Cue}.{param@ID} L0GI08_Start"/>
+                                            </objective>
+                                        </objectives>
+                                    </create_briefing>
+                                    <set_value name="{param@Cue}.{param@ID} L0GI08_DestStep" exact="{value@{param@Cue}.{param@ID} L0GI08_Step}+1"/>
+                                </do_when>
+                                <do_when value="{object@{param@Cue}.{param@ID} L0GI08_Start}" exact="{player.dockobject}">
+									<create_briefing cue="{param@Cue}" text="{{value@{param@Cue}.{param@ID} L0GI08_PageID},{value@{param@Cue}.{param@ID} L0GI08_TextID}}" title="{9620,{value@{param@Cue}.{param@ID} L0GI08_Title}}"/>
+                                    <set_value name="{param@Cue}.{param@ID} L0GI08_DestStep" exact="{value@{param@Cue}.{param@ID} L0GI08_Step}"/>
+                                </do_when>
+                                <do_otherwise>
+									<create_briefing cue="{param@Cue}" text="{{value@{param@Cue}.{param@ID} L0GI08_PageID},{value@{param@Cue}.{param@ID} L0GI08_TextID}}" title="{9620,{value@{param@Cue}.{param@ID} L0GI08_Title}}">
+										<objectives>
+											<objective step="{value@{param@Cue}.{param@ID} L0GI08_Step}">
+												<dockat object="{param@Cue}.{param@ID} L0GI08_Start"/>
+											</objective>
+										</objectives>
+									</create_briefing>
+									<set_value name="{param@Cue}.{param@ID} L0GI08_DestStep" exact="{value@{param@Cue}.{param@ID} L0GI08_Step}+1"/>
+								</do_otherwise>
+                            </do_choose>
+
+							<create_briefing cue="{param@Cue}" text="{{value@{param@Cue}.{param@ID} L0GI08_PageID},{value@{param@Cue}.{param@ID} L0GI08_TextID}}" title="{9620,{value@{param@Cue}.{param@ID} L0GI08_Title}}">
+								<requirements>
+									<requirement value="{value@{param@Cue}.{param@ID} L0GI08_WareSize}" type="cargo" />
+									<requirement value="{lookup.type.cargoclass@SS_WARE_DPACKAGE}" type="tc"/>
+									<requirement value="{lookup.type@SS_WARE_DPACKAGE}" type="warelink"/>
+								</requirements>
+							</create_briefing>
+
+							<do_all counter="Count" exact="{group.object.count@{param@Cue}.{param@ID} L0GI08_Destinations}">
+								<set_object name="this.object" value="{group.object.{counter@Count}@{param@Cue}.{param@ID} L0GI08_Destinations}"/>
+								<create_briefing cue="{param@Cue}" text="{{value@{param@Cue}.{param@ID} L0GI08_PageID},{value@{param@Cue}.{param@ID} L0GI08_TextID}}" title="{9620,{value@{param@Cue}.{param@ID} L0GI08_Title}}">
+									<objectives>
+										<objective step="{value@{param@Cue}.{param@ID} L0GI08_DestStep}+({counter@Count}-1)">
+											<dockat object="{group.object.{counter@Count}@{param@Cue}.{param@ID} L0GI08_Destinations}"/>
+										</objective>
+									</objectives>
+								</create_briefing>
+							</do_all>
+
+                            <set_value name="L0GI08 B.StartTime" exact="{player.age}+7200"/>
+							<set_value name="{param@Cue}.{param@ID} L0GI08_FirstDestStep" exact="{value@{param@Cue}.{param@ID} L0GI08_DestStep}"/>
+						</do_all>
+                    </action>
+                    <cues>
+                        <cue ref="LUM04">
+                            <params>
+                                <param name="Discipline" value="XXXT"/>
+                                <param name="RewardMult" value="2+{group.object.count@{param@Cue}.{param@ID} L0GI08_Destinations}"/>
+                                <param name="StartTime" value="L0GI08 B.StartTime"/>
+                                <param name="Duration" value="{param@Cue}.{param@ID} L0GI08_Time"/>
+                            </params>
+                        </cue>
+		            </cues>
+	            </cue>
+            </cues>
+        </cue>
+      </cues>
+    </cue>
+
+    <cue name="L0GI08" library="1">
+        <documentation>
+            <content name="L0GI08 Smuggle" reference="XXXT" type="L0"/>
+            <version date="10/06/2025" number="1.0" status="development"/>
+            <params>
+				<param name="Cue" type="cuename" compulsory="1" description="The cue where the briefing and objectives are stored"/>
+				<param name="ID" type="number" compulsory="1" description="The mission Id for dealing with mission chains"/>
+				<param name="OfferRace" type="number" compulsory="1" description="Race offering the mission"/>
+				<param name="Lv1Guide" type="actorname" compulsory="1" description="The person offering the mission"/>
+				<param name="PageID" type="number" description="Page ID of mission description"/>
+				<param name="TextID" type="number" description="Text ID of mission description"/>
+				<param name="Reward" description="Reward type"/>
+				<param name="StoryID" type="number" compulsory="0" description="Text ID of the Story title" default="No title"/>
+				<param name="Difficulty" type="number" compulsory="1" description="Difficulty level of mission"/>
+				<param name="StartSector" type="sectorname" compulsory="1" description="Starting sector"/>
+				<param name="StationCount" type="number" compulsory="0" description="Number of stations to visit per sector"/>
+				<param name="SectorRange" type="number" compulsory="0" description="The range to find additional sectors from the start sector"/>
+                <param name="Step" compulsory="1" description="The starting Step of the mission"/>
+            </params>
+        </documentation>
+        <action>
+			<set_value name="{param@Cue}.{param@ID} L0GI08_Progress" exact="0"/>
+		</action>
+        <cues>
+            <cue name="L0GI08 Mission">
+                <cues>
+					<cue name="L0GI08 Check Start">
+						<condition comment="if player hasnt started at the starting point">
+                            <check_any>
+                                <object_is_docked dockobject="{param@Cue}.{param@ID} L0GI08_Start"/>
+                                <check_all>
+                                    <match_object object="{param@Cue}.{param@ID} L0GI08_Start" class="station" negate="1"/>
+                                    <check_distance value="{object.distance@{param@Cue}.{param@ID} L0GI08_Start}" max="5km"/>
+                                </check_all>
+                            </check_any>
+                        </condition>
+						<action>
+							<do_all>
+								<reward_player>
+									<cargo>
+										<ware typename="SS_WARE_DPACKAGE" exact="{group.object.count@{param@Cue}.{param@ID} L0GI08_Destinations}"/>
+									</cargo>
+								</reward_player>
+							</do_all>
+						</action>
+					</cue>
+					<cue name="L0GI08 Go Start" check="cancel">
+						<condition comment="if player hasnt started at the starting point">
+                            <check_any>
+                                <object_is_docked dockobject="{param@Cue}.{param@ID} L0GI08_Start" negate="1"/>
+                                <check_all>
+                                    <match_object object="{param@Cue}.{param@ID} L0GI08_Start" class="station" negate="1"/>
+                                    <check_distance value="{object.distance@{param@Cue}.{param@ID} L0GI08_Start}" min="5km"/>
+                                </check_all>
+                            </check_any>
+                        </condition>
+                        <action>
+                            <do_all>
+                                <set_value name="this.Travelled" exact="1"/>
+                                <!--set the end time so we can calculate the remaining time-->
+                                <set_value name="{param@Cue}.{param@ID} L0GI08_EndTime" exact="{value@{param@Cue}.{param@ID} L0GI08_Time}+{player.age}"/>
+                                <!--set the objective / briefing-->
+                                <set_objective cue="{param@Cue}" title="{9620,{value@{param@Cue}.{param@ID} L0GI08_Title}}">
+                                    <briefing cue="{param@Cue}" step="{value@{param@Cue}.{param@ID} L0GI08_Step}"/>
+                                    <mission level="{param@Difficulty}" discipline="XXXT"/>
+                                    <dockat object="{param@Cue}.{param@ID} L0GI08_Start"/>
+                                </set_objective>
+                                <set_value name="L0GI08 Go Start.StartTime" exact="{player.age}"/>
+                            </do_all>
+                        </action>
+                        <cues>
+                            <cue ref="LUM04">
+                                <params>
+                                    <param name="StartTime" value="L0GI08 Go Start.StartTime"/>
+                                    <param name="Duration" value="{param@Cue}.{param@ID} L0GI08_Time"/>
+                                </params>
+                            </cue>
+                            <cue ref="LUM05">
+                                <params>
+                                    <param name="Duration" value="{param@Cue}.{param@ID} L0GI08_Time"/>
+                                </params>
+                            </cue>
+                        </cues>
+                    </cue>
+            
+					<!--NEED A HURRY UP CUE maybe?-->
+                    <cue name="L0GI08 Time Out 1">
+                        <condition comment="If mission Started and allowed to fail">
+                            <check_all>
+                                <cue_completed cue="L0GI08 Go Start"/>
+                                <check_value value="{param@IsPlot}" exact="1" negate="1"/>
+                            </check_all>
+                        </condition>
+                        <timing>
+                            <time exact="{value@{param@Cue}.{param@ID} L0GI08_Time}s"/>
+                        </timing>
+                        <action>
+                            <do_all>
+                                <incoming_message author="{actor.name@{param@Lv1Guide}}" text="{3604,2000}"/>
+                                <set_value name="{param@Cue}.{param@ID} L0GI08_Progress" exact="92"/>
+                                <cancel_cue cue="L0GI08 Mission"/>
+                            </do_all>
+                        </action>
+                    </cue>
+                    <cue name="L0GI08 Dest Destroyed 1">
+                        <condition>
+                            <check_any>
+                                <any_object_destroyed group="{param@Cue}.{param@ID} L0GI08_Destinations"/>
+                                <any_object_destroyed_by_player group="{param@Cue}.{param@ID} L0GI08_Destinations"/>
+                            </check_any>
+                        </condition>
+                        <action>
+                            <do_all>
+                                <incoming_message author="{actor.name@{param@Lv1Guide}}" text="{3604,2001}"/>
+                                <set_value name="{param@Cue}.{param@ID} L0GI08_Progress" exact="93"/>
+                                <cancel_cue cue="L0GI08 Mission"/>
+                            </do_all>
+                        </action>
+                    </cue>
+                    <cue name="L0GI08 Start Destroyed">
+                        <condition>
+                            <check_any>
+                                <object_destroyed object="{param@Cue}.{param@ID} L0GI08_Start"/>
+                                <object_destroyed_by_player object="{param@Cue}.{param@ID} L0GI08_Start"/>
+                            </check_any>
+                        </condition>
+                        <action>
+                            <do_all>
+                                <set_value name="{param@Cue}.{param@ID} L0GI08_Progress" exact="99"/>
+                                <cancel_cue cue="L0GI08 Mission"/>
+                            </do_all>
+                        </action>
+                    </cue>
+                    <cue name="L0GI08 At Start" delay="1000" version="3">
+                        <condition>
+                            <check_all>
+                                <check_value value="{player.ship.cargoclass}" min="{lookup.type.cargoclass@SS_WARE_DPACKAGE}"/>
+                                <check_value value="{player.ship.cargospace}" min="{value@{param@Cue}.{param@ID} L0GI08_WareSize}"/>
+                                <check_value value="{object.exists@{param@Cue}.{param@ID} L0GI08_Start}" exact="1"/>
+                                <check_any>
+                                    <object_is_docked dockobject="{param@Cue}.{param@ID} L0GI08_Start"/>
+                                    <check_all>
+                                        <match_object object="{param@Cue}.{param@ID} L0GI08_Start" class="station" negate="1"/>
+                                        <check_distance value="{object.distance@{param@Cue}.{param@ID} L0GI08_Start}" max="5km"/>
+                                    </check_all>
+                                </check_any>
+                            </check_all>
+                        </condition>
+                        <action>
+                            <do_all>
+                                <cancel_cue cue="L0GI08 Cant Transport"/>
+                                <cancel_cue cue="L0GI08 Time Out 1"/>
+                                <cancel_cue cue="L0GI08 Dest Destroyed 1"/>
+                                <cancel_cue cue="L0GI08 Start Destroyed"/>
+								<add_cargo object="{player.ship}">
+									<ware typename="SS_WARE_DPACKAGE" exact="{group.object.count@{param@Cue}.{param@ID} L0GI08_Destinations}"/>
+								</add_cargo>
+								<!--reset timer value if was  calculated earlier-->
+                                <do_if value="{value@{param@Cue}.{param@ID} L0GI08_EndTime}" min="1">
+                                    <set_value name="{param@Cue}.{param@ID} L0GI08_Time" exact="{value@{param@Cue}.{param@ID} L0GI08_EndTime}-{player.age}"/>
+                                </do_if>
+                                <!--add a small amount of time if very low-->
+                                <do_if value="{value@{param@Cue}.{param@ID} L0GI08_Time}" max="240">
+                                    <set_value name="{param@Cue}.{param@ID} L0GI08_Time" min="240" max="260"/>
+                                </do_if>
+
+                                <set_value name="this.hurry" min="{value@{param@Cue}.{param@ID} L0GI08_Time}/2" max="({value@{param@Cue}.{param@ID} L0GI08_Time}/2)+15"/>
+								<set_object name="{param@Cue}.{param@ID} L0GI08_Dest" value="{group.object.1@{param@Cue}.{param@ID} L0GI08_Destinations}"/>
+								<set_value name="{param@Cue}.{param@ID} L0GI08_CurrentStep" exact="{value@{param@Cue}.{param@ID} L0GI08_FirstDestStep}"/>
+								<set_value name="{param@Cue}.{param@ID} L0GI08_CurrentDest" exact="1"/>
+								<create_briefing cue="{param@Cue}">
+					                <objectives>
+                                        <objective step="{value@{param@Cue}.{param@ID} L0GI08_FirstDestStep}">
+                                            <dockat object="{object@{param@Cue}.{param@ID} L0GI08_Dest}"/>
+                                        </objective>
+                                    </objectives>
+                                </create_briefing>
+                                <set_objective cue="{param@Cue}" title="{9620,{value@{param@Cue}.{param@ID} L0GI08_Title}}">
+                                    <briefing cue="{param@Cue}" step="{value@{param@Cue}.{param@ID} L0GI08_FirstDestStep}"/>
+                                    <mission level="{param@Difficulty}" discipline="XXXT"/>
+                                    <dockat object="{param@Cue}.{param@ID} L0GI08_Dest"/>
+                                </set_objective>
+
+                                <do_if value="{value@{param@Cue}.{param@ID} L0GI08_UseStartTD}" exact="1">
+                                    <play_sound soundid="991"/>
+                                </do_if>
+                                <set_value name="L0GI08 At Start.StartTime" exact="{player.age}"/>
+                            </do_all>
+                        </action>
+                        <cues>
+                            <cue name="L0GI08 At Start Speak">
+                                <condition>
+                                    <cue_completed cue="L0GI08 At Start"/>
+                                </condition>
+                                <timing>
+                                    <time exact="{text.duration@13,1502}+50"/>
+                                </timing>
+                                <action>
+                                    <play_text actor="{actor@{param@Lv1Guide}}" priority="99">
+                                        <line actor="{actor@{param@Lv1Guide}}" textid="913"/>
+                                    </play_text>
+                                </action>
+                            </cue>
+                            <cue ref="LUM04">
+                                <params>
+                                    <param name="StartTime" value="L0GI08 At Start.StartTime"/>
+                                    <param name="Duration" value="{param@Cue}.{param@ID} L0GI08_Time"/>
+                                </params>
+                            </cue>
+                            <cue ref="LUM05">
+                                <params>
+                                    <param name="StartTime" value="L0GI08 At Start.StartTime"/>
+                                    <param name="Duration" value="{param@Cue}.{param@ID} L0GI08_Time"/>
+                                </params>
+                            </cue>
+                            <cue name="L0GI08 Time Out 2">
+                                <condition>
+                                    <check_all>
+                                        <cue_completed cue="L0GI08 At Start"/>
+                                        <check_value value="{param@IsPlot}" exact="1" negate="1"/>
+                                    </check_all>
+                                </condition>
+                                <timing>
+                                    <time exact="{value@{param@Cue}.{param@ID} L0GI08_Time}s"/>
+                                </timing>
+                                <action>
+                                    <do_all>
+                                        <set_value name="{param@Cue}.{param@ID} L0GI08_Progress" exact="2"/>
+                                        <cancel_cue cue="L0GI08 Mission"/>
+                                    </do_all>
+                                </action>
+                            </cue>
+                            <cue name="L0GI08 Dest Destroyed 2" delay="2s">
+                                <condition>
+                                    <check_value value="{object.exists@{param@Cue}.{param@ID} L0GI08_Dest}" exact="0"/>
+                                </condition>
+                                <action>
+                                    <do_all>
+										<do_if value="{group.object.count@{param@Cue}.{param@ID} L0GI08_DestStations}" min="1">
+											<set_value name="this.random" min="1" max="{group.object.count@{param@Cue}.{param@ID} L0GI08_DestStations}"/>
+											<set_object name="{param@Cue}.{param@ID} L0GI08_Dest" value="{group.object.{value@this.random}@{param@Cue}.{param@ID} L0GI08_DestStations}"/>
+											<remove_object_from_group group="{param@Cue}.{param@ID} L0GI08_DestStations" object="{group.object.{value@this.random}@{param@Cue}.{param@ID} L0GI08_DestStations}"/>
+										</do_if>										
+
+										<set_value name="this.step" exact="{value@{param@Cue}.{param@ID} L0GI08_Step}"/>
+                                        <do_if value="{value@L0GI08 Go Start.Travelled}" exact="1">
+                                            <set_value name="this.step" exact="{value@{param@Cue}.{param@ID} L0GI08_Step}+1"/>
+                                        </do_if>
+                                        <do_choose>
+                                            <do_when value="{object.exists@{param@Cue}.{param@ID} L0GI08_Dest}" exact="1">
+                                                <create_briefing cue="{param@Cue}">
+							                        <objectives>
+                                                        <objective step="{value@this.step}">
+                                                            <dockat object="{param@Cue}.{param@ID} L0GI08_Dest"/>
+                                                        </objective>
+                                                    </objectives>
+                                                </create_briefing>
+                                                <set_objective cue="{param@Cue}">
+                                                    <briefing cue="{param@Cue}" step="{value@this.step}"/>
+                                                    <mission level="{param@Difficulty}" discipline="XXXT"/>
+                                                    <dockat object="{param@Cue}.{param@ID} L0GI08_Dest"/>
+                                                </set_objective>
+                                                <do_if value="{param@Lv1Guide}" exact="{player.ship}">
+                                                    <play_text priority="99">
+                                                        <line actor="{param@Lv1Guide}" textid="849"/>
+                                                    </play_text>
+                                                </do_if>
+                                                <reset_cue cue="L0GI08 Dest Destroyed 2"/>
+                                            </do_when>
+                                            <do_otherwise>
+                                                <incoming_message author="{param@Lv1Guide}" text="{3604,2001}"/>
+                                                <set_value name="{param@Cue}.{param@ID} L0GI08_Progress" exact="93"/>
+                                                <cancel_cue cue="L0GI08 Mission"/>
+                                            </do_otherwise>
+                                        </do_choose>
+                                    </do_all>
+                                </action>
+                            </cue>
+							<cue name="L0GI08 At Dest" version="3" delay="1s">
+                                <condition>
+                                    <check_any>
+                                        <check_all>
+                                            <object_exists object="{param@Cue}.{param@ID} L0GI08_Dest"/>
+                                            <object_is_docked dockobject="{object@{param@Cue}.{param@ID} L0GI08_Dest}"/>
+											<check_value value="{player.ship.cargo.SS_WARE_DPACKAGE.exists}" exact="1"/>
+										</check_all>
+                                        <check_all>
+                                            <object_exists object="{param@Cue}.{param@ID} L0GI08_Dest"/>
+                                            <match_object object="{param@Cue}.{param@ID} L0GI08_Dest" class="station" negate="1"/>
+                                            <check_distance value="{object.distance@{param@Cue}.{param@ID} L0GI08_Dest}" max="5km"/>
+											<check_value value="{player.ship.cargo.SS_WARE_DPACKAGE.exists}" exact="1"/>
+                                            <check_value value="{object.exists@{param@Cue}.{param@ID} L0GI08_Dest}" exact="1"/>
+                                        </check_all>
+                                    </check_any>
+                                </condition>
+                                <timing>
+                                    <time min="10s" max="15s"/>
+                                </timing>
+                                <action>
+                                    <do_all>
+										<add_cargo object="{player.ship}">
+											<ware typename="SS_WARE_DPACKAGE" exact="-1"/>
+										</add_cargo>
+										<set_value name="{param@Cue}.{param@ID} L0GI08_CurrentDest" exact="{value@{param@Cue}.{param@ID} L0GI08_CurrentDest}+1"/>
+										<do_choose>
+											<do_when value="{value@{param@Cue}.{param@ID} L0GI08_CurrentDest}" max="{group.object.count@{param@Cue}.{param@ID} L0GI08_Destinations}">
+												<set_object name="{param@Cue}.{param@ID} L0GI08_Dest" value="{group.object.{value@{param@Cue}.{param@ID} L0GI08_CurrentDest}@{param@Cue}.{param@ID} L0GI08_Destinations}"/>
+												<set_value name="{param@Cue}.{param@ID} L0GI08_CurrentStep" exact="{value@{param@Cue}.{param@ID} L0GI08_CurrentStep}+1"/>
+												<set_objective cue="{param@Cue}">
+													<briefing cue="{param@Cue}" step="{value@{param@Cue}.{param@ID} L0GI08_CurrentStep}"/>
+													<mission level="{param@Difficulty}" discipline="XXXT"/>
+													<dockat object="{param@Cue}.{param@ID} L0GI08_Dest"/>
+												</set_objective>
+												<play_text actor="{param@Lv1Guide}" priority="99">
+													<line actor="{param@Lv1Guide}" textid="910"/>
+													<line actor="{param@Lv1Guide}" textid="911"/>
+												</play_text>
+												<set_value name="{param@Cue}.{param@ID} L0GI08_CreatePolice" exact="0"/>
+												<do_if value="{value@{param@Cue}.{param@ID} L0GI08_HasPolice}" exact="1">
+													<do_choose>
+														<do_when value="{value@{param@Cue}.{param@ID} L0GI08_Attacks}" exact="0">
+															<set_value name="this.Random" min="1" max="50"/>
+														</do_when>
+														<do_when value="{value@{param@Cue}.{param@ID} L0GI08_Attacks}" exact="1">
+															<set_value name="this.Random" min="1" max="80"/>
+														</do_when>
+														<do_otherwise>
+        													<set_value name="this.Random" min="1" max="100"/>
+														</do_otherwise>
+													</do_choose>
+													<do_if value="{value@{param@Cue}.{param@ID} L0GI08_CurrentDest}" exact="{group.object.count@{param@Cue}.{param@ID} L0GI08_Destinations}-1">
+														<do_if value="{value@{param@Cue}.{param@ID} L0GI08_Attacks}" exact="0">
+															<set_value name="this.Random" exact="1"/>
+														</do_if>
+													</do_if>
+													<do_if value="{value@this.Random}" max="30">
+														<set_value name="{param@Cue}.{param@ID} L0GI08_CreatePolice" exact="1"/>
+														<!--<reset_cue cue="L0GI08 SpawnPolice"/>-->
+													</do_if>
+												</do_if>
+												<reset_cue cue="L0GI08 At Dest"/>
+											</do_when>
+											<do_otherwise>
+												<do_if value="{object.isclass.station@{param@Cue}.{param@ID} L0GI08_Dest}" exact="0">
+													<play_sound soundid="991"/>
+												</do_if>
+												<set_value name="{param@Cue}.{param@ID} L0GI08_Progress" exact="1"/>
+												<cancel_cue cue="L0GI08 Mission"/>
+											</do_otherwise>
+										</do_choose>
+									</do_all>
+                                </action>
+                            </cue>
+                        </cues>
+                    </cue>
+                    <!--NEED A CUE TO CREATE POLICE IN CASE OF AN ILLEGAL PASSENGER?-->
+                    <cue name="L0GI08 Aborted">
+                        <condition>
+                            <objective_cancelled cue="{param@Cue}"/>
+                        </condition>
+                        <action>
+                            <do_all>
+                                <set_value name="{param@Cue}.{param@ID} L0GI08_Progress" exact="99"/>
+                                <cancel_cue cue="L0GI08 Mission"/>
+                            </do_all>
+                        </action>
+                    </cue>
+                </cues>
+            </cue>
+			
+            <cue name="L0GI08 Cleanup">
+                <condition>
+                    <check_value value="{value@{param@Cue}.{param@ID} L0GI08_Progress}" min="1"/>
+                </condition>
+				<action>
+					<add_cargo object="{player.ship}">
+						<ware typename="SS_WARE_DPACKAGE" exact="-100"/>
+					</add_cargo>
+				</action>
+				<!--
+                <cues>
+                    <cue name="L0GI03 Cleanup Actor">
+                        <cues>
+                            <cue name="L0GI03 Cleanup Actor Destroyed" delay="235" version="2" comment="V2. Exist check corrected">
+                                <condition>
+                                    <check_value value="{actor.exists@{param@Cue}.{param@ID} L0Passenger}" exact="0"/>
+                                </condition>
+                                <action>
+                                    <cancel_cue cue="L0GI03 Cleanup Actor Depart"/>
+                                </action>
+                            </cue>
+                            <cue name="L0GI03 Cleanup Actor Depart" delay="250">
+                                <condition>
+                                    <object_is_docked object="{actor.ship@{param@Cue}.{param@ID} L0Passenger}"/>
+                                </condition>
+                                <action>
+                                    <do_if value="{actor.exists@{param@Cue}.{param@ID} L0Passenger}" exact="1">
+                                        <set_object name="this.ship" value="{actor.ship@{param@Cue}.{param@ID} L0Passenger}"/>
+                                        <do_choose>
+                                            <do_when value="{value@{param@Cue}.{param@ID} Passenger Created}" exact="1">
+                                                <do_if value="{param@Leave End Passenger}" exact="1" negate="1">
+                                                    <destroy_actor actor="{param@Cue}.{param@ID} L0Passenger"/>
+                                                </do_if>
+                                            </do_when>
+                                            <do_otherwise>
+                                                <clear_actor_location actor="{param@Cue}.{param@ID} L0Passenger"/>
+                                            </do_otherwise>
+                                        </do_choose>
+                                        <do_if value="{object.isclass.astronaut@this.ship}" exact="1">
+                                            <destroy_object object="this.ship"/>
+                                        </do_if>
+                                        <do_if value="{object.exists@this.ship}" exact="1">
+                                            <remove_object object="this.ship"/>
+                                        </do_if>
+                                        <cancel_cue cue="L0GI03 Cleanup Actor Destroyed"/>
+                                    </do_if>
+                                </action>
+                            </cue>
+                        </cues>
+                    </cue>
+    			</cues>
+			-->
+		</cue>
+	</cues>
+    </cue>
+  </cues>
+</director>
