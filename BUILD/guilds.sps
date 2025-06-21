@@ -68,9 +68,9 @@ Script: GAME X3FL $GAMEDIR/addon2/Scripts/plugin.bbs.*
 Script: GAME X3FL $GAMEDIR/addon2/Scripts/plugin.guilds.*
 Script: GAME X3FL $GAMEDIR/addon2/Scripts/lib.guilds.*
 Script: GAME X3FL $GAMEDIR/addon2/Scripts/lib.tradesys.*
-Script: GAME X3FL $GAMEDIR/addon2/Scripts/config.faction.guilds.xml
-Script: GAME X3FL $GAMEDIR/addon2/Scripts/config.faction.privateer.xml
-Script: GAME X3FL $GAMEDIR/addon2/Scripts/job.xenon.migration.xml
+Script: GAME X3FL $GAMEDIR/addon2/Scripts/!config.faction.guilds.xml
+Script: GAME X3FL $GAMEDIR/addon2/Scripts/!config.faction.privateer.xml
+Script: GAME X3FL $GAMEDIR/addon2/Scripts/!job.xenon.migration.xml
 Text: GAME X3FL $GAMEDIR/addon2/T/9620-L*
 Mod: GAME X3FL $GAMEDIR/addon2/08.cat
 Mod: GAME X3FL $GAMEDIR/addon2/08.dat
