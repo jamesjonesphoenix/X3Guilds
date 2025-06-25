@@ -21,5 +21,5 @@ if not exist "convert\" (
 
 FOR /F "tokens=*" %%G IN ('dir /b convert\*.mp3') DO (
 	echo Converting '%%G'...
-	ffmpeg -y -i "convert\%%G" -acodec pcm_s16le -ac 1 -ar 44100 -filter:a "volume=10dB" "%lang%\%%~nG.wav"
+	ffmpeg -y -i "convert\%%G" -acodec pcm_s16le -ac 1 -ar 44100 -filter:a "volume=8dB" "%lang%\%%~nG.wav"
 )
