@@ -34,10 +34,12 @@
 					<find_sector x="23" y="1" name="Lost_Colonies.MorningStar" comment="Lost Colony: Morning Star"/>
 					<find_sector x="23" y="2" name="Lost_Colonies.ParadiseLost" comment="Lost Colony: Paradise Lost"/>
 					<find_sector x="23" y="3" name="Lost_Colonies.AuroraPrime" comment="Lost Colony: Aurora Prime"/>
+					<find_sector x="16" y="12" name="Lost_Colonies.Moon" comment="The Moon"/>
 				</do_all>
 			</action>
 			<cues>
 				<cue name="Lost_Colonies_Start">
+					<!--
 					<condition>
 						<check_all>							
 							<check_any>
@@ -55,7 +57,45 @@
 							</check_any>
 						</check_all>
 					</condition>
+					-->
 					<cues>
+						<cue name="Lost_Colonies_TEST">
+							<condition>
+								<cue_is_complete cue="Lost_Colonies"/>
+							</condition>
+							<timing>
+								<time exact="5s"/>
+							</timing>
+							<action>
+								<do_all>
+									<find_station class="dock" race="terran" name="Lost_Colonies.OutpostStation" silent="1" typename="SS_DOCK_ATF_MILITARY_1">
+										<sector sector="{sector@Lost_Colonies.OutpostSector}"/>
+										<jumps min="0" max="0"/>
+									</find_station>
+									<find_station name="Lost_Colonies.TerraStation" category="dock" race="corporation1">
+										<sector sector="Lost_Colonies.TerraNova"/>
+										<jumps exact="0"/>
+									</find_station>
+									<create_ship name="Lost_Colonies.TerraEnvoyShip" boardable="0" capturable="0" invincible="1" typename="SS_SH_TR_LOST_M4" race="corporation1" dockobject="Lost_Colonies.TerraStation" textid="90027">
+										<sector sector="{object.sector@Lost_Colonies.TerraStation}"/>
+										<equipment loadout="maximum"/>
+									</create_ship>
+									<create_actor name="Lost_Colonies.Leader" race="terran" voice="125" face="1133" invincible="1" character="{9620,1100003}" gender="male" object="Lost_Colonies.OutpostStation" location="crew" />
+									<create_actor name="Lost_Colonies.TerraEnvoy" face="1137" voice="128" gender="female" race="corporation1" invincible="1" character="{9620,1100056}" object="Lost_Colonies.TerraEnvoyShip" location="pilot"/>
+									<create_gate typename="SS_WG_EAST" gate="east" name="Lost_Colonies.ConnectedGate">
+										<position x="43km" y="21km" z="-9km"/>
+										<sector sector="Lost_Colonies.Althes"/>
+										<destination sector="Lost_Colonies.UnknownTerra" gate="west"/>
+									</create_gate>
+									<create_gate typename="SS_WG_TJ_WEST" gate="west" name="Lost_Colonies.DestGate">
+										<position x="-45km" y="1km" z="9km"/>
+										<sector sector="Lost_Colonies.UnknownTerra"/>
+										<destination sector="Lost_Colonies.Althes" gate="east"/>
+									</create_gate>
+									<set_value name="Lost_Colonies.Status" exact="70"/>
+								</do_all>
+							</action>
+						</cue>
 						<cue name="Lost_Colonies_GetOutpost" delay="1s">
 							<timing>
 								<time min="60s" max="90s"/>
@@ -4614,16 +4654,85 @@
 					</cues>
 				</cue>
 
-				<!--
 				<cue name="Lost_Colonies_Act7_1" delay="2s">
 					<condition>
 						<check_value value="{value@Lost_Colonies.Status}" exact="70"/>
 					</condition>
 					<timing>
-						<time min="45m" max="70m"/>
+						<time min="45s" max="70s"/>
 					</timing>
+					<cues>
+						<cue name="Lost_Colonies_Act7_1_Start" delay="1s">
+							<condition>
+								<cue_is_complete cue="Lost_Colonies_Act7_1"/>
+							</condition>
+							<action>
+								<do_all>
+									<find_sector x="16" y="12" name="Lost_Colonies.Moon" comment="The Moon"/>
+									<find_gate name="Lost_Colonies.TerraBrokenGate" gate="south">
+										<sector sector="Lost_Colonies.TerraNova"/>
+										<jumps exact="0"/>
+									</find_gate>
+									<incoming_message text="Gate = {object.name@Lost_Colonies.TerraBrokenGate}"/>
+									<set_actor_location actor="Lost_Colonies.TerraEnvoy" location="crew" object="Lost_Colonies.TerraStation"/>
+									<play_text actor="Lost_Colonies.Leader" textid="110083" priority="90"/>
+									<create_offer actor="Lost_Colonies.TerraEnvoy" cue="Lost_Colonies" discipline="XXXXP" conversation="L3GPL_03_07_00"/>
+									<create_briefing cue="Lost_Colonies" story="{9620,1100033}" title="{9620,1100044}" text="{9620,1100045}" background="terragate.tga" race="{9620,1100001}" targetrace="xenon">
+										<mission discipline="XXXXP" level="average"/>
+										<reward money="4500000"/>
+										<objectives>
+											<objective step="1">
+												<talkto actor="Lost_Colonies.TerraEnvoy"/>
+											</objective>
+										</objectives>
+									</create_briefing>
+									<set_objective cue="Lost_Colonies" story="{9620,1100033}" title="{9620,1100044}" text="{9620,1100045}" race="{9620,1100001}" targetrace="xenon" noabort="1">
+										<briefing cue="Lost_Colonies" step="1"/>
+										<mission discipline="XXXXP" level="average"/>
+										<reward money="4500000"/>
+										<talkto actor="Lost_Colonies.TerraEnvoy"/>
+									</set_objective>
+								</do_all>
+							</action>
+							<cues>
+								<cue name="Lost_Colonies_Act7_1_Accept" delay="1s">
+									<condition>
+										<conversation_completed actor="Lost_Colonies.TerraEnvoy" conversation="L3GPL_03_07_00" answer="accept"/>
+									</condition>
+									<action>
+										<do_all>
+											<remove_offer actor="Lost_Colonies.TerraEnvoy" conversation="L3GPL_03_07_00" discipline="XXXXP"/>
+											<set_actor_location actor="Lost_Colonies.TerraEnvoy" location="pilot" object="Lost_Colonies.TerraEnvoyShip"/>
+											<set_command object="Lost_Colonies.TerraEnvoyShip" command="moveposition">
+												<position object="Lost_Colonies.TerraBrokenGate" min="8km" max="10km"/>
+												<sector sector="Lost_Colonies.TerraNova"/>
+											</set_command>
+											<find_station class="dock" race="terran" name="Lost_Colonies.MoonStation" silent="1">
+												<sector sector="{sector@Lost_Colonies.Moon}"/>
+												<jumps min="0" max="0"/>
+											</find_station>
+											<create_briefing cue="Lost_Colonies" story="{9620,1100033}" title="{9620,1100044}" text="{9620,1100045}" background="terragate.tga" race="{9620,1100001}" targetrace="xenon">
+												<mission discipline="XXXXP" level="average"/>
+												<reward money="4500000"/>
+												<objectives>
+													<objective step="2">
+														<talkto actor="Lost_Colonies.TerraEnvoy"/>
+													</objective>
+												</objectives>
+											</create_briefing>
+											<set_objective cue="Lost_Colonies" story="{9620,1100033}" title="{9620,1100044}" text="{9620,1100045}" race="{9620,1100001}" targetrace="xenon" noabort="1">
+												<briefing cue="Lost_Colonies" step="2"/>
+												<mission discipline="XXXXP" level="average"/>
+												<reward money="4500000"/>
+												<talkto actor="Lost_Colonies.TerraEnvoy"/>
+											</set_objective>
+										</do_all>
+									</action>
+								</cue>
+							</cues>
+						</cue>
+					</cues>
 				</cue>
-				-->
 			</cues>
 		</cue>
 	</cues>
